@@ -1,0 +1,8 @@
+build
+build/*
+bin
+bin/*
+WebContent/build
+WebContent/build/*
+WebContent/WEB-INF/classes
+WebContent/WEB-INF/classes/*
