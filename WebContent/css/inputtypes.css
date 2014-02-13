@@ -1,0 +1,11 @@
+/*
+ * Copyright (c) Orchestral Developments Ltd (2001 - 2009).
+ *
+ * This document is copyright. Except for the purpose of fair reviewing, no part
+ * of this publication may be reproduced or transmitted in any form or by any
+ * means, electronic or mechanical, including photocopying, recording, or any
+ * information storage and retrieval system, without permission in writing from
+ * the publisher. Infringers of copyright render themselves liable for
+ * prosecution.
+ */
+A.Icon:hover{cursor:pointer!important;cursor:hand;text-decoration:none;}.DateError{background-image:url(../images/dateinput/Error.gif);background-repeat:no-repeat;height:10px;padding-left:4px;padding-right:2px;vertical-align:bottom;width:10px;}.DateCorrect{background-image:url(../images/dateinput/Correct.gif);background-repeat:no-repeat;height:10px;padding-left:4px;padding-right:2px;vertical-align:bottom;width:10px;}.DateBlock,.PopupSearchBlock{white-space:nowrap;padding-left:1px;padding-right:1px;}

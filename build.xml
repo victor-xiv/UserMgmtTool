@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="UserMgmt" default="compile">
+    <description>a Ldap User Management Console</description>
+    <property name="deploy.path"  location="/usr/share/tomcat7/webapps" />
+    <property name="url"      value="http://localhost:8080/management" />
+    <property name="username" value="admin" />
+    <property name="password" value="admin" />
+    <property name="path"     value="/UserMgmt" />
+    <property name="build.dest.dir"    value="${basedir}/build/classes" />
+    <property name="source.dir"        value="${basedir}/src" />
+    <property name="web.dir"           value="${basedir}/WebContent/WEB-INF" />
+    <property name="web.dest"          value="${web.dir}/classes" />
+    <property name="web.lib"           value="${web.dir}/lib" />
+	<property name="catalina.home"     value="/usr/share/tomcat7" />
+    <property name="tomcat.lib"        value="${catalina.home}/lib" />
+	<property name="deployer.lib"      value="/home/adminuser/Desktop/tomcat7-deployer/lib" />
+    <property name="war.file"          value="/home/adminuser/Desktop/UserMgmt.war" />
+    <path id="deployer.classpath">
+        <fileset dir="${deployer.lib}">
+            <include name="*.jar"/>
+        </fileset>
+    </path>
+	<taskdef resource="org/apache/catalina/ant/catalina.tasks" classpathref="deployer.classpath"/>
+    <target name="compile" description="compiling">
+        <mkdir dir="${build.dest.dir}" />
+        <javac target="1.5" srcdir="${source.dir}" destdir="${build.dest.dir}" debug="on" includeantruntime="false"
+        	classpath="${tomcat.lib}/servlet-api.jar;${web.lib}/axis-1.4.jar;${web.lib}/jaxrpc.jar;${web.lib}/concerto-webservice-clients.jar;${web.lib}/concerto-sdk.jar;${web.lib}/mail.jar;${web.lib}/activation.jar;${web.lib}/log4j-1.2.15.jar;">
+            <include name="**/*.java" />
+        </javac>
+        <copy filtering="no" todir="${web.dest}" overwrite="true">
+            <fileset dir="${build.dest.dir}">
+            	<include name="**/*.class" />
+            </fileset>
+        </copy>
+    </target>
+    <target name="war" depends="compile" description="building the war">
+        <war warfile="${war.file}" webxml="${web.dir}/web.xml">
+            <fileset dir="WebContent">
+                <include name="**" />
+            </fileset>
+        </war>
+    </target>
+    <target name="deploy" depends="war" description="Deploy web application">
+        <deploy url="${url}" username="${username}" password="${password}" 
+			 path="${path}" war="${basedir}/UserMgmt.war" update="true" />
+    </target>
+    <target name="undeploy" description="Undeploy web application">
+      <undeploy url="${url}" username="${username}" password="${password}"
+               path="${path}"/>
+    </target>
+    <target name="start" description="Start web application">
+      <start url="${url}" username="${username}" password="${password}"
+            path="${path}"/>
+    </target>
+    <target name="reload" description="Reload web application">
+      <reload url="${url}" username="${username}" password="${password}"
+             path="${path}"/>
+    </target>
+    <target name="stop" description="Stop web application">
+      <stop url="${url}" username="${username}" password="${password}"
+           path="${path}"/>
+    </target>
+    <target name="clean" description="Remove all compiled classes and wars">
+        <delete dir="${build.dest.dir}" />
+        <delete dir="${web.dest}" />
+        <delete file="${war.file}" />
+    </target>
+</project>

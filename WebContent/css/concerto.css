@@ -1,0 +1,97 @@
+/*
+ * Copyright (c) Orchestral Developments Ltd (2001 - 2008).
+ *
+ * This document is copyright. Except for the purpose of fair reviewing, no part
+ * of this publication may be reproduced or transmitted in any form or by any
+ * means, electronic or mechanical, including photocopying, recording, or any
+ * information storage and retrieval system, without permission in writing from
+ * the publisher. Infringers of copyright render themselves liable for
+ * prosecution.
+ */
+A,A:visited{color:blue;text-decoration:none;}
+A:hover{text-decoration:underline;}
+A.Configure:hover{text-decoration:underline;}
+.Buttons{margin-top:10px;padding-bottom:3px;text-align:right;}
+.Buttons SPAN{padding-bottom:3px;padding-top:3px;}
+INPUT.Button,A.Button,A.Button:visited,A.Button:hover,A.ButtonDisabled,A.ButtonDisabled:visited,A.ButtonDisabled:hover,A.SmallButton,A.SmallButton:visited,A.SmallButton:hover,A.SmallButtonDisabled,A.SmallButtonDisabled:visited,A.SmallButtonDisabled:hover{background:url(buttons/button.gif);border-color:#7CBAFF #2854A7 #2854A7 #7CBAFF;border-style:solid;border-width:1px;color:black;font:13px Tahoma,sans-serif;margin:1px;padding:1px 4px 2px 4px;}
+INPUT.Button:hover,A.Button:hover,A.SmallButton:hover{border-color:#EFCF86 #E09242 #E09242 #EFCF86;border-width:2px;padding:0 3px 1px 3px;text-decoration:none;}
+A.ButtonDisabled,A.ButtonDisabled:visited,A.ButtonDisabled:hover,A.SmallButtonDisabled,A.SmallButtonDisabled:visited,A.SmallButtonDisabled:hover{background-color:#B5DBFA;background-image:none;border-color:#D4CEC4;color:#A1A192;cursor:default;text-decoration:none;}
+A.SmallButton,A.SmallButton:visited,A.SmallButton:hover,A.SmallButtonDisabled,A.SmallButtonDisabled:visited,A.SmallButtonDisabled:hover{font-size:11px;}
+A.Up,A.Down,A.Left,A.Right{background:none 0 0 no-repeat;padding-left:12px;width:16px;}
+A.Up:hover,A.Down:hover,A.Left:hover,A.Right:hover{text-decoration:none;}
+A.Up{background-image:url(buttons/up.gif);}
+A.Down{background-image:url(buttons/down.gif);}
+A.Left{background-image:url(buttons/left.gif);}
+A.Right{background-image:url(buttons/right.gif);}
+P.Spacer{display:inline!important;width:16px;}
+A.Add,A.Delete,A.DeleteDisabled,A.Edit,A.Rename,A.Search,A.Select{background:none 0 0 no-repeat;padding-left:12px;width:16px;}
+A.Add:hover,A.Delete:hover,A.Edit:hover,A.Rename:hover,A.Search:hover,A.Select:hover{background-position:0 -16px;text-decoration:none;}
+A.Add SPAN,A.Delete SPAN{padding-left:7px;white-space:nowrap;}
+A.Add:hover SPAN,A.Delete:hover SPAN{text-decoration:underline;}
+A.Add{background-image:url(buttons/add.gif);}
+A.Delete,A.DeleteDisabled{background-image:url(buttons/delete.gif);}
+A.DeleteDisabled,A.DeleteDisabled:hover{background-position:0 -32px;cursor:default;text-decoration:none;}
+A.Edit{background-image:url(buttons/edit.gif);}
+A.Edit:hover{background-position:0 0;}
+A.Rename{background-image:url(buttons/rename.gif);}
+A.Search{background-image:url(buttons/search.gif);}
+A.Select{background-image:url(buttons/select.gif);}
+BODY,TABLE{background-color:white;font:13px,Arial,MingLiu;}
+COL{padding-bottom:2px;padding-top:3px;}
+COL.Button{width:20px;}
+FORM{margin:0 0 10px 0;border-top:1px white solid;}
+FORM INPUT[disabled]{background-color:white;border:1px #7B9EBD solid;padding:2px 1px;}
+FORM.AddForm{display:none;}
+IMG{border:0;}
+.Hint{border-bottom:1px dotted black;cursor:help;}
+.Hidden{display:none;visibility:hidden;}
+.Label{color:black;font-size:12px;font-weight:bold;}
+.Progress SPAN{background:url(../images/misc/progress.gif) right bottom no-repeat;padding-right:25px;width:25px;}.
+Visible{display:block;visibility:visible;}
+.Table,.Table TABLE{background:#EDF3FA;border-collapse:collapse;font:13px Arial,MingLiu;margin-top:10px;width:100%;}
+.Table TABLE{margin-top:0;}
+.TabContent .Table{width:97%;}
+.Table TD.Left,.Table TD.Right{background:url(table/corners.gif) no-repeat;height:9px;width:9px;}
+.Table THEAD TD.Right{background-position:top right;}
+.Table TFOOT TD.Left{background-position:bottom left;}
+.Table TFOOT TD.Right{background-position:bottom right;}
+.Table THEAD TD{background:#FADA90;color:black;font-weight:bold;}
+COL.Button{width:20px;}
+.Table THEAD TD A{font:normal;font-weight:normal;}
+.Table .Subtitle TD,.Table .Grouping TD{background:white;color:black;font-weight:bold;font-size:12px;white-space:nowrap;}
+.Table THEAD A.Order{color:black;}
+.Table THEAD A.Order:hover{text-decoration:underline;}
+.Table TBODY.Alternate TR TD,.Table TBODY.Moveable TR TD{border-top:1px #C9C7BA solid;background-color:white;}
+.Table TBODY.Alternate TR TD TABLE TD{border-top:none;}
+.Table TBODY TR.Even TD,.Table TBODY TR.Odd TD{background-color:white;}
+.Table TBODY TR.Hover TD,.Table TBODY TR.Selected TD{background-color:#FADA90;cursor:pointer!important;cursor:hand;}
+.Table TBODY TR.Selected{background-color:#B0C4DE;}
+#FrameTabs{border-bottom:1px #919B9C solid;height:27px;padding-top:3px;}
+.Tabs{border-bottom:2px white solid;height:20px;}
+.Tabs .Tab,#FrameTabs .Tab{background:url(gradients/largevertical.gif) 0 1px repeat-x;border:1px #919B9C solid;color:black;font:bold 13px Arial,MingLiu;margin-left:-1px;margin-right:1px;padding:3px 5px;position:absolute;}
+.Tabs .Hover,.Tabs .Selected,#FrameTabs .Hover,#FrameTabs .Selected{background:url(gradients/tabvertical.gif) 0 1px repeat-x;border-top-color:#E68B2C;cursor:pointer!important;cursor:hand;text-decoration:none;}
+.Tabs .Selected,#FrameTabs .Selected{background-position:0 -31px;border-bottom-color:white;margin-top:-2px;padding-bottom:5px;}
+.TabContent{display:none;border:1px #919B9C solid;margin:3px 0 0 -1px;padding:10px;visibility:hidden;}
+#DialogButtons{bottom:10px;position:absolute;right:10px;}
+.NavigationBar{background-color:#FADA90;border-collapse:collapse;font-weight:bold;}
+.FilterBar{background-color:white;border-collapse:collapse;}
+.FilterLabel{font-weight:bold;}
+#Disclaimer,.Disclaimer{border:1px black solid;font:12px Arial;padding:5px;}
+input.InputButton{background:url(buttons/button.gif);border-color:#7CBAFF #2854A7 #2854A7 #7CBAFF;border-style:solid;border-width:1px;color:black;font:13px Tahoma,sans-serif;margin:1px;padding:1px 4px 2px 4px;}
+.FieldError{font-size:11px;color:red;}
+.TopLeft,.TopRight,.Heading,.Footer,.BottomRight,.BottomLeft .SectionBody{margin:0;}
+.TopLeft,.TopRight,.BottomLeft,.BottomRight{background:url(table/corners.gif) no-repeat;}
+.BottomLeft,.BottomRight{height:3px;font-size:3px;}
+.TopLeft{background-position:top left;padding-left:5px;}
+.TopRight{background-position:top right;padding-right:5px;}
+.BottomLeft{background-position:bottom left;padding-left:5px;margin-bottom:13px;}
+.BottomRight{background-position:bottom right;padding-right:5px;}
+.Heading{background-color:#FADA90;color:black;font-weight:bold;padding:2px;}
+.Footer{background-color:#EDF3FA;}
+.SectionBody{width:auto;}
+.SectionBody TABLE{margin:0!important;width:100%!important;}
+.SectionBody TABLE A,.SectionBody .Spacer{margin:2px;}
+.SectionBody FORM{display:inline;margin:0;}
+.SectionBody TABLE TD{padding-left:7px;padding-right:5px;}
+.SmallNote{font-size:10px;margin:2px 0 2px 0;}
+.WarningNotification{background:no-repeat 8px;border:1px solid;font-size:1.1em;margin-bottom:2px;margin-top:1px;padding:8px 8px 8px 40px;border-color:#F0C000;background-image:url(/concerto/common/css/images/notifications/warning.gif);background-color:#FFFFDA;}

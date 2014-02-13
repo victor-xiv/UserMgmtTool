@@ -6,3 +6,7 @@ WebContent/build
 WebContent/build/*
 WebContent/WEB-INF/classes
 WebContent/WEB-INF/classes/*
+*~
+.classpath
+.project
+.settings
