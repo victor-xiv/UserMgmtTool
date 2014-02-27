@@ -28,7 +28,34 @@ public class ValidatedRequestHandler {
 			}
 		}catch(InvalidRequestException ex){
 			parameters.put("error", "This page can only be accessed from within Concerto.");
+			ex.printStackTrace();
+		}catch(Exception e){
+			e.printStackTrace();
 		}
 		return parameters;
 	}
+}
+
+/*
+
+
+try{
+	final SecretKey key = CryptoProvider.getInstance().generateKey(keyString);
+} catch (IllegalArgumentException ie) {
+	// either algorithm or key is null or incorrect
 }
+
+try {
+			httpRequest = Concerto4xSecurityHttpServletRequestMarshaller.unmarshal(request, key, VALIDITY_TIME);
+		} catch (final ValidationException e) {
+			throw new InvalidRequestException(e);
+		} catch (final ExpiredException e) {
+			throw new InvalidRequestException(e);
+		}catch(java.lang.SecurityException sce){
+			System.out.println("error=The server failed to decrypt the requests and authentication.\nThis failure caused by the Encryption Key Name/Value is not matched.");
+			sce.printStackTrace();
+		}
+
+
+ */
+// 

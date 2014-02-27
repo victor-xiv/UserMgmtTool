@@ -13,8 +13,8 @@
     <property name="web.lib"           value="${web.dir}/lib" />
 	<property name="catalina.home"     value="/usr/share/tomcat7" />
     <property name="tomcat.lib"        value="${catalina.home}/lib" />
-	<property name="deployer.lib"      value="/home/adminuser/Desktop/tomcat7-deployer/lib" />
-    <property name="war.file"          value="/home/adminuser/Desktop/UserMgmt.war" />
+	<property name="deployer.lib"      value="${tomcat.lib}/tomcat7-deployer/lib" />
+    <property name="war.file"          value="~/Desktop/UserMgmt.war" />
     <path id="deployer.classpath">
         <fileset dir="${deployer.lib}">
             <include name="*.jar"/>

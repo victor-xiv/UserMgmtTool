@@ -46,9 +46,9 @@ public class LdapTool {
 		boolean sslEnabled = props.getProperty(LdapConstants.SSL_ENABLED).equals("true");
 		if( sslEnabled ){
 			env.put(Context.SECURITY_PROTOCOL, "ssl" ); // SSL
-		//	System.setProperty("javax.net.debug", "ssl");
-		//	System.setProperty("javax.net.ssl.trustStore", props.getProperty(LdapConstants.SSL_CERT_LOC));
-		//	System.setProperty( "javax.net.ssl.trustStorePassword", props.getProperty(LdapConstants.SSL_CERT_PWD));
+			System.setProperty("javax.net.debug", "ssl");
+			System.setProperty("javax.net.ssl.trustStore", props.getProperty(LdapConstants.SSL_CERT_LOC));
+			System.setProperty( "javax.net.ssl.trustStorePassword", props.getProperty(LdapConstants.SSL_CERT_PWD));
 		}
 		try{
 			ctx = new InitialDirContext(env);

@@ -2,6 +2,7 @@ package servlets;
 
 import java.io.IOException;
 import java.util.Hashtable;
+import java.util.Enumeration;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -22,6 +23,30 @@ public class AdminServlet extends HttpServlet {
 
 		Hashtable<String, String> parameters = ValidatedRequestHandler.processRequest(request);
 		HttpSession session = request.getSession(true);
+
+
+ 		
+ 		
+ 		// TO DO need to check and test this block:
+ 		/*
+ 		// if there is a "error" paramter name, means the validation is incorrect
+ 		
+ 		if(parameters.containsKey("error")) {
+ 		
+ 			for( Enumeration<String> e = session.getAttributeNames(); e.hasMoreElements(); ){
+ 				session.removeAttribute(e.nextElement());
+ 			}
+ 			if(parameters.containsKey("isAdmin")) parameters.remove("isAdmin");
+ 		}
+ 		*/
+ 		
+ 		
+		
+ 		// TO DO: produce a better (more detail) exception message
+ 		
+ 	
+
+
 		String redirectURL = response.encodeRedirectURL("Error.jsp");
 		if(parameters.containsKey("isAdmin")){
 			if( parameters.get("isAdmin").equals("true") )
