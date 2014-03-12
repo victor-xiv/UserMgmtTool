@@ -15,9 +15,13 @@ public class UpdateNTLoginJDBC {
 	private static String jdbcUrl;
 	private static String jdbcUser;
 	private static String jdbcPassword;
-	private static Logger logger = Logger.getRootLogger();
+	
+	private static Logger logger = LoggerTool.setupDefaultRootLogger();
 	
 	public static boolean enableNT(String username){
+		
+		LoggerTool.setupRootLogger(username);
+		
 		StringBuffer query = new StringBuffer();
 		query.append("UPDATE PasswordStatus ");
 		query.append(   "SET usingNTPassword = 1 ");

@@ -1,61 +1,104 @@
+//done
+
 package tools;
 
-import java.util.Enumeration;
 import java.util.Hashtable;
 
+import javax.crypto.SecretKey;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.log4j.Logger;
-
+import ldap.ErrorConstants;
 import ldap.LdapConstants;
 import ldap.LdapProperty;
 
-import com.concerto.sdk.security.InvalidRequestException;
-import com.concerto.sdk.security.ValidatedRequest;
-import com.concerto.security.RedirectionKey;
+import org.apache.log4j.Logger;
+
+import com.orchestral.common.net.RequestParameter;
+import com.orchestral.common.net.RequestParameterList;
+import com.orchestral.common.net.http.HttpRequest;
+import com.orchestral.security.CryptoProvider;
+import com.orchestral.security.concerto4.ExpiredException;
+import com.orchestral.security.concerto4.ValidationException;
+import com.orchestral.servlet.security.Concerto4xSecurityHttpServletRequestMarshaller;
 
 public class ValidatedRequestHandler {
-	private static Logger logger = Logger.getRootLogger();
 
+	// logger object
+	private static Logger logger;
+	
+	/**
+	 * It received an HttpServletRequest that contains encrypted parameters
+	 * It validates and decrypts this request. The decrypted parameter name-value pairs are added into the return HashTable object
+	 * @param request: contains encrypted request (http://hostname:port/servletname?encryptedValue=596F79C5F207BDD7A...5E9686F6&mac=018A2F282...98C872C&expiry=000001443DC26658)
+	 * @return a Hashtable object that contains name-value pairs of the decrypted request's paramters. 
+	 */
 	public static Hashtable<String, String> processRequest(HttpServletRequest request){
-		Hashtable<String, String> parameters = new Hashtable<String, String>();
-		try{
-			ValidatedRequest req = new ValidatedRequest(request, LdapProperty.getProperty(LdapConstants.CONCERTO_VALIDATOR));
-			for(Enumeration<String> e = req.getParameterNames(); e.hasMoreElements(); ){
-				String paramName = e.nextElement();
-				parameters.put(paramName, req.getParameter(paramName));
-				logger.info(paramName+": "+req.getParameter(paramName));
+		
+		// set up the logger
+		logger = LoggerTool.setupRootLogger(request);
+		
+		
+		Hashtable<String, String> parameters = new Hashtable<String, String>();	
+		HttpRequest req = null;
+		
+		try{ // validate and decrypt the encrypted request
+			
+			logger.info("Attempt to validate and decrypt the encrypted request");
+			
+			String sharedKeyStr = LdapProperty.getProperty(LdapConstants.CONCERTO_VALIDATOR);
+			
+			// if the LDAP configuration file is not found, the sharedKeyStr is null
+			if ( sharedKeyStr == null ){
+				parameters.put("error", "LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
+				// logger has logged this error in the LdapProperty.getProperty
+				// so, we don't need to re-log it again.
+				
+			} else {
+				// initialize the shared key from the key value
+				final SecretKey key = CryptoProvider.getInstance().generateKey(sharedKeyStr);
+				// validity time of one minute (doesn't matter as long as it is non-zero)
+				// if validity time is zero, means expiry would not be checked.
+				final long VALIDITY_TIME = 60000;
+				req = Concerto4xSecurityHttpServletRequestMarshaller.unmarshal(request, key, VALIDITY_TIME);
+				logger.info("Request validation and decryption has been done successfully.");
 			}
-		}catch(InvalidRequestException ex){
-			parameters.put("error", "This page can only be accessed from within Concerto.");
-			ex.printStackTrace();
-		}catch(Exception e){
-			e.printStackTrace();
+		
+		} catch (IllegalArgumentException | SecurityException e) {
+			parameters.put("error", ErrorConstants.INCORRECT_SHAREDKEY);
+			logger.error("Validation Error", e);
+			
+		} catch (final ValidationException e) {
+			parameters.put("error", ErrorConstants.VALIDATION_FAILED);
+			logger.error("Validation Error", e);
+			
+		} catch (final ExpiredException e) {
+			parameters.put("error", ErrorConstants.EXPIRED_REQUEST);
+			logger.error("Validation Error", e);
+			
+		} catch (Exception e) {
+			parameters.put("error", ErrorConstants.UNKNOWN_ERR);
+			logger.error("Validation Error", e);
 		}
+		
+		if (req == null){
+			// req is null, if and only if decryption fail and threw an exception => parameters must contains one key "error".
+			// so, if req is null and parameters is empty => means some thing wrong without exception. 
+			if (parameters.isEmpty()){
+				parameters.put("error", ErrorConstants.UNKNOWN_ERR);
+				logger.error("Validation is completed without exception being thrown, but the decrypted request is null.");
+				return parameters;
+			}
+			
+		} else {
+			RequestParameterList reqParaList = req.getQueryParameters();
+			for ( RequestParameter rp : reqParaList.getAllParameters()) {
+				String paraName = rp.getName();
+				String paraValue = rp.getValue();
+				parameters.put(paraName, paraValue);
+				logger.info("Put name-value pair into parameter list: " + paraName+"-"+paraValue);
+			}
+		}
+		
 		return parameters;
 	}
-}
-
-/*
-
-
-try{
-	final SecretKey key = CryptoProvider.getInstance().generateKey(keyString);
-} catch (IllegalArgumentException ie) {
-	// either algorithm or key is null or incorrect
 }
-
-try {
-			httpRequest = Concerto4xSecurityHttpServletRequestMarshaller.unmarshal(request, key, VALIDITY_TIME);
-		} catch (final ValidationException e) {
-			throw new InvalidRequestException(e);
-		} catch (final ExpiredException e) {
-			throw new InvalidRequestException(e);
-		}catch(java.lang.SecurityException sce){
-			System.out.println("error=The server failed to decrypt the requests and authentication.\nThis failure caused by the Encryption Key Name/Value is not matched.");
-			sce.printStackTrace();
-		}
-
-
- */
-// 

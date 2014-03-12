@@ -13,6 +13,10 @@
       <%@ page import="java.util.TreeMap" %>
       <%@ page import="java.util.Map" %>
       <script type="text/javascript" language="javascript">
+
+
+/* Convert an input string, 
+ and produced an output which its first character is Uppercase */
 function firstCharUp(input){
   if(input.length > 1){
     var firstLetter = input.charAt(0).toUpperCase();
@@ -24,6 +28,11 @@ function firstCharUp(input){
     return input;
   }
 }
+
+
+/*
+ * Validate all the entries of the Account Request form
+ */
 function validateEntries(){
   var validated = true;
   var theFocus = '';
@@ -79,14 +88,22 @@ function validateEntries(){
     document.getElementById(theFocus).focus();
   return validated;
 }
+
+
 function doDisplayName(){
   document.form.displayName.value = document.form.givenName.value+" "+document.form.sn.value;
 }
+
+
+/* reset the form into default*/
 function ResetForm(){
   document.getElementById('validation_msg').innerHTML = "";
   document.form.reset();
   return false;
 }
+
+
+/* submit the account detail */
 function SubmitForm(){
   if(validateEntries()){
     document.form.submit();
@@ -124,12 +141,14 @@ function SubmitForm(){
                  <h1>Account Request Form</h1>
                  <img src="./css/images/swish.gif" alt="#" />
                  <br />
-<%	if( session.getAttribute("error") != null ){  %>
-                 <span class="error" style="float: center; width=100%; text-align: center"><%=session.getAttribute("error") %></span>
-<%  session.removeAttribute("error");  %>  
-<%	}else{ %>
+<%if( session.getAttribute("error") != null ){  %>
+                 <span class="error" style="float: center; width=100%; text-align: center">
+	<%=session.getAttribute("error") %>
+				 </span>
+	<%session.removeAttribute("error");  %>  
+<%}else{ %>
                  <span class="error" id="validation_msg" style="float:left; width=100%; text-align: left"></span>
-                 <div style="width: 500px; padding: 5px; margin: 5px auto ";>
+                 <div style="width: 500px; padding: 5px; margin: 5px auto ">
                    <form name="form" method="post" action="AccountRequest" onsubmit="return validateEntries();">
                      <div class="row">
                        <span class="label2">First Name:</span>
@@ -197,12 +216,15 @@ function SubmitForm(){
                        <span class="formw">
                          <select id="c" name="c" tabindex="9">
                            <option value="">Please select one from the list</option>
-<%  TreeMap<String,String> countriesMap = countries.getCountries();
-    for(Map.Entry<String, String>entry:countriesMap.entrySet()){
+	<%TreeMap<String,String> countriesMap = countries.getCountries();
+	for(Map.Entry<String, String>entry:countriesMap.entrySet()){
         String countryName = entry.getKey();
-        String countryCode = entry.getValue();  %>
-                           <option value="<%=countryCode %>"><%=countryName %></option>
-<%  }  %>
+	    String countryCode = entry.getValue();  %>
+	                       <option value="
+	    <%=countryCode %>">
+	    <%=countryName %>
+	        				</option>
+	<%}%>
                          </select>
                        </span>
                        <span class="required">*</span>
@@ -240,17 +262,21 @@ function SubmitForm(){
                      </div>
                    </form>
                  </div>
-<%	if( session.getAttribute("passed") != null){ %>
-                 <div align="center" class="passed"><%=session.getAttribute("passed")%></div>
-<%		session.removeAttribute("passed");
+	<%if( session.getAttribute("passed") != null){ %>
+	                 <div align="center" class="passed">
+	    <%=session.getAttribute("passed")%>
+	    			</div>
+		<%session.removeAttribute("passed");
 	}
 	if( session.getAttribute("failed") != null){ %>
-                 <div align="center" class="failed"><%=session.getAttribute("failed")%></div>
-<%		session.removeAttribute("failed");
-	}	%>
-                 <div align="center"><img src="./css/images/swish.gif" alt="#" /></div>
-                 <div align="center" class="disclaimer2">Having problems?<br />Email <a href="mailto:support@orionhealth.com">support@Orionhealth.com</a><br /><br /></div>
-<%	} %>
+	                 <div align="center" class="failed">
+        <%=session.getAttribute("failed")%>
+        			 </div>
+		<%session.removeAttribute("failed");
+	}%>
+	                 <div align="center"><img src="./css/images/swish.gif" alt="#" /></div>
+	                 <div align="center" class="disclaimer2">Having problems?<br />Email <a href="mailto:support@orionhealth.com">support@Orionhealth.com</a><br /><br /></div>
+<%}%>
                </td>
              </tr>
            </table>

@@ -17,6 +17,10 @@
 	<%@ page import="javax.naming.directory.Attribute" %>
 	<%@ page import="javax.naming.directory.Attributes" %>
 	<%@ page import="javax.naming.NamingEnumeration" %>
+	<%@ page import="java.io.FileNotFoundException" %>
+  	<%@ page import="javax.naming.NamingException" %>
+  	
+  	
     <% user.processUserDN(request.getParameter("dn")); %>
     <script type="text/javascript" language="javascript">
     function firstCharUp(input) {
@@ -388,7 +392,24 @@
                     <div class="row">
                     <span class="label2">Member of:</span>
                     <div style="float: right; text-align: left; width:395px;"><ul>
-<% LdapTool lt = new LdapTool();
+<% 
+
+LdapTool lt = null;
+try {
+	lt = new LdapTool();
+} catch (FileNotFoundException fe){
+	// TODO Auto-generated catch block
+	fe.printStackTrace();					
+} catch (NamingException e) {
+	// TODO Auto-generated catch block
+	e.printStackTrace();
+}
+
+if(lt == null){
+	//TODO
+}
+
+
 Attributes attrs = lt.getUserAttributes(request.getParameter("dn"));
 Attribute attr = attrs.get("memberOf");
 Set<String> baseGroups = lt.getBaseGroups();

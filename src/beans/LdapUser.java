@@ -1,5 +1,7 @@
 package beans;
 
+import java.io.FileNotFoundException;
+
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
@@ -17,7 +19,27 @@ public class LdapUser {
 	Logger logger = Logger.getRootLogger();
 	
 	public void processUserDN(String userDN){
-		LdapTool lt = new LdapTool();
+		
+		
+		
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
+		
 		Attributes attrs = lt.getUserAttributes(userDN);
 		lt.close();
 		try{

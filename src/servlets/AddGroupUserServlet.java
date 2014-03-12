@@ -1,7 +1,9 @@
 package servlets;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -44,7 +46,25 @@ public class AddGroupUserServlet extends HttpServlet {
 		String dn = request.getParameter("dn");
 		//Get desired group name
 		String group = request.getParameter("groupselect");
-		LdapTool lt = new LdapTool();
+
+
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
 		//Add organisation as group
 		boolean userAdded = lt.addUserToGroup(dn, lt.getDNFromGroup(group));
 		lt.close();

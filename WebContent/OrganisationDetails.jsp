@@ -13,6 +13,8 @@
   <%@ page import="javax.naming.directory.Attribute" %>
   <%@ page import="javax.naming.directory.Attributes" %>
   <%@ page import="javax.naming.NamingEnumeration" %>
+  <%@ page import="java.io.FileNotFoundException" %>
+  <%@ page import="javax.naming.NamingException" %>
   <%	org.processOrganisationName(request.getParameter("name"));
   		TreeMap<String,String[]> users = org.getUsers();	%>
   <script>
@@ -36,11 +38,17 @@
                 <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="#"/></div>
                 <h1><%=request.getParameter("name") %></h1>
                 <img src="css/images/swish.gif" alt="#" />
-<%	if(session.getAttribute("error") != null){ %>
-                <div class="error" style="float: center; width=100%; text-align: center"><%=session.getAttribute("error") %></div>
-<%	/*Need to remove error*/session.removeAttribute("error"); }else if(session.getAttribute("isAdmin") == null){ %>
-                <div class="error" style="float: center; width=100%; text-align: center">Only support administrators can access this page.</div>
-<%	}else{ %>
+                
+				<%if(session.getAttribute("error") != null){ %>
+                	<div class="error" style="float: center; width=100%; text-align: center">
+      				<%=session.getAttribute("error") %>
+                	</div>
+					<%/*Need to remove error*/session.removeAttribute("error");%> 
+
+				<%} else if(session.getAttribute("isAdmin") == null){ %>
+                	<div class="error" style="float: center; width=100%; text-align: center">Only support administrators can access this page.</div>
+				<%}else{ %>
+				
                 <br />
                 <div style="width: 600px; padding: 5px; margin: 5px auto ";>
                 
@@ -53,21 +61,23 @@
                   </div>
                 </div>
                 
-<%  String[] keySet = org.getUsersKeys();
-    for( int i = 0; i < keySet.length; i++ ){
-        String userCn = keySet[i];
-        String userDn = users.get(userCn)[0];
-		boolean accountDisabled = users.get(userCn)[1].equals("disabled");%>
-                  <div class="row">
-                    <span style="float: inherit; width: 200px; text-align: center;">
-<%	if(accountDisabled){	%>
-                      <a href="UserDetails.jsp?dn=<%=userDn %>" style="font-style: italic; color: #808080;"><%=userCn %> (disabled)</a>
-<%	}else{	%>
-                      <a href="UserDetails.jsp?dn=<%=userDn %>"><%=userCn %></a>
-<%	}	%>
-                    </span>
-                  </div>
-<%	} %>		
+				<%
+				String[] keySet = org.getUsersKeys();
+				for( int i = 0; i < keySet.length; i++ ){
+					String userCn = keySet[i];
+				    String userDn = users.get(userCn)[0];
+					boolean accountDisabled = users.get(userCn)[1].equals("disabled"); %>
+                    <div class="row">
+                    	<span style="float: inherit; width: 200px; text-align: center;">
+                    
+					<%if(accountDisabled){	%>
+                    		<a href="UserDetails.jsp?dn=<%=userDn %>" style="font-style: italic; color: #808080;"><%=userCn %> (disabled)</a>
+					<%}else{%>
+                      		<a href="UserDetails.jsp?dn=<%=userDn %>"><%=userCn %></a>
+					<%}%>
+                    	</span>
+                  	</div>
+				<%} %>		
                 </div>
                 <img src="css/images/swish.gif" alt="#" />
                 <div style="width: 600px; padding: 5px; margin: 5px auto ";>
@@ -80,7 +90,26 @@
                     <span style="float: left; text-align: right; width:200px;">Group DN:</span>
                     <span style="float: right; text-align: left; width:395px;"><%=org.getDistinguishedName() %></span>
                   </div>
-<% LdapTool lt = new LdapTool(); if (lt.companyExistsAsGroup(request.getParameter("name"))) { %>
+<%
+
+LdapTool lt = null;
+try {
+	lt = new LdapTool();
+} catch (FileNotFoundException fe){
+	// TODO Auto-generated catch block
+	fe.printStackTrace();					
+} catch (NamingException e) {
+	// TODO Auto-generated catch block
+	e.printStackTrace();
+}
+
+if(lt == null){
+	//TODO
+}
+
+
+
+if (lt.companyExistsAsGroup(request.getParameter("name"))) { %>
                   <div class = "row">
                     <span style="float: left; text-align: right; width:200px;">Member of:</span>
                     <div style="float: right; text-align: left; width:395px;"><ul>

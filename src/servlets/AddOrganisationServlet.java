@@ -1,8 +1,10 @@
 package servlets;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -43,7 +45,25 @@ public class AddOrganisationServlet extends HttpServlet {
 		HttpSession session = request.getSession(true);
 		//Get organisation
 		String orgname = request.getParameter("org");
-		LdapTool lt = new LdapTool();
+
+
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
 		//Add company as client and as group
 		boolean orgAdded = lt.addCompany(orgname);
 		boolean orgGroupAdded = lt.addCompanyAsGroup(orgname);

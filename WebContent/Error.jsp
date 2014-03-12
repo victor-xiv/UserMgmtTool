@@ -17,8 +17,17 @@
             <tr align="center">
               <td align="center">
                 <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="#"/></div>
-                <img src="css/images/swish.gif" alt="#" />
-                <div class="error" style="float: center; width=100%; text-align: center">Please access this application from within Support Tracker.</div>
+                <img src="css/images/swish.gif" alt="#" />           
+                <div class="error" style="float: center; width=100%; text-align: center">
+                
+                <%if ( session.getAttribute("error") != null ){ %>
+                	<%=session.getAttribute("error") %>
+                	<%session.removeAttribute("error"); /*it will affects the next request if we don't remove the "error" attr*/%>
+                <%} else { %>
+                	Please access this application from within Support Tracker.
+                <%} %>
+                
+                </div>
                 <img src="css/images/swish.gif" alt="#" />
                 <div align="center" class="disclaimer2">Having problems?<br/>Email <a href="mailto:support@orionhealth.com">Support@Orionhealth.com</a><br /></div>
               </td>

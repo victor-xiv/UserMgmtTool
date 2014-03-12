@@ -1,15 +1,18 @@
 package servlets;
 
+import javax.naming.NamingException;
 import javax.servlet.http.HttpServlet;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import com.concerto.sdk.security.ValidatedRequest;
 import com.concerto.sdk.security.InvalidRequestException;
+
 import ldap.*;
 
 @SuppressWarnings("serial")
@@ -49,7 +52,26 @@ public class ChangePasswordServlet extends HttpServlet {
 			userDN = request.getParameter("userDN");
 		String password01 = request.getParameter("password01");
 		
-		LdapTool lt = new LdapTool();
+		
+		
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
+		
 		if(lt.changePassword(userDN, password01)){
 			session.setAttribute("passed", "The password was changed successfully.");
 		}else{

@@ -1,5 +1,6 @@
 package beans;
 
+import java.sql.SQLException;
 import java.util.Map;
 
 import tools.ConcertoJDBC;
@@ -11,7 +12,18 @@ public class UserDetails {
 	private String countryCode, phoneNumber, fax, mobile, email, clientId;
 	
 	public void processUsername(String username){
-		Map<String,String> userDetails = SupportTrackerJDBC.getUserDetails(username);
+		Map<String, String> userDetails = null;
+		try {
+			userDetails = SupportTrackerJDBC.getUserDetails(username);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(userDetails == null){
+			// TODO
+		}
+		
+		
 		userDetails.putAll(ConcertoJDBC.getUserDetails(username));
 		setUsername(username);
 		setFirstName(userDetails.get("givenName")!=null?userDetails.get("givenName"):"");

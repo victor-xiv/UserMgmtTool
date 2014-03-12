@@ -1,5 +1,6 @@
 package servlets;
 
+import javax.naming.NamingException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -13,7 +14,9 @@ import tools.EmailClient;
 import tools.SupportTrackerJDBC;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,10 +56,40 @@ public class AddUserServlet extends HttpServlet {
 				response.getWriter().write("false|User was not added with invalid username.");
 				return;
 			}
-			int clientAccountId = SupportTrackerJDBC.addClient(maps);
+			
+			
+			int clientAccountId = -1;
+			try {
+				clientAccountId = SupportTrackerJDBC.addClient(maps);
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
+			
 			if( clientAccountId > 0 ){
 				maps.put("info", new String[]{Integer.toString(clientAccountId)});
-				LdapTool lt = new LdapTool();
+				
+				
+				
+				LdapTool lt = null;
+				try {
+					lt = new LdapTool();
+				} catch (FileNotFoundException fe){
+					// TODO Auto-generated catch block
+					fe.printStackTrace();					
+				} catch (NamingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				// TODO
+				if( lt == null){
+					
+				}
+				
+				
+				
 				boolean addStatus = lt.addUser(maps);
 				if( addStatus ){
 					String fullname = "";

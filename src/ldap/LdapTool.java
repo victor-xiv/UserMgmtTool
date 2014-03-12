@@ -1,7 +1,7 @@
 package ldap;
 
+import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
-
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -13,36 +13,57 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import javax.naming.CommunicationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
+import javax.naming.ServiceUnavailableException;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.BasicAttributes;
-import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.DirContext;
+import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.directory.SearchResult;
 
 import org.apache.log4j.Logger;
 
+import tools.LoggerTool;
+
 public class LdapTool {
 	private DirContext ctx;
 	private Hashtable<String, String> env;
 	private Properties props = LdapProperty.getConfiguration();
-	Logger logger = Logger.getRootLogger();
 	
-	public LdapTool(){
-		init();
-	}
-	private void init(){
+	Logger logger = LoggerTool.setupDefaultRootLogger(); //initialize with default root logger
+	
+	
+	/**
+	 * LdapTool represent the connection with LDAP server.
+	 * The LdapTool object is successfully constructed if and only if it successfully connects to LDAP server.
+	 * Otherwise, it will throw either FileNotFoundException or NamingException.
+	 * 
+	 * @throws FileNotFoundException when ldap.properties configuration file is nout found
+	 * @throws NamingException when connection with LDAP server failed
+	 */
+	public LdapTool() throws FileNotFoundException, NamingException{
+		
+		// if LDAP config file is not found
+		// the props will contain an "error" key
+		if(props.getProperty("error") != null){
+			throw new FileNotFoundException("LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
+			// don't need to log, because it has been logged in LdapProperty.getConfiguration()
+		}
+		
+		// setup environment map to connect to ldap server
 		env = new Hashtable<String, String>();
 		env.put(Context.INITIAL_CONTEXT_FACTORY, props.getProperty(LdapConstants.LDAP_CLASS));
-		String providerURL = props.getProperty(LdapConstants.LDAP_URL);
-		env.put(Context.PROVIDER_URL, providerURL);
+		env.put(Context.PROVIDER_URL, props.getProperty(LdapConstants.LDAP_URL));
 		env.put(Context.SECURITY_AUTHENTICATION, "simple");
 		env.put(Context.SECURITY_PRINCIPAL, props.getProperty(LdapConstants.ADMIN_DN));
 		env.put(Context.SECURITY_CREDENTIALS, props.getProperty(LdapConstants.ADMIN_PWD));
+		
+		// if the config file declared to connect ldap server through ssl
 		boolean sslEnabled = props.getProperty(LdapConstants.SSL_ENABLED).equals("true");
 		if( sslEnabled ){
 			env.put(Context.SECURITY_PROTOCOL, "ssl" ); // SSL
@@ -50,13 +71,38 @@ public class LdapTool {
 			System.setProperty("javax.net.ssl.trustStore", props.getProperty(LdapConstants.SSL_CERT_LOC));
 			System.setProperty( "javax.net.ssl.trustStorePassword", props.getProperty(LdapConstants.SSL_CERT_PWD));
 		}
+		
 		try{
 			ctx = new InitialDirContext(env);
+		}catch(ServiceUnavailableException se){
+			se.printStackTrace();
+			logger.error("Connecting to LDAP server", se);
+			throw new ServiceUnavailableException(ErrorConstants.LDAP_PORT_CLOSED);
+			
+		}catch(CommunicationException ce){
+			String errorMessage = ErrorConstants.FAIL_CONNECTING_LDAP;
+			logger.error("Connecting to LDAP server", ce);
+
+			// Fail because the configured port in ldap.properties is incorrect
+			if (ce.getRootCause().getMessage().contains("Connection reset")){
+				errorMessage = ErrorConstants.INCORRECT_LDAP_PORT;
+
+			// Fail because of SSL validation is incorrect			
+			}else if(ce.getRootCause().getMessage().contains("PKIX path validation failed")){
+				errorMessage = ErrorConstants.LDAP_SSL_HANDSHAKE_FAIL;
+			}
+			
+			ce.printStackTrace();
+			throw new CommunicationException(errorMessage);
+			
 		}catch(NamingException ex){
-			logger.error(ex.toString());
+			logger.error("Connecting to LDAP server", ex);
 			ex.printStackTrace();
+			throw new NamingException(ErrorConstants.FAIL_CONNECTING_LDAP);
 		}
 	}
+	
+
 	
 	public String[] updateUser(Map<String,String[]> paramMaps){
 		String userDN = paramMaps.get("dn")[0];
@@ -413,17 +459,22 @@ public class LdapTool {
 			if(attrs.get("company") == null ){
 				String company = userDN;
 				int index = company.indexOf(",");
-				company = company.substring(index+1, company.length());
-				index = company.indexOf(",");
-				company = company.substring(0, index);
+				// if there's no "," in the string => do nothing
+				if(index != -1){
+					company = company.substring(index+1);
+					index = company.indexOf(",");
+					// if there's no "," in the string => do nothing
+					if(index != -1) company = company.substring(0, index);
+				}
 				index = company.indexOf("=");
-				company = company.substring(index+1, company.length());
+				// if there's no "=" in the string => do nothing
+				if(index != -1) company = company.substring(index+1);
 				return company;
 			}else{
 				return attrs.get("company").get().toString();
 			}
 		}catch(NamingException ex){
-			logger.error(ex.toString());
+			logger.error("Trying to get attribute " + userDN + "\t", ex);
 			ex.printStackTrace();
 		}
 		return null;
@@ -443,11 +494,12 @@ public class LdapTool {
 		return false;
 	}
 	
-	//ADDITIONAL FUNCTION
-	//Simple function to check if a given company exists as a group
-	//Returns true if more than zero search matches.
-	//Otherwise returns false.
-	//Parameters: companyName - the company under consideration
+	
+	/**
+	 * Simple function to check if a given company exists as a group
+	 * @param companyName - the company under consideration
+	 * @return true if more than zero search matches. false otherwise
+	 */
 	public boolean companyExistsAsGroup(String companyName){
 		//Get DN for 'Groups'
 		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
@@ -469,12 +521,13 @@ public class LdapTool {
 		return false;
 	}
 	
-	//ADDITIONAL FUNCTION
-	//Simple function to check if a given username exists
-	//Returns true if more than zero search matches.
-	//Otherwise returns false.
-	//Parameters: username - relevant username (sAMAccountName)
-	//company - user's company
+
+	/**
+	 * Simple function to check if a given username exists
+	 * @param username - relevant username (sAMAccountName)
+	 * @param company - user's company
+	 * @return true if more than zero search matches.
+	 */
 	public boolean usernameExists(String username, String company){
 		//Search user's company
 		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
@@ -495,12 +548,14 @@ public class LdapTool {
 		//Otherwise return false
 		return false;
 	}
-	//ADDITIONAL FUNCTION
-	//Simple function to check if a given email exists.
-	//Returns true if more than zero search matches.
-	//Otherwise returns false.
-	//Parameters: email - user's email
-	//company - user's company
+	
+	/**
+	 * Simple function to check if a given email exists.
+	 * 
+	 * @param email - user's email
+	 * @param company - user's company
+	 * @return true if more than zero search matches.
+	 */
 	public boolean emailExists(String email, String company){
 		//Search user's company
 		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
@@ -521,12 +576,13 @@ public class LdapTool {
 		//Otherwise return false
 		return false;
 	}
-	//ADDITIONAL FUNCTION
-	//Simple function to check if a given userDN exists.
-	//Returns true if more than zero search matches.
-	//Otherwise returns false.
-	//Parameters: fullname - user's display name
-	//company - user's company
+	
+	/**
+	 * Simple function to check if a given userDN exists.
+	 * @param fullname - user's display name
+	 * @param company - user's company
+	 * @return true if more than zero search matches.
+	 */
 	public boolean userDNExists(String fullname, String company){
 		//Search user's company
 		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
@@ -548,11 +604,14 @@ public class LdapTool {
 		return false;
 	}
 	
-	//ADDITIONAL FUNCTION
-	//Get email address, given the corresponding username. 
-	//Returns the first matching email, if there is a match, else returns null.
-	//Parameters: username - the user's sAMAccountName
-	//company - user's company
+	
+	/**
+	 * Get email address, given the corresponding username. 
+	 * 
+	 * @param username - the user's sAMAccountName
+	 * @param company - user's company
+	 * @return the first matching email, if there is a match, else returns null
+	 */
 	public String getEmail(String username, String company){
 		//Search user's company
 		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
@@ -576,11 +635,13 @@ public class LdapTool {
 		return null;
 	}
 	
-	//ADDITIONAL FUNCTION
-	//Get full name, given the corresponding username. 
-	//Returns the first matching name, if there is a match, else returns null.
-	//Parameters: username - the user's sAMAccountName
-	//company - user's company
+	/**
+	 * Get full name, given the corresponding username. 
+	 * 
+	 * @param username - the user's sAMAccountName
+	 * @param company - user's company
+	 * @return the first matching name, if there is a match, else returns null.
+	 */
 	public String getName(String username, String company){
 		//Search user's company
 		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
@@ -675,8 +736,12 @@ public class LdapTool {
 		}
 	}
 	
-	//ADDITIONAL FUNCTION
-	//Produce groupDN from group name
+
+	/**
+	 * Produce groupDN from group name
+	 * @param groupName - group name
+	 * @return group DN
+	 */
 	public String getDNFromGroup(String groupName) {
 		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
 		String attrName = props.getProperty(LdapConstants.BASEGROUP_ATTR);
@@ -684,8 +749,12 @@ public class LdapTool {
 		return dn;
 	}
 	
-	//ADDITIONAL FUNCTION
-	//Produce organisation DN from organisation name
+
+	/**
+	 * Produce organisation DN from organisation name
+	 * @param orgName - organisation name
+	 * @return organisation DN
+	 */
 	public String getDNFromOrg(String orgName) {
 		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
 		String attrName = props.getProperty(LdapConstants.GROUP_ATTR);
@@ -741,6 +810,12 @@ public class LdapTool {
 		return false;
 	}
 	
+	
+	/**
+	 * return the sAMAccountName from userDN in String
+	 * @param userDN - user's LDAP distinguish name
+	 * @return the sAMAccountName of userDN in String if there is. Otherwise return an empty String.
+	 */
 	public String getUsername(String userDN){
 		try {
 			Attributes attrs = ctx.getAttributes(userDN);
@@ -753,6 +828,10 @@ public class LdapTool {
 		return "";
 	}
 	
+	
+	/**
+	 * close the LDAP Server connection
+	 */
 	public void close(){
 		try{
 			ctx.close();

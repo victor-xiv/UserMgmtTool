@@ -1,12 +1,35 @@
 package beans;
 
 import ldap.LdapTool;
+
+import java.io.FileNotFoundException;
 import java.util.SortedSet;
+
+import javax.naming.NamingException;
 
 public class LdapUserGroups {
 	private SortedSet<String> userGroups;
 	public LdapUserGroups(){
-		LdapTool lt = new LdapTool();
+		
+		
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
+		
 		userGroups = lt.getUserGroups();
 		lt.close();
 	}

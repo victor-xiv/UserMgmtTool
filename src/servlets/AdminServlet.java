@@ -1,8 +1,11 @@
+//done
+
+
 package servlets;
 
 import java.io.IOException;
-import java.util.Hashtable;
 import java.util.Enumeration;
+import java.util.Hashtable;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -10,44 +13,43 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.log4j.Logger;
+
+import tools.LoggerTool;
 import tools.ValidatedRequestHandler;
 
 @SuppressWarnings("serial")
 public class AdminServlet extends HttpServlet {
+	
+	private static Logger logger = LoggerTool.setupDefaultRootLogger();	// instantiate a logger
+	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
+		// setting up a logger
+		logger = LoggerTool.setupRootLogger(request);
+		
 		response.setHeader("Cache-Control", "no-cache");
 		response.setHeader("Pragma","no-cache");
 		response.setDateHeader ("Expires", 0);
 
+		// validate and decrypt the request
 		Hashtable<String, String> parameters = ValidatedRequestHandler.processRequest(request);
+		
+		// get the existing session or create a new one (if there's no existing) 
 		HttpSession session = request.getSession(true);
 
-
- 		
- 		
- 		// TO DO need to check and test this block:
- 		/*
  		// if there is a "error" paramter name, means the validation is incorrect
- 		
  		if(parameters.containsKey("error")) {
- 		
- 			for( Enumeration<String> e = session.getAttributeNames(); e.hasMoreElements(); ){
- 				session.removeAttribute(e.nextElement());
- 			}
+// 			for( Enumeration<String> e = session.getAttributeNames(); e.hasMoreElements(); ){
+// 				session.removeAttribute(e.nextElement());
+// 			}
  			if(parameters.containsKey("isAdmin")) parameters.remove("isAdmin");
  		}
- 		*/
- 		
- 		
-		
- 		// TO DO: produce a better (more detail) exception message
- 		
- 	
-
 
 		String redirectURL = response.encodeRedirectURL("Error.jsp");
+
+		// check whether the user is an admin user 
 		if(parameters.containsKey("isAdmin")){
 			if( parameters.get("isAdmin").equals("true") )
 				session.setAttribute("isAdmin", parameters.get("isAdmin"));
@@ -55,11 +57,13 @@ public class AdminServlet extends HttpServlet {
 				session.removeAttribute("isAdmin");
 		}else{
 			session.removeAttribute("isAdmin");
-			session.setAttribute("error", "This page can only be accessed from within Concerto.");
+			session.setAttribute("error", parameters.get("error"));
 		}
 		if(parameters.containsKey("target")){
 			redirectURL = response.encodeRedirectURL(parameters.get("target")+".jsp");
 		}
+		
+		logger.info("AdminHandler redirected the request to " + redirectURL);
 		response.sendRedirect(redirectURL);
 	}
 	public void doPost(HttpServletRequest request, HttpServletResponse response)

@@ -1,5 +1,6 @@
 package servlets;
 
+import javax.naming.NamingException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -8,7 +9,10 @@ import javax.servlet.ServletException;
 import tools.ConcertoJDBC;
 import tools.SupportTrackerJDBC;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.SQLException;
+
 import ldap.LdapTool;
 
 @SuppressWarnings("serial")
@@ -21,18 +25,74 @@ public class UpdateUserStatusServlet extends HttpServlet {
 		boolean updated = false;
 		if(userDN != null && action != null){
 			if(action.equals("enabling")){
-				LdapTool lt = new LdapTool();
+				
+				
+				LdapTool lt = null;
+				try {
+					lt = new LdapTool();
+				} catch (FileNotFoundException fe){
+					// TODO Auto-generated catch block
+					fe.printStackTrace();					
+				} catch (NamingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				// TODO
+				if( lt == null){
+					
+				}
+				
+				
+				
 				updated = lt.enableUser(userDN);
 				String username = lt.getUsername(userDN);
 				ConcertoJDBC.toggleUserStatus(username, true);
-				SupportTrackerJDBC.toggleUserStatus(username, true);
+				
+				try {
+					SupportTrackerJDBC.toggleUserStatus(username, true);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				
 				lt.close();
 			}else if(action.equals("disabling")){
-				LdapTool lt = new LdapTool();
+				
+				
+				
+				LdapTool lt = null;
+				try {
+					lt = new LdapTool();
+				} catch (FileNotFoundException fe){
+					// TODO Auto-generated catch block
+					fe.printStackTrace();					
+				} catch (NamingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				// TODO
+				if( lt == null){
+					
+				}
+				
+				
+				
 				updated = lt.disableUser(userDN);
 				String username = lt.getUsername(userDN);
 				ConcertoJDBC.toggleUserStatus(username, false);
-				SupportTrackerJDBC.toggleUserStatus(username, false);
+				
+				
+				try {
+					SupportTrackerJDBC.toggleUserStatus(username, false);
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				
 				lt.close();
 			}
 		}

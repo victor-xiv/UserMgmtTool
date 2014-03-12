@@ -1,7 +1,7 @@
 package servlets;
 
+import javax.naming.NamingException;
 import javax.servlet.http.HttpServlet;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
@@ -12,13 +12,16 @@ import org.apache.log4j.Logger;
 import tools.ConcertoAPI;
 import tools.SupportTrackerJDBC;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.concerto.sdk.security.ValidatedRequest;
 import com.concerto.sdk.security.InvalidRequestException;
+
 import ldap.*;
 
 @SuppressWarnings("serial")
@@ -66,15 +69,47 @@ public class RegisterUserServlet extends HttpServlet {
 			userDetails.put("sAMAccountName", new String[]{username});
 			userDetails.put("isLdapClient", new String[]{"true"});
 
-			LdapTool lt = new LdapTool();
+			
+			
+			LdapTool lt = null;
+			try {
+				lt = new LdapTool();
+			} catch (FileNotFoundException fe){
+				// TODO Auto-generated catch block
+				fe.printStackTrace();					
+			} catch (NamingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			// TODO
+			if( lt == null){
+				
+			}
+			
+			
+			
+			
 			//ADDITIONAL CODE
 			//Whether an error has occured
 			boolean good = true;
 			//Get company and mail info
 			String company = request.getParameter("company");
 			String email = request.getParameter("mail");
+			
 			//Get list of Orion Health email addresses from database - SPT-311
-			List<String> emails = SupportTrackerJDBC.getEmails();
+			List<String> emails = null;
+			try {
+				emails = SupportTrackerJDBC.getEmails();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			if(emails == null){
+				// TODO
+			}
+			
+			
 			//If an Orion User (no company and email registered as staff) - SPT-311
 			if ( (request.getParameter("company").equals(""))&&(emails.contains(email.toLowerCase())) ) {
 				//Set company as Orion Health
@@ -131,8 +166,20 @@ public class RegisterUserServlet extends HttpServlet {
 			}
 			//If the company has not been set as an OU and no error has occurred - SPT-316
 			if ((!lt.companyExists(company))&&good) {
+				
 				//Get list of supported companies from database
-				List<String> orgs = SupportTrackerJDBC.getOrganisations();
+				List<String> orgs = null;
+				try {
+					orgs = SupportTrackerJDBC.getOrganisations();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if(orgs == null){
+					// TODO
+				}
+				
+				
 				//If this company is supported, set as OU
 				if (orgs.contains(company)) {
 					lt.addCompany(company);

@@ -9,7 +9,12 @@
     <meta http-equiv="Pragma" content="no-cache" /> 
     <meta http-equiv="expires" content="0" />
     <title>Account Requests Management</title>
+    
+    
+    <!-- beans declaration -->
     <jsp:useBean id="accounts" class="beans.AccountRequestsBean" scope="session" />
+    
+    
     <%@ page import="java.util.ArrayList" %>
     <%@ page import="java.util.HashMap" %>
     <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
@@ -71,6 +76,9 @@ div.row span.value3{
 	<script type="text/javascript" language="javascript">
 var id = '';
 
+/**
+ * toggle on or of the drop down menu of the detail of the account requested that belong to the given idx
+ */
 function applyClick(idx) {
   var item_id = 'request' + idx;
   var image_id = 'image' + idx;
@@ -83,6 +91,10 @@ function applyClick(idx) {
   else
     document.getElementById(item_id).style.display = "block";
 }
+
+/**
+ * check whether the username in the "username" block is valid
+ */
 function validateUsername() {
   for( var i = 0; i < document./*form.username*/getElementsByName('username').length; i++ ){
     if( document./*form.username*/getElementsByName('username')[i].checked ){
@@ -101,6 +113,10 @@ function validateUsername() {
   alert("Please choose a username");
   return false;
 }
+
+/**
+ * accept the account request, POST the filename to AccepRequest servlet to do the accepting request
+ */
 function AcceptRequest(idx) {
   if(validateUsername()){
     document.getElementById('accept' + idx).className = 'ButtonDisabled';
@@ -113,6 +129,10 @@ function AcceptRequest(idx) {
     ajax.send('');
   }
 }
+ 
+/**
+ * decline the requeest, POST the filename to AcceptRequest servlet to do the declining request
+ */
 function DeclineRequest(idx) {
   document.getElementById('accept' + idx).className = 'ButtonDisabled';
   document.getElementById('decline' + idx).className = 'ButtonDisabled';
@@ -122,6 +142,8 @@ function DeclineRequest(idx) {
   ajax.onreadystatechange = handleHttpResponse;
   ajax.send('');
 }
+ 
+ 
 function handleHttpResponse(){
   if(ajax.readyState == 4){
     if(ajax.status == 200){
@@ -142,7 +164,9 @@ function handleHttpResponse(){
     </script>
   </head>
   <body>
-    <%accounts.refresh();%>
+
+<%accounts.refresh();%>
+
     <table align="center" border="0" style="border-color: #ef7224" cellspacing="1">
       <tr>
         <td bgcolor="#ef7224">
@@ -153,27 +177,32 @@ function handleHttpResponse(){
                 <h1>Account Requests Management</h1>
                 <img src="./css/images/swish.gif" alt="#" />
                 <br />
-<%	if(session.getAttribute("error") != null){ %>
-                <span class="error" style="float: center; width=100%; text-align: center"><%=session.getAttribute("error") %></span>
-<%		session.removeAttribute("error");
-	}else if(session.getAttribute("isAdmin") == null){ %>
+<%if(session.getAttribute("error") != null){ %>
+                <span class="error" style="float: center; width=100%; text-align: center">
+	<%=session.getAttribute("error") %>
+                </span>
+	<%session.removeAttribute("error");%>
+
+<%}else if(session.getAttribute("isAdmin") == null){ %>
                 <span class="error" style="float: center; width=100%; text-align: center">Only support administrators can access this page.</span>
-<%	}else{ %>
+
+<%}else{ %>
                 <span id="validation_msg" style="float:left; width: 500px; text-align: left"></span>
                 <div style="width: 500px; padding: 5px; margin: 5px auto ";>
-<%	ArrayList<HashMap<String, String>> reqList = accounts.getRequests();
-	if( reqList.size() == 0 ){	%>
+
+	<%ArrayList<HashMap<String, String>> reqList = accounts.getRequests();%>
+		<%if( reqList.size() == 0 ){%>
                   <span style="float: center; text-align: center; font-size: 16px">There are no pending account requests.</span>
-<%	}else{
-		for( int i = 0; i < reqList.size(); i++ ){
-			HashMap<String, String> singleRequest = reqList.get(i);
-			String id = (i < 10 ? "0"+i : ""+i);
-			String nodeID = "node"+id;
-			String imageID = "image"+id;
-			String filenameID = "filename"+id;
-			String acceptID = "accept"+id;
-			String declineID = "decline"+id;
-			String requestID = "request"+id;	%>
+		<%}else{
+			for( int i = 0; i < reqList.size(); i++ ){
+				HashMap<String, String> singleRequest = reqList.get(i);
+				String id = (i < 10 ? "0"+i : ""+i);
+				String nodeID = "node"+id;
+				String imageID = "image"+id;
+				String filenameID = "filename"+id;
+				String acceptID = "accept"+id;
+				String declineID = "decline"+id;
+				String requestID = "request"+id;	%>
                   <div class="row">
                     <div id="<%=nodeID %>" class="CollapseRegionLink" style="text-align: left;" onclick="applyClick('<%=id %>'); ">
                       <input type="hidden" id="<%=filenameID %>" value="<%=singleRequest.get("filename") %>" />
@@ -189,10 +218,10 @@ function handleHttpResponse(){
                         <span class="value3">
                           <form name="form" id="form">
                             <input type="hidden" id="sAMAccountName" value="" />
-<%  String[] names = accounts.getAvailableNames(singleRequest.get("givenName"), singleRequest.get("sn"));
-for( int j = 0; j < names.length; j++ ){  %>
+				<%String[] names = accounts.getAvailableNames(singleRequest.get("givenName"), singleRequest.get("sn"));
+				for( int j = 0; j < names.length; j++ ){  %>
                             <input type="radio" name="username" value="<%=names[j] %>" /><%=names[j] %><br />
-<%  }  %>
+				<%}%>
 							<input type="radio" name="username" value="other<%= i %>" />
 							<input type="text" id="customNameother<%= i %>"></input><br />
                           </form>

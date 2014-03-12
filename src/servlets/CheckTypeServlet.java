@@ -1,5 +1,6 @@
 package servlets;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.rmi.RemoteException;
@@ -12,6 +13,7 @@ import javax.mail.Transport;
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -78,7 +80,26 @@ public class CheckTypeServlet extends HttpServlet {
 		
 		//Search LDAP users
 		if (true) {
-			LdapTool lt = new LdapTool();
+			
+			
+			LdapTool lt = null;
+			try {
+				lt = new LdapTool();
+			} catch (FileNotFoundException fe){
+				// TODO Auto-generated catch block
+				fe.printStackTrace();					
+			} catch (NamingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			// TODO
+			if( lt == null){
+				
+			}
+			
+			
+			
 			String name = lt.getName(username, organisation);
 			String mail = lt.getEmail(username, organisation);
 			//Check if this user actually exists

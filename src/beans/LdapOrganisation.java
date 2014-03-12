@@ -1,9 +1,11 @@
 package beans;
 
+import java.io.FileNotFoundException;
 import java.util.TreeMap;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
+
 import ldap.LdapTool; 
 
 public class LdapOrganisation {
@@ -12,7 +14,26 @@ public class LdapOrganisation {
 	private String distinguishedName;
 	
 	public void processOrganisationName(String name){
-		LdapTool lt = new LdapTool();
+		
+		
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
+		
 		users = lt.getGroupUsers(name);
 		Attributes attrs = lt.getOrganisationAttributes(name);
 		try{

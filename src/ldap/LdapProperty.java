@@ -1,13 +1,15 @@
 package ldap;
 
-import java.util.Properties;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
 public class LdapProperty {
 	private static Logger logger = Logger.getRootLogger();
+
 	public static Properties getConfiguration(){
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
@@ -16,10 +18,17 @@ public class LdapProperty {
         try{
         	FileInputStream fis = new FileInputStream(properties);
         	props.load(fis);
+		}catch(FileNotFoundException fe){
+			props.setProperty("error", "LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
+			logger.error("LDAP" + ErrorConstants.CONFIG_FILE_NOTFOUND, fe);
+			fe.printStackTrace();
+			
 		}catch(Exception ex){
-			logger.error(ex.toString());
+			props.setProperty("error", "LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
+			logger.error("LDAP" + ErrorConstants.CONFIG_FILE_NOTFOUND, ex);
 			ex.printStackTrace();
 		}
+        
 		return props;
 	}
 	

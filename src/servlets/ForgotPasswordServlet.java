@@ -1,9 +1,11 @@
 package servlets;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Properties;
 
+import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -52,8 +54,27 @@ private static final long serialVersionUID = 1L;
 		//Print HTML Header
 		printHeader(out, conserver);
 		
+		
+		
 		//Get LdapTool and change Password.
-		LdapTool lt = new LdapTool();
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
+		
 		//If successful, print success
 		if (lt.changePassword(userDN, password))
 			out.println("Password changed successfully.");

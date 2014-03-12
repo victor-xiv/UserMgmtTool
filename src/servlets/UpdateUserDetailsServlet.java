@@ -1,5 +1,6 @@
 package servlets;
 
+import javax.naming.NamingException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -8,8 +9,10 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
+
 import ldap.LdapTool;
 
 @SuppressWarnings("serial")
@@ -29,7 +32,28 @@ public class UpdateUserDetailsServlet extends HttpServlet {
     {
 		HttpSession session = request.getSession(true);
 		Map<String,String[]> paramMaps = (Map<String,String[]>)request.getParameterMap();
-		LdapTool lt = new LdapTool();
+		
+		
+		
+		
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException fe){
+			// TODO Auto-generated catch block
+			fe.printStackTrace();					
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		// TODO
+		if( lt == null){
+			
+		}
+		
+		
+		
 		String[] updateStatus = lt.updateUser(paramMaps);
 		lt.close();
 		if( updateStatus[0].equals("true") ){
