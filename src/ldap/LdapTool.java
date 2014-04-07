@@ -294,7 +294,16 @@ public class LdapTool {
 		}
 	}
 	
-	public boolean addUserToGroup(String userDN, String groupDN){
+	
+	
+	/**
+	 * Update LDAP server: add a user (who represented by userDN) to a group (represented by groupDN)
+	 * @param userDN representing user who needed to be assigned to the group
+	 * @param groupDN representing group that needed to be assigned to the user
+	 * @return true if the Adding process completed successfully
+	 * @throws NamingException if an exception thrown during the process
+	 */
+	public boolean addUserToGroup(String userDN, String groupDN) throws NamingException{
 		try	{
 			ModificationItem member[] = new ModificationItem[1];
 			member[0]= new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("member", userDN)); 
@@ -303,9 +312,9 @@ public class LdapTool {
 			return true;
 		}
 		catch (NamingException e) {
-			 System.err.println("Problem adding user: "+userDN+" to group: " + e);
+			 logger.error("Problem adding user: "+userDN+" to group: " + groupDN, e);
+			 throw new NamingException("Adding user to a group: " + ErrorConstants.FAIL_UPDATE_LDAP);
 		}
-		return false;
 	}
 	
 	public boolean changePassword(String userDN, String password){
@@ -397,20 +406,23 @@ public class LdapTool {
 		try{
 			NamingEnumeration<SearchResult> e = ctx.search(baseDN, filter, null);
 			while(e.hasMore()){
-				SearchResult results = (SearchResult)e.next();
-				Attributes attributes = results.getAttributes();
-				String cn = attributes.get("cn").get().toString(); // displayName
-				String dn = attributes.get("distinguishedName").get().toString();
-				int userAccountControl = Integer.parseInt(attributes.get("userAccountControl").get().toString());
-				String disabled = "enabled";
-				if( (userAccountControl & 2) > 0 ){
-					disabled = "disabled";
+				try{
+					SearchResult results = (SearchResult)e.next();
+					Attributes attributes = results.getAttributes();
+					String cn = attributes.get("cn").get().toString(); // displayName
+					String dn = attributes.get("distinguishedName").get().toString();
+					int userAccountControl = Integer.parseInt(attributes.get("userAccountControl").get().toString());
+					String disabled = "enabled";
+					if( (userAccountControl & 2) > 0 ){
+						disabled = "disabled";
+					}
+					users.put(cn, new String[]{dn, "enabled"});
+				} catch (NullPointerException ne){
+					logger.error("Exception while querying all users from " + baseDN, ne);
 				}
-				users.put(cn, new String[]{dn, disabled});
 			}
 		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error("Exception while querying for: " + baseDN + " from Ldap server.", ex);
 		}
 		return users;
 	}
