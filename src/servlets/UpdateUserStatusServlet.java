@@ -13,89 +13,69 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import ldap.ErrorConstants;
 import ldap.LdapTool;
 
 @SuppressWarnings("serial")
 public class UpdateUserStatusServlet extends HttpServlet {
+	
+	/**
+	 * update the user status in LDAP server, Concerto DB and Support Tracker DB
+	 */
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
 		String userDN = request.getParameter("dn");
 		String action = request.getParameter("action");
 		boolean updated = false;
+		
 		if(userDN != null && action != null){
-			if(action.equals("enabling")){
-				
-				
-				LdapTool lt = null;
-				try {
-					lt = new LdapTool();
-				} catch (FileNotFoundException fe){
-					// TODO Auto-generated catch block
-					fe.printStackTrace();					
-				} catch (NamingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				// TODO
-				if( lt == null){
-					
-				}
-				
-				
-				
-				updated = lt.enableUser(userDN);
-				String username = lt.getUsername(userDN);
-				ConcertoJDBC.toggleUserStatus(username, true);
-				
-				try {
-					SupportTrackerJDBC.toggleUserStatus(username, true);
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				
-				lt.close();
-			}else if(action.equals("disabling")){
-				
-				
-				
-				LdapTool lt = null;
-				try {
-					lt = new LdapTool();
-				} catch (FileNotFoundException fe){
-					// TODO Auto-generated catch block
-					fe.printStackTrace();					
-				} catch (NamingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				// TODO
-				if( lt == null){
-					
-				}
-				
-				
-				
-				updated = lt.disableUser(userDN);
-				String username = lt.getUsername(userDN);
-				ConcertoJDBC.toggleUserStatus(username, false);
-				
-				
-				try {
-					SupportTrackerJDBC.toggleUserStatus(username, false);
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				
-				lt.close();
+			// connecting to LDAP server
+			LdapTool lt = null;
+			try {
+				lt = new LdapTool();
+			} catch (FileNotFoundException fe){
+				response.getWriter().write("false|" + fe.getMessage());
+				return;
+				// we're not logging here, because it has been logged in LdapTool();
+			} catch (NamingException e) {
+				response.getWriter().write("false|" + e.getMessage());
+				// we're not logging here, because it has been logged in LdapTool();
+				return;
 			}
+			
+			// if LDAP can't be connected it should be thrown exception.
+			// if there's no exception thrown and lt is null => a weird error occured.
+			if (lt == null){
+				response.getWriter().write("false|" + ErrorConstants.UNKNOWN_ERR);
+				return;
+			}
+			
+			boolean status = false;
+			if(action.equals("enabling")){
+				updated = lt.enableUser(userDN);
+				status = true;
+			} else if(action.equals("disabling")){
+				updated = lt.disableUser(userDN);
+				status = false;
+			} else {
+				lt.close();
+				return;
+			}
+			
+			String username = lt.getUsername(userDN);
+			try {
+				ConcertoJDBC.toggleUserStatus(username, status);
+				SupportTrackerJDBC.toggleUserStatus(username, status);
+			} catch (SQLException e1) {
+				response.getWriter().write("false|" + e1.getMessage());
+				return;
+				// we're not logging here, because it has been logged
+			}
+			
+			lt.close();
 		}
+		
 		if(updated){
 			if(action.equals("enabling")){
 				response.getWriter().write("true|User is enabled.");

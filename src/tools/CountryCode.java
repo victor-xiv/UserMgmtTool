@@ -10,6 +10,11 @@ import org.apache.log4j.Logger;
 
 public class CountryCode {
 	private static Logger logger = Logger.getRootLogger();
+	
+	/**
+	 * read CountryCode.xml (pathToTomcatConfFolder/CountryCode.xml) assign the key,value pair into countries TreeMap
+	 * @return a TreeMap that contains key,value pair of all countries. i.e. {(Afghanistan, Afghanistan), ...}
+	 */
 	public static TreeMap<String,String> getCountryNameMap(){
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
@@ -31,6 +36,12 @@ public class CountryCode {
 		return countries;
 	}
 	
+	
+	
+	/**
+	 * read CountryCode.xml (pathToTomcatConfFolder/CountryCode.xml) assign the key,value pair into countries TreeMap
+	 * @return a TreeMap that contains key,value pair of all countries. i.e. {(AF, Afghanistan), ...}
+	 */
 	public static TreeMap<String,String> getCountryCodeMap(){
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
@@ -52,20 +63,46 @@ public class CountryCode {
 		return countries;
 	}
 	
+	
+	
+	/**
+	 * return a string of country that matches to the given country name
+	 * @param name : requested Country name
+	 * @return Country name that matches to the given name
+	 */
 	public static String getCountryByName(String name){
 		TreeMap<String,String> countries = getCountryNameMap();
 		return countries.get(name);
 	}
 	
+	
+	
+	/**
+	 * retrun a string of country that matches to the given country code
+	 * @param code : requested country code
+	 * @return Country code that matches to the given country code.
+	 */
 	public static String getCountryByCode(String code){
 		TreeMap<String,String> countries = getCountryCodeMap();
 		return countries.get(code);
 	}
 	
+	
+	
+	/**
+	 * get the path (in String) to Tomcat conf folder
+	 * @return path to Tomcat conf folder (in String)
+	 */
 	private static String getCatalinaBase() {
         return System.getProperty("catalina.base", getCatalinaHome());
     }
 	
+	
+	
+	/**
+	 * get the path (in String) to Tomcat folder
+	 * @return path to Tomcat folder (in String)
+	 */
     private static String getCatalinaHome() {
         return System.getProperty("catalina.home",
                                   System.getProperty("user.dir"));

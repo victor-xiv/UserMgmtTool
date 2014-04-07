@@ -23,6 +23,10 @@ public class AdminServlet extends HttpServlet {
 	
 	private static Logger logger = LoggerTool.setupDefaultRootLogger();	// instantiate a logger
 	
+	
+	/**
+	 * received the request, validate and decrypt the request. Redirect to an appropriate .jsp file
+	 */
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{

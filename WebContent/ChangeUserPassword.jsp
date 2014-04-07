@@ -4,6 +4,12 @@
 		<link rel="stylesheet" href="css/concerto.css" type="text/css" />
 		<link rel="stylesheet" href="css/general.css" type="text/css" />
 		<script type="text/javascript" language="javascript">
+
+/**
+ * Validate user's input password.
+ * Pasword must be more than 8 and less than 12 characters in length
+ * Password must contatins A-Z, a-z, 0-9
+ */
 function validatePwd01(){
     var regex = new RegExp("[A-Za-z0-9]{8,12}");
     if(document.getElementById('password01').value == "" ){
@@ -21,6 +27,13 @@ function validatePwd01(){
 		return true;
 	}
 }
+
+
+/**
+ * Validate the confirmation password.
+ * If this confirmation password matches the first one => true
+ * else false
+ */
 function validatePwd02(){
     if(document.getElementById('password01').value == ""){
         document.getElementById('pwd_msg02').innerHTML = "<font color=\"#FF0000\">Please fill in the first password.</font>";
@@ -32,12 +45,20 @@ function validatePwd02(){
 	}
 	return false;
 }
+ 
+/**
+ * reset password forms
+ */
 function ResetForm(){
     document.getElementById('pwd_msg01').innerHTML == "";
     document.getElementById('pwd_msg02').innerHTML == "";
     document.form.reset(); 
     return false;
 }
+
+/**
+ * submit the form
+ */
 function SubmitForm(){
 	if(validatePwd01()){
     	document.form.submit();
@@ -58,7 +79,10 @@ function SubmitForm(){
 					            <img src="css/images/swish.gif" alt="#" />
 					            <br />
 <%	if( session.getAttribute("error") != null){ %>
-								<div align="center" class="failed"><%=session.getAttribute("error") %></div>
+								<div align="center" class="failed">
+		<%=session.getAttribute("error") %>
+		<%session.removeAttribute("error"); %>
+								</div>
 <%	}else{ %>
 
 				                <div style="width: 600px; padding: 5px; margin: 5px auto ";>
@@ -84,13 +108,18 @@ function SubmitForm(){
 					            </div>
 <%	} %>
 <%	if( session.getAttribute("passed") != null){ %>
-<div align="center" class="passed"><%=session.getAttribute("passed")%></div>
-<%		session.removeAttribute("passed");
+								<div align="center" class="passed">
+<%=session.getAttribute("passed")%>
+								</div>
+<%session.removeAttribute("passed");
 	}
-	if( session.getAttribute("failed") != null){ %>
-<div align="center" class="failed"><%=session.getAttribute("failed")%></div>
+	if( session.getAttribute("failed") != null){ 
+	%>
+								<div align="center" class="failed">
+<%=session.getAttribute("failed")%>
+								</div>
 <%		session.removeAttribute("failed");
-	}	%>
+	}%>
 								<div align="center" class="error"><span class="msg" id="global_msg"></span></div>
 					            <img src="css/images/swish.gif" alt="#" />
 					            <div align="center" class="disclaimer2">Having problems?<br/>Email <a href="mailto:support@orionhealth.com">Support@Orionhealth.com</a><br /></div>

@@ -15,8 +15,14 @@
   <%@ page import="javax.naming.NamingEnumeration" %>
   <%@ page import="java.io.FileNotFoundException" %>
   <%@ page import="javax.naming.NamingException" %>
-  <%	org.processOrganisationName(request.getParameter("name"));
-  		TreeMap<String,String[]> users = org.getUsers();	%>
+  <%@ page import="java.net.ConnectException" %>
+  <%	TreeMap<String,String[]> users = null;
+  		try{
+	  		org.processOrganisationName(request.getParameter("name"));
+	  		users = org.getUsers();
+  		} catch (ConnectException e){
+  			session.setAttribute("error", e.getMessage());
+  		} %>
   <script>
   function SubmitForm(){
   	document.getElementById("create").submit();

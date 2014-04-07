@@ -57,13 +57,8 @@ public class SupportTrackerJDBC {
 		query.append( "WHERE CA.loginName LIKE '"+username+"' ");
 		
 		// connecting to Database server
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e1) {
-			throw e1;
-			// no need to log, it has been logged inthe getConnection()
-		}
+		Connection con = getConnection();
+		
 		
 		if(con != null){
 			try {
@@ -416,12 +411,21 @@ public class SupportTrackerJDBC {
 			return con;
 			
 		} catch (ClassNotFoundException e) {
-			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-			throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
+			logger.error(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND, e);
+			throw new SQLException(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND);
+			
+		} catch (ExceptionInInitializerError e){
+			logger.error(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB, e);
+			throw new SQLException(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB);
+			
+		} catch (LinkageError e){
+			logger.error(ErrorConstants.FAIL_LINKAGE_DB, e);
+			throw new SQLException(ErrorConstants.FAIL_LINKAGE_DB);
 			
 		} catch (SQLException e) {
 			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 			throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
+			
 		}
 	}
 }

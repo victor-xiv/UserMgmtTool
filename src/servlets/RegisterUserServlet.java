@@ -6,16 +6,20 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
+import javax.xml.rpc.ServiceException;
 
 import org.apache.log4j.Logger;
 
 import tools.ConcertoAPI;
+import tools.LoggerTool;
 import tools.SupportTrackerJDBC;
+import tools.ValidatedRequestHandler;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
@@ -27,25 +31,47 @@ import ldap.*;
 @SuppressWarnings("serial")
 public class RegisterUserServlet extends HttpServlet {
 	//ADDITIONAL VARIABLE
-	Logger logger = Logger.getRootLogger();
+	Logger logger = LoggerTool.setupDefaultRootLogger();
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
+		logger = LoggerTool.setupRootLogger(request);
+		
 		String username = "";
 		HttpSession session = request.getSession(true);
-		try{
-			ValidatedRequest req = new ValidatedRequest(request, LdapProperty.getProperty(LdapConstants.CONCERTO_VALIDATOR));
-			if( req.getParameter("username") != null ){
-				username = req.getParameter("username");
-			}else{
-				session.setAttribute("error", "This page can only be accessed from within Concerto.");
-				String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
-				response.sendRedirect(redirectURL);
-			}
-		}catch(InvalidRequestException ex){
+			
+		//ValidatedRequest req = new ValidatedRequest(request, LdapProperty.getProperty(LdapConstants.CONCERTO_VALIDATOR));
+		Hashtable<String, String> reqParams = ValidatedRequestHandler.processRequest(request);
+			
+			
+		if( reqParams.containsKey("username") && reqParams.get("username") != null ){
+			username = reqParams.get("username");
+		
+		// if there is no "username" key and no "error" key in the request parameters
+		// It means that the request is valid but the request doesn't contains "username" => can't process further
+		} else if (!reqParams.containsKey("error")) {
 			session.setAttribute("error", "This page can only be accessed from within Concerto.");
+			logger.error(ErrorConstants.NO_USERNAME_SPECIFIED);
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
 		}
+			
+		// if request validation and encryption failed => reqParams must contains "error" key
+		if(reqParams.containsKey("error")){
+			session.setAttribute("error", reqParams.get("error"));
+			// we are not logging this error here, because it is already logged in the ValidatedRequestHandler.processRequest()
+		}			
+		
+		// userDN must not be an empty String
+		if (username.isEmpty()){
+			session.setAttribute("error", "There is no username found in the request parameters.");
+			logger.error("username is an empty String");
+		}
+		
+		logger.info("Redirect request to: " + "ChangeUserPassword.jsp");
+		
 		session.setAttribute("username", username);
 		String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
 		response.sendRedirect(redirectURL);
@@ -55,6 +81,8 @@ public class RegisterUserServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
+		logger = LoggerTool.setupRootLogger(request);
+		
 		HttpSession session = request.getSession(true);
 		String username = (String)session.getAttribute("username");
 		session.removeAttribute("username");
@@ -197,7 +225,12 @@ public class RegisterUserServlet extends HttpServlet {
 				//ADDITIONAL CODE ENDS
 				if(lt.addUser(userDetails)){
 					session.setAttribute("passed", "You have been registered successfully.");
-					ConcertoAPI.enableNT(username);
+					try {
+						ConcertoAPI.enableNT(username);
+					} catch (ServiceException e) {
+						session.setAttribute("error", e.getMessage());
+						// we are not logging this error, because it has been logged in ConcertoAPI.enableNT()
+					}
 				}else{
 					session.setAttribute("error", "Your registration has failed.  Please contact the system administrator.");
 				} 

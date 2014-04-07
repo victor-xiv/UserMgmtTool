@@ -6,6 +6,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.rpc.ServiceException;
 
 import tools.ConcertoAPI;
 
@@ -14,7 +15,12 @@ public class TestServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
-		ConcertoAPI.testGetClientUser("JackM");
+		try {
+			ConcertoAPI.testGetClientUser("JackM");
+		} catch (ServiceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		//ConcertoAPI.testAddClientUser("testuser22");
 		//String redirectURL = response.encodeRedirectURL("Test.jsp");
 		//response.sendRedirect(redirectURL);

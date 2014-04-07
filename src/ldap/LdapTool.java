@@ -104,27 +104,53 @@ public class LdapTool {
 	
 
 	
+	/**
+	 * update the Ldap's user with the given attributes (paramMaps). The userDN is the index 0 element of the value that mapped with key "dn"
+	 * @param paramMaps: given attributes that need to be updated or deleted.
+	 * @return: {"false","Failed to update details for user: "+userDN} if it failed to update.
+	 *          {"true", userDN} or {"true", newUserDN} otherwise.
+	 */
 	public String[] updateUser(Map<String,String[]> paramMaps){
 		String userDN = paramMaps.get("dn")[0];
 		Attributes attrs = getUserAttributes(userDN);
 		
+		if(attrs == null){
+			return new String[]{"false","Get null value for the user's exisiting attributes."};
+		}
+		
+		// replaceMap entries will be add to ModificationItem obj (the object that used to update Ldap server user's properties)
+		// replaceMap stores only attributes that need to be replaced (updated)
 		HashMap<String, String[]> replaceMap = new HashMap<String, String[]>();
+		// removeList elements will be add to ModificationItem
+		// removeList stores only elements that need to be removed from the Ldap user's properties
 		ArrayList<String> removeList = new ArrayList<String>();
+		
 		try{
+			// Iterate through paramMaps
+			// if the value of each map entry is empty String "" => add its correspond key into removeList
+			// if the value of a map entry equals to the existValue of attr => add that map entry into replaceMap
 			for(Map.Entry<String, String[]>entry:paramMaps.entrySet()){
-				String existValue = (attrs.get(entry.getKey())!=null?attrs.get(entry.getKey()).get().toString():"");
-				if(entry.getValue()[0].equals("")){
-					if(!existValue.equals("")){
-						removeList.add(entry.getKey());
+				try{
+					String existValue = (attrs.get(entry.getKey())!=null ? attrs.get(entry.getKey()).get().toString() : "");
+					if(entry.getValue()[0].equals("")){
+						if(!existValue.equals("")){
+							removeList.add(entry.getKey());
+						}
+					}else if(!entry.getValue()[0].equals(existValue)){
+						replaceMap.put(entry.getKey(), entry.getValue());
 					}
-				}else if(!entry.getValue()[0].equals(existValue)){
-					replaceMap.put(entry.getKey(), entry.getValue());
+				} catch (NullPointerException e){
+					logger.error("Null result from the given updating attributes.", e);
 				}
 			}
 		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error("Exception while iterating the given updating attributes.", ex);
+			return new String[]{"false","Failed to extract information from the given attributes."};
 		}
+		
+		// remove the password attribute from replaceMap, 
+		// because we are not updating password with this replaceMap
+		// but we are updating password in changePassword() method
 		String password = "";
 		if(replaceMap.get("password01") != null){
 			password = replaceMap.get("password01")[0];
@@ -140,18 +166,27 @@ public class LdapTool {
 			newUserDN = "CN="+fullname+",OU="+replaceMap.get("company")[0]+","+groupBaseDN;
 		}
 
+		// This object is used to modify the user object in Ldap Server
 		ModificationItem[] mods = new ModificationItem[replaceMap.size()+removeList.size()];
+
+		// mods has length 0, means nothing to update
 		if( mods.length == 0 ){
 			return new String[]{"true",userDN};
 		}
+		
+		// add every replaceMap's map entry into mods as the replace_attribute
 		int i = 0;
 		for(Map.Entry<String, String[]>entry:replaceMap.entrySet()){
 			mods[i++] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(entry.getKey(), entry.getValue()[0]));
 		}
+		
+		// add every removeList into mods as the remove_attribute
 		for(Iterator<String> it = removeList.iterator(); it.hasNext(); ){
 			String entry = it.next();
 			mods[i++] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute(entry));
 		}
+		
+		// try to update the userDN with the mods attributes
 		try {
 			if(!newUserDN.equals("")){
 				ctx.rename(userDN, newUserDN);
@@ -161,10 +196,11 @@ public class LdapTool {
 			}
 			logger.info("Updated details for user: "+userDN);
 		} catch (NamingException e) {
-			logger.error(e.toString());
-			e.printStackTrace();
-			return new String[]{"false","Failed to update details for user: "+userDN};
+			logger.error("Exception while updating the Ldap user's attribute", e);
+			return new String[]{"false","Failed to update details for user: "+userDN + " into Ldap Server."};
 		}
+		
+		// updating password => this.changePassword() will handle this
 		if(!password.equals("")){
 			if(!changePassword(userDN, password)){
 				logger.info("Failed to update password for user: "+userDN);
@@ -176,6 +212,10 @@ public class LdapTool {
 		else
 			return new String[]{"true",userDN};
 	}
+	
+	
+	
+	
 	
 	public boolean addUser(Map<String,String[]> paramMaps){
 		try{
@@ -317,6 +357,13 @@ public class LdapTool {
 		}
 	}
 	
+	
+	/**
+	 * Change the password of give userDN with the given password
+	 * @param userDN: Ldap user whose password need to be changed
+	 * @param password: new password
+	 * @return true if the modification is successful. false otherwise.
+	 */
 	public boolean changePassword(String userDN, String password){
 		try{
 			String quotedPwd = "\""+password+"\"";
@@ -328,25 +375,32 @@ public class LdapTool {
 			logger.info("Updated password for user: "+userDN);
 			return true;
 		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error(String.format("Exception while modifying user's password, (userDN, psw) = (%s, %s)", userDN, password), ex);
 		}catch(UnsupportedEncodingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error("Exception while encoding the given password: " + userDN,ex);
 		}
 		return false;
 	}
 	
+	
+	/**
+	 * delete the user (defined by given userDN)
+	 * @param userDN: given userDN that need to be deleted
+	 * @return true, if the deletion successful, false otherwise.
+	 */
 	public boolean deleteUser(String userDN){
 		try{
 			ctx.destroySubcontext(userDN);
 			return true;
 		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error("Exception while deleting a give userDN: " + userDN, ex);
 			return false;
 		}
 	}
+	
+	
+	
+	
 	
 	public SortedSet<String> getUserGroups(){
 		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
@@ -369,6 +423,9 @@ public class LdapTool {
 		}
 		return output; 
 	}
+	
+	
+	
 	
 	//ADDITIONAL FUNCTION
 	//Get a list of all Groups (not organizations) in the AD
@@ -397,6 +454,9 @@ public class LdapTool {
 		}
 		return output; 
 	}
+	
+	
+	
 	
 	public TreeMap<String,String[]> getGroupUsers(String name){
 		TreeMap<String,String[]> users = new TreeMap<String,String[]>();
@@ -427,6 +487,10 @@ public class LdapTool {
 		return users;
 	}
 	
+	
+	
+	
+	
 	public Attributes getOrganisationAttributes(String name){
 		try{
 			String baseDN = "OU="+name+","+props.getProperty(LdapConstants.GROUP_DN);
@@ -439,13 +503,19 @@ public class LdapTool {
 		return null;
 	}
 	
+	
+	/**
+	 * get attributes of a Ldap user who has userDN
+	 * @param userDN: of the Ldap user
+	 * @return an Attributes object that stores all the current attributes belong to this userDN.
+	 *         null otherwise.
+	 */
 	public Attributes getUserAttributes(String userDN){
 		try{
 			Attributes attrs = ctx.getAttributes(userDN);
 			return attrs;
 		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error("Exception while querying all attribtues of a user: " + userDN, ex);
 		}
 		return null;
 	}
@@ -718,7 +788,12 @@ public class LdapTool {
 	}
 	
 	//ADDITIONAL FUNCTION
-	//Add Company group to 'Groups'
+	/**
+	 * Add Company group to 'Groups'
+	 * @param companyName that need to add as a Ldap Group
+	 * @return true if the Organisation was added successfully.
+	 * 		   false otherwise.
+	 */
 	public boolean addCompanyAsGroup(String companyName){
 		//Get base DN for 'Groups'
 		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
@@ -738,12 +813,11 @@ public class LdapTool {
 				logger.info("ctx uninitialised");
 			//Create company group and log success
 			ctx.createSubcontext(companyDN, attributes);
-			logger.info("Company with DN: "+companyDN+" was added as group successfully");
+			logger.info("Organisation with DN: "+companyDN+" was added as group successfully");
 			return true;
 		//If error, log detail and stack trace
 		} catch (NamingException e) {
-			logger.error(e.toString());
-			e.printStackTrace();
+			logger.error(String.format("Failed to add organisation: %s, as a Ldap Group", companyName), e);
 			return false;
 		}
 	}

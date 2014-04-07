@@ -1,6 +1,7 @@
 package beans;
 
 import java.io.FileNotFoundException;
+import java.net.ConnectException;
 import java.util.TreeMap;
 
 import javax.naming.NamingException;
@@ -13,34 +14,35 @@ public class LdapOrganisation {
 	private String name;
 	private String distinguishedName;
 	
-	public void processOrganisationName(String name){
+	public void processOrganisationName(String name) throws ConnectException{
 		
 		
 		LdapTool lt = null;
 		try {
 			lt = new LdapTool();
 		} catch (FileNotFoundException fe){
-			// TODO Auto-generated catch block
-			fe.printStackTrace();					
+			throw new ConnectException(fe.getMessage());	
+			// we are not logging this error here, because it has been logged in LdapTool()
 		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			throw new ConnectException(e.getMessage());
+			// we are not logging this error here, because it has been logged in LdapTool()
 		}
 		
 		// TODO
-		if( lt == null){
+		if( lt != null){
+			users = lt.getGroupUsers(name);
+			Attributes attrs = lt.getOrganisationAttributes(name);
+			try{
+				setName(attrs.get("name")!=null ? attrs.get("name").get().toString():"");
+				setDistinguishedName(attrs.get("distinguishedName")!=null?attrs.get("distinguishedName").get().toString():"");
+			}catch(NamingException ex){
+				lt.close();
+				throw new ConnectException(ex.getMessage());
+				// we are not logging this error here, because it has been logged in LdapTool()
+			}
 			
+			lt.close();
 		}
-		
-		
-		
-		users = lt.getGroupUsers(name);
-		Attributes attrs = lt.getOrganisationAttributes(name);
-		try{
-			setName(attrs.get("name")!=null?attrs.get("name").get().toString():"");
-			setDistinguishedName(attrs.get("distinguishedName")!=null?attrs.get("distinguishedName").get().toString():"");
-		}catch(NamingException ex){}
-		lt.close();
 	}
 
 	public void setDistinguishedName(String distinguishedName) {

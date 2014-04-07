@@ -3,6 +3,7 @@
     import="tools.SupportTrackerJDBC"
     import="java.util.List"
     import="java.util.Arrays"
+    import="java.net.ConnectException"
     %>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -14,6 +15,14 @@
   <link rel="stylesheet" href="./css/core.css" type="text/css" />
   <link rel="stylesheet" href="./css/inputtypes.css" type="text/css" />-->
   <jsp:useBean id="groups" class="beans.LdapUserGroups" scope="session" />
+  
+  <%	try {
+	  		groups.refreshGetUserGroup();
+  		} catch(ConnectException e){
+  			session.setAttribute("error", e.getMessage());
+  		}
+  %>
+  
   <script>
     window.onload = function () {
     	if (document.getElementById("addnew").org.length == 0) {
@@ -26,7 +35,7 @@
     function SubmitForm(){
     	document.getElementById("addnew").submit();
 	    return true;
-    	}
+    }
   </script>
 </head>
   <body>
@@ -40,7 +49,9 @@
                 <h1>Organisation Management</h1>
                 <img src="css/images/swish.gif" alt="#" />
 <%  if(session.getAttribute("error") != null){ %>
-                <div class="error" style="float: center; width=100%; text-align: center"><%=session.getAttribute("error") %></div>
+                <div class="error" style="float: center; width=100%; text-align: center">
+                <%=session.getAttribute("error") %>
+                </div>
 <%  }else if(session.getAttribute("isAdmin") == null){ %>
                 <div class="error" style="float: center; width=100%; text-align: center">Only support administrators can access this page.</div>
 <%  }else{ %>

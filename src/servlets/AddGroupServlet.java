@@ -16,6 +16,9 @@ import ldap.LdapTool;
 
 /**
  * Servlet implementation class AddOrganisationServlet
+ * 
+ * Handle assigning a group to an organization
+ * This servlet is refered from Organisations.jsp
  */
 public class AddGroupServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
@@ -48,25 +51,23 @@ public class AddGroupServlet extends HttpServlet {
 		String group = request.getParameter("groupselect");
 
 		LdapTool lt = null;
+		boolean orgAdded = false;
 		try {
 			lt = new LdapTool();
-		} catch (FileNotFoundException fe){
-			// TODO Auto-generated catch block
-			fe.printStackTrace();					
-		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//Add organisation as group
+			orgAdded = lt.addUserToGroup(lt.getDNFromGroup(orgname), lt.getDNFromGroup(group));
+			lt.close();
+		} catch (Exception e){
+			session.setAttribute("error", 
+					"<font color=\"red\">"
+						+ "<b>Addition of organisation '"+orgname+"' to group "+group+" has failed.</b>"
+						+ "<b>Reason of failure: " + e.getMessage() + "</b>"
+					+ "</font>");
+			request.getRequestDispatcher("OrganisationDetails.jsp").forward(request, response);
+			return;
 		}
-		
-		// TODO
-		if( lt == null){
-			
-		}
-		
-		
-		//Add organisation as group
-		boolean orgAdded = lt.addUserToGroup(lt.getDNFromGroup(orgname), lt.getDNFromGroup(group));
-		lt.close();
+
+
 		//If adding as group successful, print success message
 		if( orgAdded ){
 			session.setAttribute("error", "<font color=\"green\"><b>Organisation '"+orgname+

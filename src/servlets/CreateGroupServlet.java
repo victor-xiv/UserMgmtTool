@@ -39,6 +39,8 @@ public class CreateGroupServlet extends HttpServlet {
 
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
+	 * 
+	 * Serve the Post request to add Organisation as a group into Ldap Server
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		HttpSession session = request.getSession(true);
@@ -50,35 +52,29 @@ public class CreateGroupServlet extends HttpServlet {
 		try {
 			lt = new LdapTool();
 		} catch (FileNotFoundException fe){
-			// TODO Auto-generated catch block
-			fe.printStackTrace();					
+			session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed. Reason: " + fe.getMessage() + "</b></font>");
+			request.getRequestDispatcher("OrganisationDetails.jsp").forward(request, response);				
 		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed. Reason: " + e.getMessage() + "</b></font>");
+			request.getRequestDispatcher("OrganisationDetails.jsp").forward(request, response);
 		}
-		
-		// TODO
-		if( lt == null){
-			
-		}
-		
-		
-		
-		//Add organisation as group
-		boolean orgAdded = lt.addCompanyAsGroup(orgname);
-		lt.close();
-		//If adding as group successful, print success message
-		if( orgAdded ){
-			session.setAttribute("error", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
-			logger.info("Organisation has been added successfully.");
-		//Otherwise, print error message
-		}else{
-			session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b></font>");
-			logger.info("Addition of organisation '"+orgname+"' has failed.");
-		}
-		//Forward (redirect with parameters) to OrganisationDetails.jsp
-		request.getRequestDispatcher("OrganisationDetails.jsp").forward(request, response);
-	}
 
+		if( lt != null){
+			//Add organisation as group
+			boolean orgAdded = lt.addCompanyAsGroup(orgname);
+			lt.close();
+			//If adding as group successful, print success message
+			if( orgAdded ){
+				session.setAttribute("error", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
+				logger.info("Organisation has been added successfully.");
+			//Otherwise, print error message
+			}else{
+				session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b></font>");
+				logger.info("Addition of organisation '"+orgname+"' has failed.");
+			}
+			//Forward (redirect with parameters) to OrganisationDetails.jsp
+			request.getRequestDispatcher("OrganisationDetails.jsp").forward(request, response);
+		}
+	}
 }
 

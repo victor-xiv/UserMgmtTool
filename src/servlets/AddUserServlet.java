@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
+import javax.xml.rpc.ServiceException;
 
 import org.apache.log4j.Logger;
 
@@ -46,51 +47,35 @@ public class AddUserServlet extends HttpServlet {
 		maps.put("isLdapClient", new String[]{"true"});
 		maps.put("password01", new String[]{"password1"});
 		
-		String sAMAccountName = request.getParameter("sAMAccountName");
+		String sAMAccountName = request.getParameter("sAMAccountName").trim();
 		logger.info("Username: "+sAMAccountName);
-			if( sAMAccountName == null ){
-				response.getWriter().write("false|User was not added with invalid username.");
-				return;
-			}
-			if( sAMAccountName.equals("") ){
+			if( sAMAccountName == null || sAMAccountName.equals("")){
 				response.getWriter().write("false|User was not added with invalid username.");
 				return;
 			}
 			
 			
+			LdapTool lt = null;	  
 			int clientAccountId = -1;
 			try {
+				// connect to ldap server
+				lt = new LdapTool();
+				// add user into support tracker DB
 				clientAccountId = SupportTrackerJDBC.addClient(maps);
-			} catch (SQLException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+			} catch (Exception e1) {
+				if(lt != null) lt.close();
+				response.getWriter().write("false|User was not added because: " + e1.getMessage());
+				return;
 			}
 			
 			
 			if( clientAccountId > 0 ){
-				maps.put("info", new String[]{Integer.toString(clientAccountId)});
+				maps.put("info", new String[]{Integer.toString(clientAccountId)});	
 				
-				
-				
-				LdapTool lt = null;
-				try {
-					lt = new LdapTool();
-				} catch (FileNotFoundException fe){
-					// TODO Auto-generated catch block
-					fe.printStackTrace();					
-				} catch (NamingException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
-				// TODO
-				if( lt == null){
-					
-				}
-				
-				
-				
+				// add user into ldap server
 				boolean addStatus = lt.addUser(maps);
+				lt.close();
+				
 				if( addStatus ){
 					String fullname = "";
 					if(maps.get("displayName")[0] != null){
@@ -98,7 +83,16 @@ public class AddUserServlet extends HttpServlet {
 					}else{
 						fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
 					}
-					ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
+					
+					
+					try {
+						ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
+					} catch (ServiceException e) {
+						response.getWriter().write("false|User was not added because: " + e.getMessage());
+						return;
+					}
+					
+					
 					EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
 					response.getWriter().write("true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0]);
 					session.setAttribute("message", "<font color=\"green\"><b>User '"+sAMAccountName+"' has been added successfully.</b></font>");
@@ -106,7 +100,7 @@ public class AddUserServlet extends HttpServlet {
 					response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added.");
 					session.setAttribute("message", "<font color=\"red\"><b>Addition of user '"+sAMAccountName+"' has failed.</b></font>");
 				}
-				lt.close();
+				
 			}else{
 				response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added to database.");
 				session.setAttribute("message", "<font color=\"red\"><b>Addition of user '"+sAMAccountName+"' has failed.</b></font>");

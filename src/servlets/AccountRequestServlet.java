@@ -34,6 +34,14 @@ import tools.ValidatedRequestHandler;
 public class AccountRequestServlet extends HttpServlet {
 	Logger logger = LoggerTool.setupDefaultRootLogger(); // initialize as a default root logger
 	
+	
+	
+	/**
+	 * Serve the client's request by presenting the Account Request Form page:
+	 * + First Validate and decrypt the request
+	 * + Connect to Ldap server to get the company name
+	 * + redirect the reqeust to AccountRequestForm.jsp
+	 */
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
@@ -85,6 +93,14 @@ public class AccountRequestServlet extends HttpServlet {
 		response.sendRedirect(redirectURL);
 	}
 
+	
+	
+	/**
+	 * Received the detail of the account (that user requesting to be created) through Request's parameters
+	 * Process that account detail and write it to an .xml file.
+	 * that account request file is the concatenation of LdapConstants.OUTPUT_FOLDER and the processing date/time
+	 * e.g. /opt/LDAP/2014-03-13T10:58:32.995+1300.xml
+	 */
 	@SuppressWarnings("unchecked")
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
@@ -94,7 +110,9 @@ public class AccountRequestServlet extends HttpServlet {
 		//Email (ADDITIONAL VARIABLE)
 		String email = request.getParameter("mail");
 		
-		
+		/**
+		 * connecting to ldap server
+		 */
 		LdapTool lt = null;
 		try {
 			lt = new LdapTool();
@@ -177,6 +195,7 @@ public class AccountRequestServlet extends HttpServlet {
 		String redirectURL = response.encodeRedirectURL("AccountRequestForm.jsp");
 		response.sendRedirect(redirectURL);
 	}
+	
 	
 	
 	/**

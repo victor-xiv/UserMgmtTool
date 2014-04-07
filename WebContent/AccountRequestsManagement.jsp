@@ -131,7 +131,7 @@ function AcceptRequest(idx) {
 }
  
 /**
- * decline the requeest, POST the filename to AcceptRequest servlet to do the declining request
+ * decline the requeest, POST the filename to AcceptRequestServlet to do the declining request
  */
 function DeclineRequest(idx) {
   document.getElementById('accept' + idx).className = 'ButtonDisabled';
@@ -143,7 +143,10 @@ function DeclineRequest(idx) {
   ajax.send('');
 }
  
- 
+
+ /**
+ * Handle the response (result) from the AcceptRequestServlet
+ */
 function handleHttpResponse(){
   if(ajax.readyState == 4){
     if(ajax.status == 200){

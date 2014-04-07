@@ -24,7 +24,13 @@ public class UserDetails {
 		}
 		
 		
-		userDetails.putAll(ConcertoJDBC.getUserDetails(username));
+		try {
+			userDetails.putAll(ConcertoJDBC.getUserDetails(username));
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		setUsername(username);
 		setFirstName(userDetails.get("givenName")!=null?userDetails.get("givenName"):"");
 		setLastName(userDetails.get("sn")!=null?userDetails.get("sn"):"");

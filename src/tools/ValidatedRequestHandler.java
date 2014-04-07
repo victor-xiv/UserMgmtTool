@@ -24,7 +24,7 @@ import com.orchestral.servlet.security.Concerto4xSecurityHttpServletRequestMarsh
 public class ValidatedRequestHandler {
 
 	// logger object
-	private static Logger logger;
+	private static Logger logger = LoggerTool.setupDefaultRootLogger();
 	
 	/**
 	 * It received an HttpServletRequest that contains encrypted parameters

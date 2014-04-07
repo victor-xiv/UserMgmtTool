@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.rpc.ServiceException;
 
 import ldap.ErrorConstants;
 import ldap.LdapConstants;
@@ -36,6 +37,13 @@ public class AcceptRequestServlet extends HttpServlet {
 	
 	Logger logger = LoggerTool.setupDefaultRootLogger(); // initiate as a default root logger
 	
+	
+	/**
+	 * Receive the request,
+	 * validate the requested account detail (account detail attached with request's parameters)
+	 * + If request is declined => delete the .xml file that correspond to that account and send rejected email
+	 * + If request is accepted => create the account and send accepted mail (if account created successfully) 
+	 */
 	@SuppressWarnings("unused")
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
@@ -114,13 +122,11 @@ public class AcceptRequestServlet extends HttpServlet {
 				LdapTool lt = null;
 				try {
 					lt = new LdapTool();
-				} catch (FileNotFoundException fe){
-					fe.printStackTrace();			
+				} catch (FileNotFoundException fe){		
 					response.getWriter().write("false|"+fe.getMessage());
 					return;
 					//no need to log, the error has been logged in LdapTool()
 				} catch (NamingException e) {
-					e.printStackTrace();			
 					response.getWriter().write("false|"+e.getMessage());
 					return;
 					//no need to log, the error has been logged in LdapTool()
@@ -141,7 +147,15 @@ public class AcceptRequestServlet extends HttpServlet {
 					}else{
 						fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
 					}
-					ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
+					
+					try {
+						ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
+					} catch (ServiceException e) {
+						response.getWriter().write("false|"+e.getMessage());
+						return;
+						//no need to log, the error has been logged in ConcertoAPI.addClientUser()
+					}
+					
 					EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
 					response.getWriter().write("true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0]);
 				}else{

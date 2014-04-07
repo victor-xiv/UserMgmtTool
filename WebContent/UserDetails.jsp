@@ -19,9 +19,44 @@
 	<%@ page import="javax.naming.NamingEnumeration" %>
 	<%@ page import="java.io.FileNotFoundException" %>
   	<%@ page import="javax.naming.NamingException" %>
+  	<%@ page import="java.net.ConnectException" %>
+  	<%@ page import="ldap.ErrorConstants" %>
   	
   	
-    <% user.processUserDN(request.getParameter("dn")); %>
+    <% 	try{
+    		user.processUserDN(request.getParameter("dn"));
+    		groups.refreshGetUserGroup();
+    	} catch (ConnectException e) {
+    		session.setAttribute("error", e.getMessage());
+    	}
+    
+	    LdapTool lt = null;
+	    try {
+	    	lt = new LdapTool();
+	    } catch (FileNotFoundException fe){
+	    	session.setAttribute("error", fe.getMessage());
+	    } catch (NamingException e) { 
+	    	session.setAttribute("error", e.getMessage());
+	    }
+	
+	    Attributes attrs = null;
+	    Attribute attr = null;
+	    Set<String> baseGroups = null;
+	
+	    if(lt != null){
+	    	attrs = lt.getUserAttributes(request.getParameter("dn"));
+	    	attr = attrs.get("memberOf");
+	    	baseGroups = lt.getBaseGroups();
+	    	lt.close();
+	    	
+	    	if(attrs==null || attr==null || baseGroups==null){
+	    		session.setAttribute("error", ErrorConstants.UNKNOWN_ERR);
+	    	}
+	    } else {
+	    	session.setAttribute("error", ErrorConstants.UNKNOWN_ERR);
+	    }
+	%>
+	
     <script type="text/javascript" language="javascript">
     function firstCharUp(input) {
         if (input.length > 1) {
@@ -97,6 +132,9 @@
     function doDisplayName() {
         document.form.displayName.value = document.form.givenName.value + " " + document.form.sn.value;
     }
+    
+    /* Enable each input of the form to allow user to modify and submit the update
+    */
     function UpdateForm() {
     	document.getElementById('givenName').disabled = false;
     	document.getElementById('sn').disabled = false;
@@ -202,11 +240,19 @@
                 <img src="./css/images/swish.gif" alt="There should be an image here...." />
 <%  if(session.getAttribute("error") != null){ %>
                 <div class="row">
-                  <div class="error" style="float: center; width=100%; text-align: center"><%=session.getAttribute("error") %></div>
+                  <div class="error" style="float: center; width=100%; text-align: center">
+         <%=session.getAttribute("error") %>
+                  </div>
                 </div>
 <%  }else if(session.getAttribute("isAdmin") == null){ %>
                 <div class="error" style="float: center; width=100%; text-align: center">Only support administrators can access this page.</div>
-<%  }else{ %>
+
+
+
+
+
+
+<%  }else{ // this open bracket is paired with a close at the end of this file%>
                 <br />
                 <div style="width: 500px; padding: 5px; margin: 5px auto ";>
                   <span style="float:left; width:auto; text-align: left; font-family: Arial, Helvetica, sans-serif;">Account status: </span>
@@ -379,7 +425,7 @@
                       <span style="float: center;" class="failed"><%=session.getAttribute("failed")%></span>
                     </div>
 <%		session.removeAttribute("failed");
-	}	%>
+	}%>
                     <div id="buttonGrp1" class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 200px; height: 20px; display: block">
                       <a class="Button" id="updateButton" onclick="javascript: UpdateForm()" style="display: compact;">Update</a>
                       <a class="Button" id="backButton" onclick="javascript: BackForm()" style="display: compact;">Back</a>
@@ -393,52 +439,40 @@
                     <span class="label2">Member of:</span>
                     <div style="float: right; text-align: left; width:395px;"><ul>
 <% 
-
-LdapTool lt = null;
-try {
-	lt = new LdapTool();
-} catch (FileNotFoundException fe){
-	// TODO Auto-generated catch block
-	fe.printStackTrace();					
-} catch (NamingException e) {
-	// TODO Auto-generated catch block
-	e.printStackTrace();
-}
-
-if(lt == null){
-	//TODO
-}
-
-
-Attributes attrs = lt.getUserAttributes(request.getParameter("dn"));
-Attribute attr = attrs.get("memberOf");
-Set<String> baseGroups = lt.getBaseGroups();
 if (attr != null) {
-	NamingEnumeration e = attr.getAll(); 
+NamingEnumeration e = attr.getAll(); 
 	while (e.hasMore()) {
 		String dn = (String)e.next();
 		String name = dn.split(",")[0].split("=")[1];
 		baseGroups.remove(name);%>
-                    <li title='<%= dn %>'><%= name %></li>
-	<% } } else { %><li>No groups</li><% } %>
+	              <li title='<%= dn %>'><%= name %></li>
+	<%} 
+} else { %>
+				  <li>No groups</li>
+<%}%>
                     </ul></div>
                   </div>
-    <% if (baseGroups.size()>0) { %>
+<%if (baseGroups.size()>0) { %>
                 <form id="addto" method="post" action="AddGroupUser">
                   <!-- <br /><span id="addlabel"><b>Add to Group:</b></span><br /> -->
-                  <input type="hidden" name="dn" value="<%=request.getParameter("dn") %>" />
-                  <%	session.setAttribute("dn", request.getParameter("dn")); %>
+                  <input type="hidden" name="dn" value="
+    <%=request.getParameter("dn") %>" />
+    <%session.setAttribute("dn", request.getParameter("dn")); %>
                   <select name="groupselect" id="groupselect">
-<% for (String group : baseGroups) {
-		  %>
-		  		    <option value="<%= group %>"><%= group %></option>
-		  <% } %>
+    <%for (String group : baseGroups) {%>
+		  		    <option value="
+		<%= group %>"><%= group %>
+		  		    </option>
+	<%}%>
                   </select>
                   <a class="Button" href="#" id="addbutton" onclick="javascript: SubmitGroupForm()">Add User to Group</a>
                 </form>
-<% } lt.close(); %>
+<%}%>
                 </div>
-<%	}	%>
+
+
+
+<%} //this bracket is paired with the open at else after if(isAdmin) %>
                 <div align="center"><img src="./css/images/swish.gif" alt="There should be an image here...." /></div>
                 <div align="center" class="disclaimer2">Having problems?<br />Email <a href="mailto:support@orionhealth.com">support@Orionhealth.com</a><br /><br /></div>
               </td>

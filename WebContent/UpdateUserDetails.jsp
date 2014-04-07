@@ -8,7 +8,17 @@
 <%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.TreeMap" %>
 <%@ page import="java.util.Map" %>
-<% user.processUserDN(request.getParameter("dn")); %>
+<%@ page import="java.net.ConnectException" %>
+
+    <% 	try{
+    		user.processUserDN(request.getParameter("dn"));
+    		groups.refreshGetUserGroup();
+    	} catch (ConnectException e) {
+    		session.setAttribute("error", e.getMessage());
+    	}
+	%>
+
+
 <script type='text/javascript'>
 function validateEntries(){
 	if(document.form.sAMAccountName.value == ""){
