@@ -70,7 +70,7 @@ public class RegisterUserServlet extends HttpServlet {
 			logger.error("username is an empty String");
 		}
 		
-		logger.info("Redirect request to: " + "ChangeUserPassword.jsp");
+		logger.info("Redirect request to: " + "RegisterUser.jsp");
 		
 		session.setAttribute("username", username);
 		String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
@@ -86,157 +86,162 @@ public class RegisterUserServlet extends HttpServlet {
 		HttpSession session = request.getSession(true);
 		String username = (String)session.getAttribute("username");
 		session.removeAttribute("username");
+		
 		if( username == null ){
 			session.setAttribute("error", "This page can only be accessed from within Concerto.");
 			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
 			response.sendRedirect(redirectURL);
-		}else{
-			Map<String,String[]> userDetails = new HashMap<String,String[]>();
-			userDetails.putAll((Map<String,String[]>)request.getParameterMap());
-			userDetails.put("password", new String[]{request.getParameter("password01")});
-			userDetails.put("sAMAccountName", new String[]{username});
-			userDetails.put("isLdapClient", new String[]{"true"});
-
-			
-			
-			LdapTool lt = null;
-			try {
-				lt = new LdapTool();
-			} catch (FileNotFoundException fe){
-				// TODO Auto-generated catch block
-				fe.printStackTrace();					
-			} catch (NamingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			// TODO
-			if( lt == null){
-				
-			}
-			
-			
-			
-			
-			//ADDITIONAL CODE
-			//Whether an error has occured
-			boolean good = true;
-			//Get company and mail info
-			String company = request.getParameter("company");
-			String email = request.getParameter("mail");
-			
-			//Get list of Orion Health email addresses from database - SPT-311
-			List<String> emails = null;
-			try {
-				emails = SupportTrackerJDBC.getEmails();
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			if(emails == null){
-				// TODO
-			}
-			
-			
-			//If an Orion User (no company and email registered as staff) - SPT-311
-			if ( (request.getParameter("company").equals(""))&&(emails.contains(email.toLowerCase())) ) {
-				//Set company as Orion Health
-				userDetails.put("company", new String[]{"Orion Health"});
-				company = "Orion Health";
-			}
-			//Check if userDN already exists - SPT-320
-			if (lt.userDNExists(request.getParameter("displayName"), company)) {
-				//If so, create error message and return as message to display
-				String message = "<font color=\"red\">";
-				message = "Unable to create user account. ";
-				message += "An account has already been created with the same name. <br />";
-				message += "Please contact Orion Health Support: <ul>";
-				message += "<li>Phone </li>";
-				message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-				message += "<li>Raise a Ticket </li></ul>";
-				message += "</font>";
-				session.setAttribute("error", message);
-				logger.info("UserDN for user '"+username+"' already exists.");
-				//Flag error
-				good = false;
-			}
-			//Check if email already used in account and no error has occurred - SPT-314
-			else if (lt.emailExists(email, company)&&good) {
-				//If so, create error message and return as message to display
-				String message = "<font color=\"red\">";
-				message = "Unable to create user account. ";
-				message += "An account with this email address ("+email+") already exists. <br />";
-				message += "Please contact Orion Health Support: <ul>";
-				message += "<li>Phone </li>";
-				message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-				message += "<li>Raise a Ticket </li></ul>";
-				message += "</font>";
-				session.setAttribute("error", message);
-				logger.info("Email '"+email+"' already in use.");
-				//Flag error
-				good = false;
-			}
-			//Check if username already exists and no error has occurred - SPT-320
-			if (lt.usernameExists(username, company)&&good) {
-				//If so, create error message and return as message to display
-				String message = "<font color=\"red\">";
-				message = "Unable to create user account. ";
-				message += "An account has already been created for this user. <br />";
-				message += "Please contact Orion Health Support: <ul>";
-				message += "<li>Phone </li>";
-				message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-				message += "<li>Raise a Ticket </li></ul>";
-				message += "</font>";
-				session.setAttribute("error", message);
-				logger.info("Username '"+username+"' already exists.");
-				//Flag error
-				good = false;
-			}
-			//If the company has not been set as an OU and no error has occurred - SPT-316
-			if ((!lt.companyExists(company))&&good) {
-				
-				//Get list of supported companies from database
-				List<String> orgs = null;
-				try {
-					orgs = SupportTrackerJDBC.getOrganisations();
-				} catch (SQLException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				if(orgs == null){
-					// TODO
-				}
-				
-				
-				//If this company is supported, set as OU
-				if (orgs.contains(company)) {
-					lt.addCompany(company);
-					lt.addCompanyAsGroup(company);
-					//Otherwise error and quit
-				} else {
-					session.setAttribute("error", "Your registration has failed - your organisation "+company+" has not been registered. "  
-							+ "Please contact the system administrator.");
-					//Flag error
-					good = false;
-				}
-			}
-			//If no error has occurred,
-			if (good) {
-				//ADDITIONAL CODE ENDS
-				if(lt.addUser(userDetails)){
-					session.setAttribute("passed", "You have been registered successfully.");
-					try {
-						ConcertoAPI.enableNT(username);
-					} catch (ServiceException e) {
-						session.setAttribute("error", e.getMessage());
-						// we are not logging this error, because it has been logged in ConcertoAPI.enableNT()
-					}
-				}else{
-					session.setAttribute("error", "Your registration has failed.  Please contact the system administrator.");
-				} 
-			}
-			lt.close();
+			return;
 		}
+		
+		
+		
+		Map<String, String[]> userDetails = new HashMap<String, String[]>();
+		userDetails.putAll((Map<String, String[]>) request.getParameterMap());
+		userDetails.put("password",
+				new String[] { request.getParameter("password01") });
+		userDetails.put("sAMAccountName", new String[] { username });
+		userDetails.put("isLdapClient", new String[] { "true" });
+
+		// connecting to LdapServer
+		LdapTool lt = null;
+		try {
+			lt = new LdapTool();
+		} catch (NamingException | FileNotFoundException e) {
+			String errorMessage = String.format("Your registration has failed because of %s. Please contact the system administrator.", e.getMessage());
+			session.setAttribute("error", errorMessage);
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
+		}
+
+		/* ADDITIONAL CODE
+		   Whether an error has occured*/
+		
+		boolean good = true; //error flag, if there's no error, good is always true, otherwise it will be set to false 
+		
+		// Get company and mail info
+		String company = request.getParameter("company");
+		String email = request.getParameter("mail");
+
+		// Get list of Orion Health email addresses from database - SPT-311
+		List<String> emails = null;
+		try {
+			emails = SupportTrackerJDBC.getEmails();
+		} catch (SQLException e) {
+			String errorMessage = String.format("Your registration has failed because of %s. Please contact the system administrator.", e.getMessage());
+			session.setAttribute("error", errorMessage);
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
+		}
+
+		// If an Orion User (no company and email registered as staff) - SPT-311
+		if ((request.getParameter("company").equals(""))
+				&& (emails.contains(email.toLowerCase()))) {
+			// Set company as Orion Health
+			userDetails.put("company", new String[] { "Orion Health" });
+			company = "Orion Health";
+		}
+		
+		// Check if userDN already exists - SPT-320
+		if (lt.userDNExists(request.getParameter("displayName"), company)) {
+			// If so, create error message and return as message to display
+			String message = "<font color=\"red\">";
+			message = "Unable to create user account. ";
+			message += "An account has already been created with the same name. <br />";
+			message += "Please contact Orion Health Support: <ul>";
+			message += "<li>Phone </li>";
+			message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
+			message += "<li>Raise a Ticket </li></ul>";
+			message += "</font>";
+			session.setAttribute("error", message);
+			logger.info("UserDN for user '" + username + "' already exists.");
+			// Flag error
+			good = false;
+		}
+		// Check if email already used in account and no error has occurred -
+		// SPT-314
+		else if (lt.emailExists(email, company) && good) {
+			// If so, create error message and return as message to display
+			String message = "<font color=\"red\">";
+			message = "Unable to create user account. ";
+			message += "An account with this email address (" + email + ") already exists. <br />";
+			message += "Please contact Orion Health Support: <ul>";
+			message += "<li>Phone </li>";
+			message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
+			message += "<li>Raise a Ticket </li></ul>";
+			message += "</font>";
+			session.setAttribute("error", message);
+			logger.info("Email '" + email + "' already in use.");
+			// Flag error
+			good = false;
+		}
+		// Check if username already exists and no error has occurred - SPT-320
+		if (lt.usernameExists(username, company) && good) {
+			// If so, create error message and return as message to display
+			String message = "<font color=\"red\">";
+			message = "Unable to create user account. ";
+			message += "An account has already been created for this user. <br />";
+			message += "Please contact Orion Health Support: <ul>";
+			message += "<li>Phone </li>";
+			message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
+			message += "<li>Raise a Ticket </li></ul>";
+			message += "</font>";
+			session.setAttribute("error", message);
+			logger.info("Username '" + username + "' already exists.");
+			// Flag error
+			good = false;
+		}
+		// If the company has not been set as an OU and no error has occurred -
+		// SPT-316
+		if ((!lt.companyExists(company)) && good) {
+
+			// Get list of supported companies from database
+			List<String> orgs = null;
+			try {
+				orgs = SupportTrackerJDBC.getOrganisations();
+			} catch (SQLException e) {
+				String errorMessage = String.format("Your registration has failed because of %s. Please contact the system administrator.", e.getMessage());
+				session.setAttribute("error", errorMessage);
+				String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}
+
+			// If this company is supported, set as OU
+			if (orgs.contains(company)) {
+				lt.addCompany(company);
+				lt.addCompanyAsGroup(company);
+				// Otherwise error and quit
+			} else {
+				session.setAttribute("error",
+						"Your registration has failed - your organisation "
+								+ company + " has not been registered. "
+								+ "Please contact the system administrator.");
+				// Flag error
+				good = false;
+			}
+		}
+		// If no error has occurred,
+		if (good) {
+			// ADDITIONAL CODE ENDS
+			if (lt.addUser(userDetails)) {
+				session.setAttribute("passed", "You have been registered successfully.");
+				try {
+					ConcertoAPI.enableNT(username);
+				} catch (ServiceException e) {
+					session.setAttribute("error", e.getMessage());
+					// we are not logging this error, because it has been logged
+					// in ConcertoAPI.enableNT()
+				}
+			} else {
+				session.setAttribute("error",
+						"Your registration has failed.  Please contact the system administrator.");
+			}
+		}
+		lt.close();
+
 		String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
 		response.sendRedirect(redirectURL);
 	}

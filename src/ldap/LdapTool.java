@@ -652,8 +652,7 @@ public class LdapTool {
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex.getMessage());
-			ex.printStackTrace();
+			logger.error("Exception while searching for " + baseDN, ex);
 		}
 		//Otherwise return false
 		return false;
@@ -663,7 +662,7 @@ public class LdapTool {
 	 * Simple function to check if a given userDN exists.
 	 * @param fullname - user's display name
 	 * @param company - user's company
-	 * @return true if more than zero search matches.
+	 * @return true if more than zero search matches (means userDN exists).
 	 */
 	public boolean userDNExists(String fullname, String company){
 		//Search user's company
@@ -679,7 +678,7 @@ public class LdapTool {
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex.getMessage());
+			logger.error("Exception while searching for " + baseDN, ex);
 			ex.printStackTrace();
 		}
 		//Otherwise return false
@@ -765,7 +764,15 @@ public class LdapTool {
 		}
 		return true;
 	}*/
+	
+	/**
+	 * Add the given companyName into the Ldap server as a Client (Ldap user)
+	 * @param companyName that need to be added
+	 * @return true if the companyName can be added successfully
+	 *         false otherwise
+	 */
 	public boolean addCompany(String companyName){
+		// get base dn for the user (it should be: OU=Clients,DC=orion,DC=dmz)
 		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
 		String companyDN = props.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+","+baseDN;
 		Attributes attributes = new BasicAttributes(true);
@@ -781,8 +788,7 @@ public class LdapTool {
 			logger.info("Company with DN: "+companyDN+" was added successfully");
 			return true;
 		} catch (NamingException e) {
-			logger.error(e.toString());
-			e.printStackTrace();
+			logger.error(String.format("Exception while adding %s into Ldap server as a user.", companyName), e);
 			return false;
 		}
 	}
@@ -790,7 +796,7 @@ public class LdapTool {
 	//ADDITIONAL FUNCTION
 	/**
 	 * Add Company group to 'Groups'
-	 * @param companyName that need to add as a Ldap Group
+	 * @param companyName that need to be added as a Ldap Group
 	 * @return true if the Organisation was added successfully.
 	 * 		   false otherwise.
 	 */
