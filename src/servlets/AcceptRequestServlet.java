@@ -71,7 +71,7 @@ public class AcceptRequestServlet extends HttpServlet {
 		
 		Map<String, String[]> maps = null;
 		try{
-			processFile(file);
+			maps = processFile(file);
 		} catch (IOException e){
 			response.getWriter().write("false|"+ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
 			return;

@@ -535,21 +535,28 @@ public class LdapTool {
 		return null;
 	}
 	
+	
+	
+	/**
+	 * get the company name that the userDN is working for (from the LDAP server)
+	 * @param userDN represent the user/company
+	 * @return company name in String
+	 */
 	public String getUserCompany(String userDN){
 		try{
 			Attributes attrs = ctx.getAttributes(userDN);
 			if(attrs.get("company") == null ){
 				String company = userDN;
 				int index = company.indexOf(",");
-				// if there's no "," in the string => do nothing
+				// if there's "," => get the substring after ","
 				if(index != -1){
 					company = company.substring(index+1);
 					index = company.indexOf(",");
-					// if there's no "," in the string => do nothing
+					// if there's "," => get the substring after ","
 					if(index != -1) company = company.substring(0, index);
 				}
 				index = company.indexOf("=");
-				// if there's no "=" in the string => do nothing
+				// if there's "=" => get the substring after "="
 				if(index != -1) company = company.substring(index+1);
 				return company;
 			}else{
@@ -562,6 +569,13 @@ public class LdapTool {
 		return null;
 	}
 	
+	
+	
+	/**
+	 * check if the given companyName exists in the Ldap server
+	 * @param companyName
+	 * @return true if the given companyName is in Ldap Server, false otherwise
+	 */
 	public boolean companyExists(String companyName){
 		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
 		String filter = "("+props.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+")";
@@ -854,6 +868,24 @@ public class LdapTool {
 		return dn;
 	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	public boolean isAccountDisabled(String userDN){
 		try {
 			Attributes attrs = ctx.getAttributes(userDN);
@@ -901,6 +933,19 @@ public class LdapTool {
 		}
 		return false;
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	/**

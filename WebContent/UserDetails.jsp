@@ -58,6 +58,13 @@
 	%>
 	
     <script type="text/javascript" language="javascript">
+    function cleanUpThePage(){
+    	var idsNeededToBeCleanedUp = new Array("validation_msg", "addGroupFailed", "addGroupPassed");
+    	for(var i=0; i<idsNeededToBeCleanedUp.length; i++){
+    		document.getElementById(idsNeededToBeCleanedUp[i]).innerHTML = "";
+    	}
+    
+    }
     function firstCharUp(input) {
         if (input.length > 1) {
             var firstLetter = input.charAt(0).toUpperCase();
@@ -136,6 +143,7 @@
     /* Enable each input of the form to allow user to modify and submit the update
     */
     function UpdateForm() {
+    	cleanUpThePage();
     	document.getElementById('givenName').disabled = false;
     	document.getElementById('sn').disabled = false;
     	document.getElementById('displayName').disabled = false;
@@ -169,10 +177,76 @@
         return false;
     }
     function SubmitGroupForm() {
-	  	document.getElementById("addto").submit();
-		    return true;
+    	cleanUpThePage();
+    	
+    	// send a POST request to AddGroupUser servlet with parameters: dn and gropselect 
+    	var dn = document.getElementById("dnInput").value;
+    	var groupSelect = document.getElementById("groupselect").value;
+    	ajax.open("POST", "AddGroupUser", true);
+    	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
+        var params = "dn=" + dn + "&groupselect=" + groupSelect;
+        ajax.send(params);
+    	
+        // handling ajax state
+        ajax.onreadystatechange = function(){
+        	
+        	// handling once request responded
+        	if(ajax.readyState == 4){
+        		// if reponse is 200
+        		if(ajax.status == 200){
+		        	var xmlDoc = ajax.responseXML;
+		        	
+		        	// try to check the reponse that contain a tage "failed" first
+		        	// if response contains "failed" tag, mean the adding a group process is failed
+		        	var failed = xmlDoc.getElementsByTagName("failed")[0];
+	
+		        	// if failed tag is not defined or null means the process is successful
+		        	if(failed == undefined || failed == null){
+		        		
+		        		// update the memberOf list
+		        		var memberOfList = xmlDoc.getElementsByTagName("memberOf");
+		        		var value = "<ul>";
+		        		for(var i=0; i<memberOfList.length; i++){
+		        			var dnValue = memberOfList[i].firstElementChild.firstChild.nodeValue;
+		        			var nameValue = memberOfList[i].lastElementChild.firstChild.nodeValue;
+		        			
+		        			value += "<li title='" + dnValue + "'>" + nameValue + "</li>";
+		        		}
+		        		value += "</ul>";
+		        		document.getElementById("memberOf").innerHTML = value;
+		        		
+		        		// update the drop down menu which is listing all the groups that this user is not bellonging to
+		        		value = "";
+		        		var nonMemberOfList = xmlDoc.getElementsByTagName("notMemberOf");
+		        		for(var i=0; i<nonMemberOfList.length; i++){
+		        			var nameValue = nonMemberOfList[i].firstChild.nodeValue;
+		        			value += "<option value='" + nameValue + "'>" + nameValue + "</option>";
+		        		}
+		        		document.getElementById("groupselect").innerHTML = value;
+		        		
+		        		var passed = xmlDoc.getElementsByTagName("passed")[0].firstChild.nodeValue;
+		        		document.getElementById("addGroupPassed").innerHTML = passed;
+		        		
+		        		// return because don't need to update the "addGroupFailed" element
+		        		return;
+		        	}
+        		}
+        		
+        		// if reponse is not 200 or xml reponse contains "failed" tage:
+        		// set the addGroupFailed element
+        		var reason = "<font color=\"red\"><b>Addition of organisation '" + dn 
+															+ "' to group " + groupSelect + " has failed.</b>"
+												  "<b>" + failed.firstChild.nodeValue +"</b>"
+													+"</font>";
+				document.getElementById("addGroupFailed").innerHTML = reason;
+        	}
+        }
+        
 	}
     function ToggleStatus() {
+    	cleanUpThePage();
+    	
     	var url = "UpdateUserStatus?dn="+encodeURIComponent('<%=request.getParameter("dn") %>');
         if (document.getElementById('accstatus').innerHTML == "Disabled") {
             url += "&action=enabling";
@@ -190,7 +264,7 @@
             if(ajax.status == 200){
                 results = ajax.responseText.split("|");
                 if(results[0] == "true"){
-                    document.getElementById('validation_msg').innerHTML +=
+                    document.getElementById('validation_msg').innerHTML =
                         "<font color=\"#00FF00\">* "+results[1]+"</font><br />";
                     if (document.getElementById('accstatus').innerHTML == "Disabled") {
                         document.getElementById('accstatus').innerHTML = "Enabled";
@@ -198,11 +272,11 @@
                         document.getElementById('accstatus').innerHTML = "Disabled";
                     }
                 }else{
-                    document.getElementById('validation_msg').innerHTML +=
+                    document.getElementById('validation_msg').innerHTML =
                         "<font color=\"#FF0000\">* "+results[1]+"</font><br />";
                 }
             }else{
-    		    document.getElementById('validation_msg').innerHTML +=
+    		    document.getElementById('validation_msg').innerHTML =
     		        "<font color=\"#FF0000\">* The system encountered an error while processing, please try again later.</font><br />";
     	    }
         }
@@ -242,6 +316,7 @@
                 <div class="row">
                   <div class="error" style="float: center; width=100%; text-align: center">
          <%=session.getAttribute("error") %>
+         <% session.removeAttribute("error"); %>
                   </div>
                 </div>
 <%  }else if(session.getAttribute("isAdmin") == null){ %>
@@ -324,7 +399,7 @@
                         <select disabled="disabled" id="company" name="company" tabindex="6">
                           <option value="">Please select one from the list</option>
 <%	String[] userGroups = groups.getUserGroups();
-	System.out.println(user.getCompany());
+	//System.out.println(user.getCompany());
 	for(int i = 0; i < userGroups.length; i++){
 		String group = userGroups[i];
 		if(group.equals(user.getCompany())){	%>
@@ -414,18 +489,13 @@
                       </span>
                       <span class="required">*</span>
                     </div>
-<%	if( session.getAttribute("passed") != null){ %>
+                    
                     <div class="row">
-                      <span style="float: center;" class="passed"><%=session.getAttribute("passed")%></span>
-                    </div>
-<%		session.removeAttribute("passed");
-	}
-	if( session.getAttribute("failed") != null){ %>
-                    <div class="row">
-                      <span style="float: center;" class="failed"><%=session.getAttribute("failed")%></span>
-                    </div>
-<%		session.removeAttribute("failed");
-	}%>
+                    	<span id="addGroupPassed" style="float: center;" class="passed"></span>
+						<span id="addGroupFailed" style="float: center;" class="failed"></span>
+					</div>
+					
+	
                     <div id="buttonGrp1" class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 200px; height: 20px; display: block">
                       <a class="Button" id="updateButton" onclick="javascript: UpdateForm()" style="display: compact;">Update</a>
                       <a class="Button" id="backButton" onclick="javascript: BackForm()" style="display: compact;">Back</a>
@@ -437,7 +507,7 @@
                   </form>
                     <div class="row">
                     <span class="label2">Member of:</span>
-                    <div style="float: right; text-align: left; width:395px;"><ul>
+                    <div id="memberOf" style="float: right; text-align: left; width:395px;"><ul>
 <% 
 if (attr != null) {
 NamingEnumeration e = attr.getAll(); 
@@ -455,7 +525,7 @@ NamingEnumeration e = attr.getAll();
 <%if (baseGroups.size()>0) { %>
                 <form id="addto" method="post" action="AddGroupUser">
                   <!-- <br /><span id="addlabel"><b>Add to Group:</b></span><br /> -->
-                  <input type="hidden" name="dn" value="
+                  <input id="dnInput" type="hidden" name="dn" value="
     <%=request.getParameter("dn") %>" />
     <%session.setAttribute("dn", request.getParameter("dn")); %>
                   <select name="groupselect" id="groupselect">
