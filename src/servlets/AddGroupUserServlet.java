@@ -70,6 +70,8 @@ public class AddGroupUserServlet extends HttpServlet {
 			//Add organisation as group
 			userAdded = lt.addUserToGroup(dn, lt.getDNFromGroup(group));
 			
+			// baseGroups will be used to list all groups that this user doesn't belong to
+			// namingEnum will be used to list all groups that this user belong to
 			Attributes attrs = lt.getUserAttributes(dn);
 			Attribute attr = attrs.get("memberOf");
 			namingEnum = attr.getAll();
@@ -113,9 +115,6 @@ public class AddGroupUserServlet extends HttpServlet {
 		    String value = String.format("\t<passed>'User %s' has been successfully added to group %s.</passed>\n", dn, group);
 		    sfXml.append(value);
 		    
-//			session.setAttribute("passed", "<font color=\"green\"><b>User '"
-//					+ dn + "' has been successfully added to group " + group
-//					+ ".</b></font>");
 			logger.info("Organisation has been added to group.");
 
 		// Otherwise, log the error
@@ -123,9 +122,6 @@ public class AddGroupUserServlet extends HttpServlet {
 			String value = String.format("\t<failed>Addition of organisation '%s' to group %s has failed.</failed>\n", dn, group);
 		    sfXml.append(value);
 		    
-//			session.setAttribute("failed",
-//					"<font color=\"red\"><b>Addition of organisation '" + dn
-//							+ "' to group " + group + " has failed.</b></font>");
 			logger.info("Addition of organisation '" + dn + "' to group "
 					+ group + " has failed.");
 		}

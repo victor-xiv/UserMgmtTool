@@ -358,6 +358,31 @@ public class LdapTool {
 	}
 	
 	
+	
+	/**
+	 * remove the given userDN from given groupDN  
+	 * @param userDN - ldap's user DN (it's not just a name, it is a DN of that user)
+	 * @param groupDN - ldap's group DN (it's not just a name, it is a DN of that group)
+	 * @return true if the removing successfully
+	 * @throws NamingException if it cannot remove this userDN from the groupDN
+	 */
+	public boolean removeUserFromAGroup(String userDN, String groupDN) throws NamingException{
+		try	{
+			// create a remove attribute (groupDN is an attribute of userDN)
+			ModificationItem member[] = new ModificationItem[1];
+			member[0]= new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute("member", userDN)); 
+			// apply the remove attribute
+			ctx.modifyAttributes(groupDN,member);
+			logger.info("Added user "+userDN+" to group: " + groupDN);
+			return true;
+		}
+		catch (NamingException e) {
+			 logger.error("Problem in removing user: "+userDN+" from group: " + groupDN, e);
+			 throw new NamingException("Removing user from a group: " + ErrorConstants.FAIL_UPDATE_LDAP);
+		}
+	}
+	
+	
 	/**
 	 * Change the password of give userDN with the given password
 	 * @param userDN: Ldap user whose password need to be changed
@@ -809,7 +834,7 @@ public class LdapTool {
 	
 	//ADDITIONAL FUNCTION
 	/**
-	 * Add Company group to 'Groups'
+	 * Add Company to 'Groups'
 	 * @param companyName that need to be added as a Ldap Group
 	 * @return true if the Organisation was added successfully.
 	 * 		   false otherwise.

@@ -58,8 +58,22 @@
 	%>
 	
     <script type="text/javascript" language="javascript">
+    
+	Element.prototype.remove = function(){
+		this.parentElement.removeChild(this);
+	}
+	
+	NodeList.prototype.remove = HTMLCollection.prototype.remove = function(){
+		var len=this.length; 
+		for(var i=0; i<len; i++){
+			if(this[i] && this[i].parentElement){
+				this[i].parentElement.removeChild(this[i]);
+			}
+		}
+	}
+    
     function cleanUpThePage(){
-    	var idsNeededToBeCleanedUp = new Array("validation_msg", "addGroupFailed", "addGroupPassed");
+    	var idsNeededToBeCleanedUp = new Array("validation_msg", "add-removeGroupFailed", "add-removeGroupPassed");
     	for(var i=0; i<idsNeededToBeCleanedUp.length; i++){
     		document.getElementById(idsNeededToBeCleanedUp[i]).innerHTML = "";
     	}
@@ -176,6 +190,64 @@
         }
         return false;
     }
+    function deleteGroup(groupDN){
+    	cleanUpThePage();
+    	
+    	var dn = document.getElementById("dnInput").value;
+    	ajax.open("POST", "RemoveAGroupFromUser", true);
+    	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
+        var params = "userDN=" + dn + "&groupDN=" + groupDN;
+        ajax.send(params);  
+        
+     	// handling ajax state
+        ajax.onreadystatechange = function(){
+        	
+        	// handling once request responded
+        	if(ajax.readyState == 4){
+        		// if reponse is 200
+        		if(ajax.status == 200){
+        			var xmlDoc = ajax.responseXML;
+            		
+        			// try to check the reponse that contain a tage "failed"
+		        	// if response contains "failed" tag, mean the adding a group process is failed
+		        	var failed = xmlDoc.getElementsByTagName("failed")[0];
+        			
+		        	// if failed tag is not defined or null means the process is successful
+		        	if(failed == undefined || failed == null){
+		        		
+		        		// update the drop down menu which is listing all the groups that this user is not bellonging to
+		        		var value = "";
+		        		var nonMemberOfList = xmlDoc.getElementsByTagName("notMemberOf");
+		        		for(var i=0; i<nonMemberOfList.length; i++){
+		        			var nameValue = nonMemberOfList[i].firstChild.nodeValue;
+		        			value += "<option value='" + nameValue + "'>" + nameValue + "</option>";
+		        		}
+		        		document.getElementById("groupselect").innerHTML = value;
+		        		
+		        		// remove the deleted element from html
+            			var elm = document.getElementById(groupDN)
+            			elm.parentNode.removeChild(elm);
+		        		
+		        	} else {
+		        		var failedMessage = "<font color=\"red\"><b>Deletion of group '" + groupDN 
+														+ "' from user " + dn + " has failed.</b>"
+											+ "<b>"+ failed.firstChild.nodeValue +"</b></font>";
+							
+						document.getElementById("add-removeGroupFailed").innerHTML = failedMessage;
+		        	}
+            		
+        			return;
+        		}
+        		
+        		// if reponse is not 200 or xml reponse contains "failed" tage:
+        		// set the add-removeGroupFailed element
+        		var failedMessage = "<font color=\"red\">Server failed to response.</font>";
+				document.getElementById("add-removeGroupFailed").innerHTML = failedMessage;
+        	}
+        	
+        }
+    }
     function SubmitGroupForm() {
     	cleanUpThePage();
     	
@@ -206,15 +278,14 @@
 		        		
 		        		// update the memberOf list
 		        		var memberOfList = xmlDoc.getElementsByTagName("memberOf");
-		        		var value = "<ul>";
+		        		var value = "<table>";
 		        		for(var i=0; i<memberOfList.length; i++){
 		        			var dnValue = memberOfList[i].firstElementChild.firstChild.nodeValue;
 		        			var nameValue = memberOfList[i].lastElementChild.firstChild.nodeValue;
-		        			
-		        			value += "<li title='" + dnValue + "'>" + nameValue + "</li>";
+		        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+dnValue+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
 		        		}
-		        		value += "</ul>";
-		        		document.getElementById("memberOf").innerHTML = value;
+		        		value += "</table>";
+		        		document.getElementById("memberOf").innerHTML = value;	              
 		        		
 		        		// update the drop down menu which is listing all the groups that this user is not bellonging to
 		        		value = "";
@@ -226,20 +297,22 @@
 		        		document.getElementById("groupselect").innerHTML = value;
 		        		
 		        		var passed = xmlDoc.getElementsByTagName("passed")[0].firstChild.nodeValue;
-		        		document.getElementById("addGroupPassed").innerHTML = passed;
-		        		
-		        		// return because don't need to update the "addGroupFailed" element
-		        		return;
+		        		document.getElementById("add-removeGroupPassed").innerHTML = "<font color=\"green\"><b>" + passed +"</b></font>";
+		        	} else {
+		        		// xml reponse contains "failed" tage:
+		        		// set the add-removeGroupFailed element
+		        		var reason = "<font color=\"red\"><b>" + failed.firstChild.nodeValue +"</b></font>";
+						document.getElementById("add-removeGroupFailed").innerHTML = reason;
 		        	}
+        		} else {
+            		// if reponse is not 200
+            		// set the add-removeGroupFailed element
+            		var reason = "<font color=\"red\"><b>Addition of organisation '" + dn 
+    															+ "' to group " + groupSelect + " has failed.</b>"
+    												  "<b> Server is not responding to the request. </b>"
+    													+"</font>";
+    				document.getElementById("add-removeGroupFailed").innerHTML = reason;
         		}
-        		
-        		// if reponse is not 200 or xml reponse contains "failed" tage:
-        		// set the addGroupFailed element
-        		var reason = "<font color=\"red\"><b>Addition of organisation '" + dn 
-															+ "' to group " + groupSelect + " has failed.</b>"
-												  "<b>" + failed.firstChild.nodeValue +"</b>"
-													+"</font>";
-				document.getElementById("addGroupFailed").innerHTML = reason;
         	}
         }
         
@@ -491,8 +564,8 @@
                     </div>
                     
                     <div class="row">
-                    	<span id="addGroupPassed" style="float: center;" class="passed"></span>
-						<span id="addGroupFailed" style="float: center;" class="failed"></span>
+                    	<span id="add-removeGroupPassed" style="float: center;" class="passed"></span>
+						<span id="add-removeGroupFailed" style="float: center;" class="failed"></span>
 					</div>
 					
 	
@@ -507,7 +580,7 @@
                   </form>
                     <div class="row">
                     <span class="label2">Member of:</span>
-                    <div id="memberOf" style="float: right; text-align: left; width:395px;"><ul>
+                    <div id="memberOf" style="float: right; text-align: left; width:395px; font-size:11px; color:#007186"><table>
 <% 
 if (attr != null) {
 NamingEnumeration e = attr.getAll(); 
@@ -515,12 +588,15 @@ NamingEnumeration e = attr.getAll();
 		String dn = (String)e.next();
 		String name = dn.split(",")[0].split("=")[1];
 		baseGroups.remove(name);%>
-	              <li title='<%= dn %>'><%= name %></li>
+	              <tr id='<%= dn %>'>
+	              		<td><a class="Delete" onclick="deleteGroup( '<%= dn %>' )" href="#" title="Delete"></a></td>
+	              		<td><%= name %></td>
+	              </tr>
 	<%} 
 } else { %>
-				  <li>No groups</li>
+				  <tr><td>No groups</tr>
 <%}%>
-                    </ul></div>
+                    </table></div>
                   </div>
 <%if (baseGroups.size()>0) { %>
                 <form id="addto" method="post" action="AddGroupUser">
