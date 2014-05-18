@@ -76,10 +76,17 @@ div.row span.value3{
 	<script type="text/javascript" language="javascript">
 var id = '';
 
+function cleanupResultMsg(){
+	document.getElementById('validation_msg').innerHTML = "";
+}
+
+
 /**
  * toggle on or of the drop down menu of the detail of the account requested that belong to the given idx
  */
 function applyClick(idx) {
+  cleanupResultMsg();
+	
   var item_id = 'request' + idx;
   var image_id = 'image' + idx;
   if (document.getElementById(image_id).className == 'node_c')
@@ -96,6 +103,8 @@ function applyClick(idx) {
  * check whether the username in the "username" block is valid
  */
 function validateUsername() {
+  cleanupResultMsg();
+	
   for( var i = 0; i < document./*form.username*/getElementsByName('username').length; i++ ){
     if( document./*form.username*/getElementsByName('username')[i].checked ){
       document./*form.sAMAccountName*/getElementById('sAMAccountName').value = document./*form.username*/getElementsByName('username')[i].value;
@@ -118,6 +127,8 @@ function validateUsername() {
  * accept the account request, POST the filename to AccepRequest servlet to do the accepting request
  */
 function AcceptRequest(idx) {
+  cleanupResultMsg();
+  
   if(validateUsername()){
     document.getElementById('accept' + idx).className = 'ButtonDisabled';
     document.getElementById('decline' + idx).className = 'ButtonDisabled';
@@ -134,6 +145,8 @@ function AcceptRequest(idx) {
  * decline the requeest, POST the filename to AcceptRequestServlet to do the declining request
  */
 function DeclineRequest(idx) {
+  cleanupResultMsg();
+	 
   document.getElementById('accept' + idx).className = 'ButtonDisabled';
   document.getElementById('decline' + idx).className = 'ButtonDisabled';
 
@@ -148,18 +161,20 @@ function DeclineRequest(idx) {
  * Handle the response (result) from the AcceptRequestServlet
  */
 function handleHttpResponse(){
+  cleanupResultMsg();
+  
   if(ajax.readyState == 4){
     if(ajax.status == 200){
       results = ajax.responseText.split("|");
       if(results[0] == "true"){
-      	document.getElementById('validation_msg').innerHTML +=
+      	document.getElementById('validation_msg').innerHTML =
           "<font color=\"#00FF00\">* "+results[1]+"</font><br />";
       }else{
-    	document.getElementById('validation_msg').innerHTML +=
+    	document.getElementById('validation_msg').innerHTML =
           "<font color=\"#FF0000\">* "+results[1]+"</font><br />";
       }
     }else{
-      document.getElementById('validation_msg').innerHTML +=
+      document.getElementById('validation_msg').innerHTML =
     	  "<font color=\"#FF0000\">* The system encountered an error while processing, please try again later.</font><br />";
     }
   }

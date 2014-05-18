@@ -177,6 +177,11 @@
                 <span class="error" id="validation_msg" style="float:left; width=100%; text-align: left"></span>
                 <div style="width: 500px; padding: 5px; margin: 5px auto ";>
                   <form name="form" method="post" action="RegisterUser">
+                  
+                  
+                  
+                  
+                  
                     <div id="step1">
                     <div class="row">
                       <span class="label2">Username:</span>
@@ -316,6 +321,13 @@
                       <a class="Button" id="cancelButton" onclick="javascript: CancelForm()" style="display: compact;">Cancel</a>
                     </div>
                     </div>
+                    
+                    
+                    
+                    
+                    
+                    
+                    
                     <div id="step2" style="display: none">
                     <div class="row">
                       <span style="font-family: Arial, Helvetica, sans-serif; height: 30px;">Please enter your current Support Tracker password.</span>

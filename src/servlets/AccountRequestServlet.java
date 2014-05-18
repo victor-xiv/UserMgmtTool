@@ -64,14 +64,17 @@ public class AccountRequestServlet extends HttpServlet {
 
 				// configuration file is not found
 			} catch (FileNotFoundException fe){
+				session.removeAttribute("userDN");
 				session.setAttribute("error", fe.getMessage());
 				// no need to log, the error has been logged in LdapTool()
 				
 			// connection fail
 			} catch (NamingException e) {
+				session.removeAttribute("userDN");
 				session.setAttribute("error", e.getMessage());
 				// no need to log, the error has been logged in LdapTool()
 			} catch (Exception e){
+				session.removeAttribute("userDN");
 				session.setAttribute("error", e.getMessage());
 				logger.error("Unknown Exception during connecting to LDAP server.", e);
 			}

@@ -48,26 +48,26 @@ public class AddOrganisationServlet extends HttpServlet {
 
 
 		LdapTool lt = null;
+		boolean orgAdded = false;
+		boolean orgGroupAdded = false;
 		try {
 			lt = new LdapTool();
+			//Add company as client and as group
+			orgAdded = lt.addCompany(orgname);
+			orgGroupAdded = lt.addCompanyAsGroup(orgname);
+			lt.close();
 		} catch (FileNotFoundException fe){
-			// TODO Auto-generated catch block
-			fe.printStackTrace();					
-		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		// TODO
-		if( lt == null){
+			session.setAttribute("message", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b>"
+							+ "<b>"+ fe.getMessage() +"</b></font>");
+			// don't need to log this exception, because it has been logged in the LdapTool() constructor
 			
+		} catch (NamingException e) {
+			session.setAttribute("message", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b>"
+							+ "<b>"+ e.getMessage() +"</b></font>");
+			// don't need to log this exception, because it has been logged in the LdapTool() constructor
 		}
 		
-		
-		//Add company as client and as group
-		boolean orgAdded = lt.addCompany(orgname);
-		boolean orgGroupAdded = lt.addCompanyAsGroup(orgname);
-		lt.close();
+
 		//If successfully added as client
 		if( orgAdded ){
 			//If successfully added as group, give success message

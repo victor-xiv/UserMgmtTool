@@ -75,6 +75,19 @@ private static final long serialVersionUID = 1L;
 		
 		
 		
+		
+		out.println("I can't find any page that link to this servlet. So, I made this line to make the request fail."
+				+ "In order to find it and fix it. So, if you see this text, please report to CSS global team."
+				+ "The report should include: what link you clicked to get to this message."
+				+ "What page you are looking at. A screenshot of this page and the previous page that link to this page."
+				+ "Thanks for your cooperation.");
+		
+		
+		
+		
+		
+		
+		
 		//If successful, print success
 		if (lt.changePassword(userDN, password))
 			out.println("Password changed successfully.");

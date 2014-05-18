@@ -125,8 +125,10 @@ function SubmitForm(){
                  <img src="./css/images/swish.gif" alt="#" />
                  <br />
 <%	if( session.getAttribute("message") != null ){  %>
-                 <span class="error" style="float: center; width=100%; text-align: center"><%=session.getAttribute("message") %></span>
-<%  session.removeAttribute("message");  %>  
+                 <span class="error" style="float: center; width=100%; text-align: center">
+        <%=session.getAttribute("message") %>
+        		 </span>
+		<%  session.removeAttribute("message");  %>  
 <%	}else{ %>
                  <span class="error" id="validation_msg" style="float:left; width=100%; text-align: left"></span>
                  <div style="width: 500px; padding: 5px; margin: 5px auto ";>

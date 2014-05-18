@@ -47,7 +47,6 @@ public class AddGroupUserServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		HttpSession session = request.getSession(true);
 		//Get organisation name
 		String dn = request.getParameter("dn").trim(); 
 		//Get desired group name
