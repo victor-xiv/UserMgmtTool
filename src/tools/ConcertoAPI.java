@@ -1,5 +1,6 @@
 package tools;
 
+import java.io.File;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +20,7 @@ import com.concerto.webservice.user.UserManagerServiceSEIServiceLocator;
 import com.concerto.webservice.user.dto.UserAttributeDTO;
 import com.concerto.webservice.user.dto.UserDTO;
 import com.concerto.webservice.user.exception.UserManagerServiceException;
+import com.orchestral.webservice.handler.PasswordCallbackHandler;
 
 public class ConcertoAPI {
 	private static Logger logger = Logger.getRootLogger();
@@ -52,6 +54,17 @@ public class ConcertoAPI {
 			logger.error(ErrorConstants.FAIL_UPDATE_CONCERTO, e);
 			throw new ServiceException(ErrorConstants.FAIL_UPDATE_CONCERTO);
 		}
+	}
+	
+	
+	/**
+	 * check if the username exist in Concerto
+	 * @param username
+	 * @return true (if username exist in Concerto) false (otherwise)
+	 */
+	public static boolean doesClientUserExist(String username){
+		// TODO need to implement before closing ticket SPT-609
+		return false;
 	}
 	
 	
@@ -97,12 +110,20 @@ public class ConcertoAPI {
 	 * @throws ServiceException if there is an exception during the connection or during the updating.
 	 */
 	public static void addClientUser(String username, String clientID, String fullName, String description, String email) throws ServiceException{
-		final EngineConfiguration config = new FileProvider( "client-deploy.wsdd" );
-		final UserManagerServiceSEIServiceLocator locator = new UserManagerServiceSEIServiceLocator( config );
-		String concertoUrl = LdapProperty.getProperty(UserMgmtConstants.CONCERTO_URL);
-		locator.setUserManagerServiceEndpointAddress(concertoUrl+"/services/UserManagerService");
+		
+			
+			
+//		File file = new File("/home/adminuser/Desktop/UsrMgmt_WSP/client-deploy.wsdd" );
+//		final EngineConfiguration config = new FileProvider( "/home/adminuser/Desktop/UsrMgmt_WSP/client-deploy.wsdd" );
+//		final UserManagerServiceSEIServiceLocator locator = new UserManagerServiceSEIServiceLocator( config );
+//		String concertoUrl = LdapProperty.getProperty(UserMgmtConstants.CONCERTO_URL);
+		//locator.setUserManagerServiceEndpointAddress(concertoUrl+"/services/UserManagerService");
+		final UserManagerServiceSEIServiceLocator locator = new UserManagerServiceSEIServiceLocator();
+		locator.setUserManagerServiceEndpointAddress("https://192.168.21.69/concerto/services/UserManagerService");
+		
 		try {
 			final UserManagerServiceSEI userManager = locator.getUserManagerService();
+			UserDTO usertest = userManager.getUser("admin");
 			UserDTO user = userManager.addUser(username);
 			String[] groupMemberships = user.getGroupMemberships();
 			ArrayList<String> groupList = new ArrayList<String>(Arrays.asList(groupMemberships));

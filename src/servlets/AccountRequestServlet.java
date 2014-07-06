@@ -25,6 +25,7 @@ import ldap.LdapConstants;
 import ldap.LdapProperty;
 import ldap.LdapTool;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
 import tools.LoggerTool;
@@ -169,7 +170,7 @@ public class AccountRequestServlet extends HttpServlet {
 			}
 			
 			else{
-				// write the request out into the persistant file
+				// write the request out into the persistent file
 				try{
 					outputRequest((HashMap<String,String[]>)request.getParameterMap());
 				}catch(IOException e){
@@ -245,7 +246,8 @@ public class AccountRequestServlet extends HttpServlet {
 				Map.Entry<String, String[]> map = (Map.Entry<String, String[]>)it.next();
 				//MODIFIED CODE - SPT-445
 				String val = map.getValue()[0];
-				val = val.replaceAll("\\&", "&amp;");
+				//escaping XML reserved characters 
+				val = StringEscapeUtils.escapeXml10(val.trim());
 				bw.write("\t<field name=\""+map.getKey()+"\">"+val+"</field>");
 				//MODIFIED CODE
 				bw.newLine();

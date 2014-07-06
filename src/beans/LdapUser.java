@@ -22,6 +22,9 @@ public class LdapUser {
 	
 	public void processUserDN(String userDN) throws ConnectException{
 		
+		// because this userDN is passed from browser. so, it has not been escaped the reserved char.
+		// so, we need to escape those reserved chars
+		//userDN = LdapTool.escapedCharsOnCompleteDN(userDN);
 		
 		
 		LdapTool lt = null;

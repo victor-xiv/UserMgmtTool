@@ -1,18 +1,17 @@
 package servlets;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Set;
 
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
+import javax.naming.ldap.Rdn;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import ldap.LdapTool;
 
@@ -95,7 +94,8 @@ public class AddGroupUserServlet extends HttpServlet {
 			try {
 				while(namingEnum.hasMore()){
 					String thisDN = (String) namingEnum.next();
-					String name = thisDN.split(",")[0].split("=")[1];
+					thisDN = (String) Rdn.unescapeValue(thisDN);
+					String name = LdapTool.getCNValueFromDN(thisDN);
 					baseGroups.remove(name);
 					String value = String.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n", thisDN, name);
 					sfXml.append(value);

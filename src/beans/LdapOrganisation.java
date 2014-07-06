@@ -28,7 +28,6 @@ public class LdapOrganisation {
 			// we are not logging this error here, because it has been logged in LdapTool()
 		}
 		
-		// TODO
 		if( lt != null){
 			users = lt.getGroupUsers(name);
 			Attributes attrs = lt.getOrganisationAttributes(name);

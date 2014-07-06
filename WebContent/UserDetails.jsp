@@ -21,10 +21,12 @@
   	<%@ page import="javax.naming.NamingException" %>
   	<%@ page import="java.net.ConnectException" %>
   	<%@ page import="ldap.ErrorConstants" %>
+  	<%@ page import="javax.naming.ldap.Rdn" %>
   	
   	
     <% 	try{
-    		user.processUserDN(request.getParameter("dn"));
+    		String userDN = request.getParameter("dn");
+    		user.processUserDN(userDN);
     		groups.refreshGetUserGroup();
     	} catch (ConnectException e) {
     		session.setAttribute("error", e.getMessage());
@@ -197,7 +199,8 @@
     	ajax.open("POST", "RemoveAGroupFromUser", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-        var params = "userDN=" + dn + "&groupDN=" + groupDN;
+        var params = "userDN=" + encodeURIComponent(dn) + "&groupDN=" + encodeURIComponent(groupDN);
+        
         ajax.send(params);  
         
      	// handling ajax state
@@ -257,7 +260,7 @@
     	ajax.open("POST", "AddGroupUser", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-        var params = "dn=" + dn + "&groupselect=" + groupSelect;
+        var params = "dn=" + encodeURIComponent(dn) + "&groupselect=" + encodeURIComponent(groupSelect);
         ajax.send(params);
     	
         // handling ajax state
@@ -586,7 +589,8 @@ if (attr != null) {
 NamingEnumeration e = attr.getAll(); 
 	while (e.hasMore()) {
 		String dn = (String)e.next();
-		String name = dn.split(",")[0].split("=")[1];
+		dn = (String)Rdn.unescapeValue(dn);
+		String name = LdapTool.getCNValueFromDN(dn); //dn.split(",")[0].split("=")[1];
 		baseGroups.remove(name);%>
 	              <tr id='<%= dn %>'>
 	              		<td><a class="Delete" onclick="deleteGroup( '<%= dn %>' )" href="#" title="Delete"></a></td>

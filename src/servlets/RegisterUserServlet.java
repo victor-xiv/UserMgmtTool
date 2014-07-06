@@ -1,5 +1,6 @@
 package servlets;
 
+import javax.naming.InvalidNameException;
 import javax.naming.NamingException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -211,8 +212,18 @@ public class RegisterUserServlet extends HttpServlet {
 
 			// If this company is supported, set as OU
 			if (orgs.contains(company)) {
-				lt.addCompany(company);
-				lt.addCompanyAsGroup(company);
+				try {
+					lt.addCompany(company);
+					lt.addCompanyAsGroup(company);
+				} catch (InvalidNameException e) {
+					session.setAttribute("error",
+							"Your registration has failed - your organisation "
+									+ company + " has not been registered. "
+									+ "Please contact the system administrator.");
+					// Flag error
+					good = false;
+				}
+				
 				// Otherwise error and quit
 			} else {
 				session.setAttribute("error",

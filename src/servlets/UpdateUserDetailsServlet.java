@@ -67,7 +67,7 @@ public class UpdateUserDetailsServlet extends HttpServlet {
 				logger.info(updateStatus[1]);
 			}
 			
-			String redirectURL = response.encodeRedirectURL("UserDetails.jsp?dn="+updateStatus[1]);
+			String redirectURL = response.encodeRedirectURL("UserDetails.jsp?dn="+java.net.URLEncoder.encode(updateStatus[1]));
 			response.sendRedirect(redirectURL);
 		}
 	}

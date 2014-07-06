@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.naming.InvalidNameException;
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -28,6 +29,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import tools.ConcertoAPI;
+import tools.ConcertoTest;
 import tools.EmailClient;
 import tools.LoggerTool;
 import tools.SupportTrackerJDBC;
@@ -50,18 +52,28 @@ public class AcceptRequestServlet extends HttpServlet {
 	{
 		logger = LoggerTool.setupRootLogger(request);
 		
+		// sAMAccountName used as LDAP logon (i.e username)
+		// it is allowed to have only these special chars:  ( ) . - _ ` ~ @ $ ^  and other normal chars [a-zA-Z0-9]
 		String sAMAccountName = request.getParameter("username");
+
+		// check if sAMAccountName contains any prohibited chars
+		String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+		if(temp.length() < sAMAccountName.length()){
+			response.getWriter().write("false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
+			return;
+		}
 		logger.info("Username: "+sAMAccountName);
 		
 		// reading the account request file
 		String filename = request.getParameter("filename");
-		if( filename == null){ //if filename was deleted from the disk
+		if( filename == null){ //if given filename is null 
 			response.getWriter().write("false|This request no longer exists.");
 		}
 		String action = request.getParameter("action");
 		File outFolder = new File(LdapProperty.getProperty(LdapConstants.OUTPUT_FOLDER));
 		File file = new File(outFolder, filename);
-		// if file doesn't exist or can't be read
+		// if file doesn't exist or can't be read from the folder configured in ldap.properties (value of output.folder)
+		// there can be an issue that the configured property in ldap.propreties is not correct (Please double check, if u run into file doesn't exist problem).
 		if(!file.exists()){
 			logger.error(ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
 			response.getWriter().write("false|"+ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
@@ -71,7 +83,7 @@ public class AcceptRequestServlet extends HttpServlet {
 		
 		Map<String, String[]> maps = null;
 		try{
-			maps = processFile(file);
+			maps = processFile(file); //get all the user's properties from the file
 		} catch (IOException e){
 			response.getWriter().write("false|"+ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
 			return;
@@ -83,6 +95,7 @@ public class AcceptRequestServlet extends HttpServlet {
 		
 		// if account request is declined
 		if(action.equals("decline")){
+			// delete file and send rejected email to client
 			if(file.delete()){
 				EmailClient.sendEmailRejected(maps.get("mail")[0], maps.get("displayName")[0]);
 				response.getWriter().write("true|Account request has been declined.");
@@ -97,13 +110,78 @@ public class AcceptRequestServlet extends HttpServlet {
 			if( sAMAccountName == null ){
 				response.getWriter().write("false|User was not added with invalid username.");
 				return;
-			}else if( sAMAccountName.equals("") ){
+			}else if( sAMAccountName.trim().equals("") ){
 				response.getWriter().write("false|User was not added with invalid username.");
 				return;
 			}
 			//MODIFIED CODE ENDS
 			
 			maps.put("sAMAccountName", new String[]{sAMAccountName});
+			
+			// fullname is used to check whether this name exist in LDAP and concerto.
+			// and used to add into concerto
+			String fullname = "";
+			if(maps.get("displayName")[0] != null) 	fullname = maps.get("displayName")[0];
+			else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
+			
+			
+			// connecting to LDAP server
+			LdapTool lt = null;
+			try {
+				lt = new LdapTool();
+			} catch (FileNotFoundException fe){	
+				response.getWriter().write("false|Could not connect to LDAP server due to: "+fe.getMessage());
+				return;
+				//no need to log, the error has been logged in LdapTool()
+			} catch (NamingException e) {
+				response.getWriter().write("false|Could not connect to LDAP server due to: "+ e.getMessage());
+				return;
+				//no need to log, the error has been logged in LdapTool()
+			}
+			if( lt == null){
+				logger.error("Unknown Error while connecting to LDAP server");
+				response.getWriter().write("false|Unknown Error while connecting to LDAP server");
+				return;
+			}
+			
+			// if company doesn't exist in LDAP's "Client" add the company into "Client"
+			if(!lt.companyExists(maps.get("company")[0])){
+				try {
+					if(!lt.addCompany(maps.get("company")[0])){
+						// if companyName doesn't exist in "Client" and can't be added, just return false;
+						response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.");
+						return;
+					}
+				} catch (InvalidNameException e) {
+					response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.");
+					return;
+				}
+			}
+			// if company doesn't exist in LDAP's "Groups" add the company into "Groups"
+			if(!lt.companyExistsAsGroup(maps.get("company")[0])){
+				try {
+					if(!lt.addCompanyAsGroup(maps.get("company")[0])){
+						response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.");
+						return;
+					}
+				} catch (InvalidNameException e) {
+					response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.");
+					return;
+				}
+			}
+			
+			// check if username exist in LDAP or Concerto
+			boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
+			boolean usrExistsInConcerto = ConcertoAPI.doesClientUserExist(fullname);
+			if(usrExistsInLDAP){
+				response.getWriter().write("false|Requesting user already exists in LDAP server");
+				return;
+			} else if(usrExistsInConcerto){
+				response.getWriter().write("false|Requesting user already exists in Concerto server");
+				return;
+			}
+			
+			// ADDING USER ACCOUNT CODE STARTS FROM HERE \\
 			
 			int clientAccountId = -1;
 			try {
@@ -115,54 +193,37 @@ public class AcceptRequestServlet extends HttpServlet {
 				//no need to log, the error has been logged in SupportTrackerJDBC.addClient(maps)
 			}
 			
+			// if add a user into Supprt Tracker successfully
 			if( clientAccountId > 0 ){
 				maps.put("info", new String[]{Integer.toString(clientAccountId)});
 				
-				
-				LdapTool lt = null;
-				try {
-					lt = new LdapTool();
-				} catch (FileNotFoundException fe){		
-					response.getWriter().write("false|"+fe.getMessage());
-					return;
-					//no need to log, the error has been logged in LdapTool()
-				} catch (NamingException e) {
-					response.getWriter().write("false|"+e.getMessage());
-					return;
-					//no need to log, the error has been logged in LdapTool()
-				}
-				if( lt == null){
-					logger.error("Unknown Error while connecting to LDAP server");
-					response.getWriter().write("false|Unknown Error while connecting to LDAP server");
-					return;
-				}
-				
-				
+				// add user into LDAP server
 				boolean addStatus = lt.addUser(maps);
-				if( addStatus ){
+				if( addStatus ){ // add a user into Ldap successfully
+					// delete the file from the disk
 					file.delete();
-					String fullname = "";
-					if(maps.get("displayName")[0] != null){
-						fullname = maps.get("displayName")[0];
-					}else{
-						fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
-					}
 					
+					// add user into Concerto
 					try {
 						ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
 					} catch (ServiceException e) {
-						response.getWriter().write("false|"+e.getMessage());
+						response.getWriter().write("false|User " +maps.get("displayName")[0]+"added successfully to Support Tracker and Ldap, but Concerto. Due to: "+e.getMessage());
 						return;
 						//no need to log, the error has been logged in ConcertoAPI.addClientUser()
 					}
 					
 					EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
 					response.getWriter().write("true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0]);
-				}else{
-					response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added.");
+				
+				}else{ // add a user into Ldap is not successful
+					
+					// remove the previous added user from Support Tracker DB
+					deletePreviouslyAddedClientFromSupportTracker(clientAccountId);
+					
+					response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added, due to the failure in adding the user into LDAP server.");
 				}
 			}else{
-				response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added to database.");
+				response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added, due to the failure in adding the user into Support Tracker DB.");
 			}
 		}
 	}
@@ -172,6 +233,22 @@ public class AcceptRequestServlet extends HttpServlet {
 		doGet(request, response);
 	}
 	
+	
+	
+	/**
+	 * a helper method to help doGet() to delete clientAccountId from the Support Tracker DB. (this method is used to avoid duplicate code only)
+	 * It was successful to add a user into support tracker (and the clientAccountId was returned from support tracker).
+	 * But, it was unsuccessful to add that user to LDAP. So, we need to delete this newly added clientAccountId from Support Tracker.
+	 * @param clientAccountId
+	 */
+	public void deletePreviouslyAddedClientFromSupportTracker(int clientAccountId){
+		// remove the previous added user from Support Tracker DB
+		try {
+			SupportTrackerJDBC.deleteClient(clientAccountId);
+		} catch (SQLException e) {
+			logger.error("An exception occured while deleting this clientAccountId: " + clientAccountId);
+		}
+	}
 	
 	
 	

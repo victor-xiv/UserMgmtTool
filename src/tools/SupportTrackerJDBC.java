@@ -92,8 +92,8 @@ public class SupportTrackerJDBC {
 	
 	//ADDITIONAL FUNCTION - SPT-316
 	/**
-	 * Get the sorted list of supported organisations
-	 * @return sorted list of supported organisations
+	 * Get the sorted list of organisations being supported
+	 * @return sorted list of organisations being supported
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
 	public static List<String> getOrganisations() throws SQLException{
@@ -190,8 +190,9 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
 	public static int addClient(Map<String, String[]> maps) throws SQLException{
-		// creating query to select clientID
+		// creating query to select clientId that belong to the given companyName (stored in maps)
 		StringBuffer query = new StringBuffer();
+		// e.g. example of a final query      SELECT clientId FROM Client WHERE companyName = 'Aamal Medical Co'
 		query.append("SELECT clientId FROM Client WHERE companyName = '"
 				+ maps.get("company")[0] + "'");
 		int clientId = -1;
@@ -206,7 +207,7 @@ public class SupportTrackerJDBC {
 		}
 
 		if (con != null) {
-			// executing the query and trying to get the client ID to store in clientID
+			// executing the query and trying to get the clientId of the companyName to store in clientID
 			try {
 				Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery(query.toString());
@@ -218,11 +219,12 @@ public class SupportTrackerJDBC {
 				throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
 			}
 				
-			//if there is a clientID (is not -1), insert a client account that belongs to this client ID
+			//if there is a companyName in the DB (is not -1), insert a client account with this clientId
 			//the client account info contained in given maps
 			int status = -1;
 			if( clientId != -1 ){
 				// building a query (in String)
+				// e.g example of a query:   INSERT INTO ClientAccount (contactPersonName, contactPersonDepartment, contactPersonPosition, contactPersonPhone, contactPersonFax, contactPersonEmail, contactPersonMobile, loginName, clientId, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				query = new StringBuffer();
 				query.append("INSERT INTO ClientAccount (contactPersonName, contactPersonDepartment, ");
 				query.append("contactPersonPosition, contactPersonPhone, contactPersonFax, ");
@@ -243,11 +245,14 @@ public class SupportTrackerJDBC {
 					pst.setString(10, "Y");
 					// execute the query
 					status = pst.executeUpdate();
+					logger.info(String.format("Added user with name: %s and clientId %d successfully",  maps.get("displayName")[0], clientId));
 				} catch (SQLException e) {
 					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
 				}
 			}
+			
+			// this client has been added, try to get and return its clientAccountId  
 			int clientAccountId = -1;
 			if( status > 0 ){
 				// building a query to query for clientAccountId from ClientAccount table
@@ -278,6 +283,42 @@ public class SupportTrackerJDBC {
 		}
 		return -1;
 	}
+	
+	
+	
+	/**
+	 * delete client (using clientAccountId) from Support Tracker Database
+	 * @param clientAccountId that need to be deleted
+	 * @return false if there's no record has been deleted or true if at least 1 record has been deleted
+	 * @throws SQLException if there's any exception occur before, during and after connection and query execution
+	 */
+	public static boolean deleteClient(int clientAccountId) throws SQLException{
+		String query = String.format("DELETE ClientAccount WHERE clientAccountId = %d", clientAccountId);
+		
+		Connection con = null;
+		try {
+			con = getConnection();
+		} catch (SQLException e) {
+			throw e;
+			// don't need to log here, it has been logged in getConnection()
+		}
+		
+		if(con != null){
+			// execute the delete query, return false if there's no recorded deleted
+			Statement st = con.createStatement();
+			
+			if(st.executeUpdate(query)!=0){
+				logger.info(String.format("Deleted clientAccountId: %d successfully", clientAccountId));
+				return true;
+			} else {
+				logger.info(String.format("There's no row affected when attampted to delete clientAccountId: %d.", clientAccountId));
+				return false;
+			}
+		}
+		
+		return false;
+	}
+	
 	
 	
 	/**
@@ -335,6 +376,10 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if it failed to connect to DB server, failed to execute the queries or failed to close the connectioin 
 	 */
 	public static String[] getAvailableUsernames(String firstname, String surname) throws SQLException{
+		// remove any special characters that are not allowed to be in user name.
+		// those characters are: " ' , < > : = * [ ] | : ! # + & % { } ? \
+		firstname = firstname.replaceAll("[\\\"\\\'\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?\\\\]", "");
+		surname = surname.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
 		// create all possible names and stored them into a TreeMap
 		TreeSet<String> names = new TreeSet<String>();
 		names.add((firstname+"."+surname).toLowerCase()); //joe.alan

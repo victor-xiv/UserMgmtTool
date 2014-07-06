@@ -3,6 +3,7 @@ package servlets;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import javax.naming.InvalidNameException;
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -61,17 +62,25 @@ public class CreateGroupServlet extends HttpServlet {
 
 		if( lt != null){
 			//Add organisation as group
-			boolean orgAdded = lt.addCompanyAsGroup(orgname);
-			lt.close();
-			//If adding as group successful, print success message
-			if( orgAdded ){
-				session.setAttribute("error", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
-				logger.info("Organisation has been added successfully.");
-			//Otherwise, print error message
-			}else{
-				session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b></font>");
-				logger.info("Addition of organisation '"+orgname+"' has failed.");
+			boolean orgAdded;
+			try {
+				orgAdded = lt.addCompanyAsGroup(orgname);
+			
+				lt.close();
+				//If adding as group successful, print success message
+				if( orgAdded ){
+					session.setAttribute("error", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
+					logger.info("Organisation has been added successfully.");
+				//Otherwise, print error message
+				}else{
+					session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b></font>");
+					logger.info("Addition of organisation '"+orgname+"' has failed.");
+				}
+			} catch (InvalidNameException e) {
+				// dt need to log, it has been logged in lt.addCompanyAsGroup();
+				session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed." + e.getMessage() + "</b></font>");
 			}
+			
 			//Forward (redirect with parameters) to OrganisationDetails.jsp
 			request.getRequestDispatcher("OrganisationDetails.jsp").forward(request, response);
 		}

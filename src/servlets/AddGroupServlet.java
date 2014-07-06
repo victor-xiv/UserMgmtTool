@@ -53,7 +53,7 @@ public class AddGroupServlet extends HttpServlet {
 		try {
 			lt = new LdapTool();
 			//Add organisation as group
-			orgAdded = lt.addUserToGroup(lt.getDNFromGroup(orgname), lt.getDNFromGroup(group));
+			orgAdded = lt.addGroup1InToGroup2(lt.getDNFromGroup(orgname), lt.getDNFromGroup(group));
 			lt.close();
 		} catch (Exception e){
 			session.setAttribute("error", 

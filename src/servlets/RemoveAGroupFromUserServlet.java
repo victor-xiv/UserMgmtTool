@@ -51,14 +51,8 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 		response.setContentType("text/xml");
 	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
 	    sfXml.append("<response>\n");
-	    
-	    
-	    int test = (int)(Math.random() * 50);
 		
 		try {
-			
-			if(test % 2 == 0) throw new Exception("my test");
-			
 			
 			lt = new LdapTool();
 			//remove group from user

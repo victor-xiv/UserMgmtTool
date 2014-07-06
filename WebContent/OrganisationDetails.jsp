@@ -1,5 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
+<%@page import="java.net.URLEncoder"%>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <title>Organisation: <%=request.getParameter("name") %></title>
@@ -16,6 +17,7 @@
   <%@ page import="java.io.FileNotFoundException" %>
   <%@ page import="javax.naming.NamingException" %>
   <%@ page import="java.net.ConnectException" %>
+  <%@ page import="javax.naming.ldap.Rdn" %>
   <%	TreeMap<String,String[]> users = null;
   		try{
 	  		org.processOrganisationName(request.getParameter("name"));
@@ -72,12 +74,13 @@
 				for( int i = 0; i < keySet.length; i++ ){
 					String userCn = keySet[i];
 				    String userDn = users.get(userCn)[0];
+				    userDn = java.net.URLEncoder.encode(userDn);
 					boolean accountDisabled = users.get(userCn)[1].equals("disabled"); %>
                     <div class="row">
                     	<span style="float: inherit; width: 200px; text-align: center;">
                     
 					<%if(accountDisabled){	%>
-                    		<a href="UserDetails.jsp?dn=<%=userDn %>" style="font-style: italic; color: #808080;"><%=userCn %> (disabled)</a>
+                    		<a href="t?dn=<%=userDn %>" style="font-style: italic; color: #808080;"><%=userCn %> (disabled)</a>
 					<%}else{%>
                       		<a href="UserDetails.jsp?dn=<%=userDn %>"><%=userCn %></a>
 					<%}%>
