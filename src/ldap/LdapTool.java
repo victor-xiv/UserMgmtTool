@@ -970,9 +970,9 @@ public class LdapTool {
 	 * @param companyName that need to be added (must has not been escaped any reserved chars)
 	 * @return true if the companyName can be added successfully
 	 *         false otherwise
-	 * @throws InvalidNameException 
+	 * @throws NamingException 
 	 */
-	public boolean addCompany(String companyName) throws InvalidNameException{
+	public boolean addCompany(String companyName) throws NamingException{
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
 		
 		// get baseDN for the user (it should be: OU=Clients,DC=orion,DC=dmz)
@@ -1008,7 +1008,7 @@ public class LdapTool {
 		} catch (NamingException e) {
 			logger.error(String.format("Exception while adding %s into Ldap server as a user.", companyName), e);
 			if(e instanceof NameAlreadyBoundException){
-				throw new InvalidNameException("This group already exist in Clients");
+				throw new NameAlreadyBoundException("This group already exist in Clients");
 			}
 			
 			return false;
@@ -1026,9 +1026,9 @@ public class LdapTool {
 	 * @param companyName that need to be added as a Ldap Group
 	 * @return true if the Organisation was added successfully.
 	 * 		   false otherwise.
-	 * @throws InvalidNameException 
+	 * @throws NamingException 
 	 */
-	public boolean addCompanyAsGroup(String companyName) throws InvalidNameException{
+	public boolean addCompanyAsGroup(String companyName) throws NamingException{
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
 				
 		//Get base DN for 'Groups'
@@ -1068,6 +1068,9 @@ public class LdapTool {
 		//If error, log detail and stack trace
 		} catch (NamingException e) {
 			logger.error(String.format("Failed to add organisation: %s, as a Ldap Group", companyName), e);
+			if(e instanceof NameAlreadyBoundException){
+				throw new NameAlreadyBoundException("This group already exist in Clients");
+			}
 			return false;
 		}
 	}
@@ -1245,7 +1248,7 @@ public class LdapTool {
 	
 	/**
 	 * This method is used to escape any reserved chars that contains in the full complete Group DN.
-	 * e.g. given groupDN="cn=Associated Regional and University Pathologists, I,OU=Groups,DC=orion,DC=dmz"
+	 * e.g. given groupDN="cn=Associated, I,OU=Groups,DC=orion,DC=dmz"
 	 * @param dn is a full complete dn that has not been escaped any reserved chars. 
 	 * @return a final dn that has been escaped all reserved chars (e.g. groupDN="cn=Associated Regional and University Pathologists\, I,OU=Groups,DC=orion,DC=dmz")
 	 */

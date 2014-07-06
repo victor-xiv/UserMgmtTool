@@ -193,7 +193,7 @@ public class SupportTrackerJDBC {
 		// creating query to select clientId that belong to the given companyName (stored in maps)
 		StringBuffer query = new StringBuffer();
 		// e.g. example of a final query      SELECT clientId FROM Client WHERE companyName = 'Aamal Medical Co'
-		query.append("SELECT clientId FROM Client WHERE companyName = '"
+		query.append("SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = '"
 				+ maps.get("company")[0] + "'");
 		int clientId = -1;
 		

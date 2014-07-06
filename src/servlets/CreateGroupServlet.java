@@ -76,7 +76,7 @@ public class CreateGroupServlet extends HttpServlet {
 					session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b></font>");
 					logger.info("Addition of organisation '"+orgname+"' has failed.");
 				}
-			} catch (InvalidNameException e) {
+			} catch (NamingException e) {
 				// dt need to log, it has been logged in lt.addCompanyAsGroup();
 				session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed." + e.getMessage() + "</b></font>");
 			}

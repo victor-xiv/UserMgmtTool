@@ -52,23 +52,12 @@ public class AcceptRequestServlet extends HttpServlet {
 	{
 		logger = LoggerTool.setupRootLogger(request);
 		
-		// sAMAccountName used as LDAP logon (i.e username)
-		// it is allowed to have only these special chars:  ( ) . - _ ` ~ @ $ ^  and other normal chars [a-zA-Z0-9]
-		String sAMAccountName = request.getParameter("username");
-
-		// check if sAMAccountName contains any prohibited chars
-		String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
-		if(temp.length() < sAMAccountName.length()){
-			response.getWriter().write("false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
-			return;
-		}
-		logger.info("Username: "+sAMAccountName);
-		
 		// reading the account request file
 		String filename = request.getParameter("filename");
 		if( filename == null){ //if given filename is null 
 			response.getWriter().write("false|This request no longer exists.");
 		}
+		
 		String action = request.getParameter("action");
 		File outFolder = new File(LdapProperty.getProperty(LdapConstants.OUTPUT_FOLDER));
 		File file = new File(outFolder, filename);
@@ -79,7 +68,6 @@ public class AcceptRequestServlet extends HttpServlet {
 			response.getWriter().write("false|"+ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
 			return;
 		}
-
 		
 		Map<String, String[]> maps = null;
 		try{
@@ -99,10 +87,27 @@ public class AcceptRequestServlet extends HttpServlet {
 			if(file.delete()){
 				EmailClient.sendEmailRejected(maps.get("mail")[0], maps.get("displayName")[0]);
 				response.getWriter().write("true|Account request has been declined.");
+			} else {
+				response.getWriter().write("false|Failed to delete the stored request.");
+				return;
 			}
 			
 		// if account request is accepted
 		}else{
+				
+			// sAMAccountName used as LDAP logon (i.e username)
+			// it is allowed to have only these special chars:  ( ) . - _ ` ~ @ $ ^  and other normal chars [a-zA-Z0-9]
+			String sAMAccountName = request.getParameter("username");
+	
+			// check if sAMAccountName contains any prohibited chars
+			String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+			if(temp.length() < sAMAccountName.length()){
+				response.getWriter().write("false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
+				return;
+			}
+			logger.info("Username: "+sAMAccountName);
+		
+
 			//MODIFIED CODE - SPT-447
 			//Handle code for null and blank usernames SEPARATELY
 			//Previously handled together risking Null Pointer Exception
@@ -152,7 +157,7 @@ public class AcceptRequestServlet extends HttpServlet {
 						response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.");
 						return;
 					}
-				} catch (InvalidNameException e) {
+				} catch (NamingException e) {
 					response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.");
 					return;
 				}
@@ -164,7 +169,7 @@ public class AcceptRequestServlet extends HttpServlet {
 						response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.");
 						return;
 					}
-				} catch (InvalidNameException e) {
+				} catch (NamingException e) {
 					response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.");
 					return;
 				}

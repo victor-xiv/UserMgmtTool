@@ -3,6 +3,7 @@ package servlets;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import javax.naming.NameAlreadyBoundException;
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -52,8 +53,17 @@ public class AddOrganisationServlet extends HttpServlet {
 		boolean orgGroupAdded = false;
 		try {
 			lt = new LdapTool();
-			//Add company as client and as group
-			orgAdded = lt.addCompany(orgname);
+			
+			try{
+				//Add company as client and as group
+				orgAdded = lt.addCompany(orgname);
+			} catch (NamingException e) {
+				// NameAlreadyBoundException thrown, means the orgname exists in the Clients.
+				// So, change orgAdded to true in order to add the orgname into Groups
+				if(e instanceof NameAlreadyBoundException){
+					orgAdded = true;
+				}
+			}
 			
 			//If successfully added as client
 			if(orgAdded){

@@ -58,6 +58,7 @@
                 <br />
                 <div style="width: 600px; padding: 5px; margin: 5px auto ";>
 <%  String[] userGroups = groups.getUserGroups();
+	List<String> userGroupsList = Arrays.asList(userGroups);
   for( int i = 0; i < userGroups.length; i++ ){  %>
                   <div class="row">
                     <a href="OrganisationDetails.jsp?name=<%=userGroups[i] %>"><%=userGroups[i] %></a>
@@ -68,7 +69,7 @@
                   <br /><span id="addlabel"><b>Add Organisation:</b></span><br />
                   <select name="org" id="org">
 <% for (String organisation : orgs) {
-	  if (!Arrays.asList(userGroups).contains(organisation)) {
+	  if (!userGroupsList.contains(organisation.trim())) {
 		  %>
 		  		    <option value="<%= organisation %>"><%= organisation %></option>
 		  <%

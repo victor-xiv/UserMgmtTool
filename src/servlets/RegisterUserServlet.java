@@ -138,7 +138,7 @@ public class RegisterUserServlet extends HttpServlet {
 		}
 
 		// If an Orion User (no company and email registered as staff) - SPT-311
-		if ((request.getParameter("company").equals(""))
+		if ((request.getParameter("company").trim().equals(""))
 				&& (emails.contains(email.toLowerCase()))) {
 			// Set company as Orion Health
 			userDetails.put("company", new String[] { "Orion Health" });
@@ -196,7 +196,9 @@ public class RegisterUserServlet extends HttpServlet {
 		}
 		// If the company has not been set as an OU and no error has occurred -
 		// SPT-316
-		if ((!lt.companyExists(company)) && good) {
+		boolean compExistsAsClient = lt.companyExists(company);
+		boolean compExistsAsGroup = lt.companyExistsAsGroup(company);
+		if (!compExistsAsClient && !compExistsAsGroup && good) {
 
 			// Get list of supported companies from database
 			List<String> orgs = null;
@@ -213,13 +215,22 @@ public class RegisterUserServlet extends HttpServlet {
 			// If this company is supported, set as OU
 			if (orgs.contains(company)) {
 				try {
-					lt.addCompany(company);
-					lt.addCompanyAsGroup(company);
-				} catch (InvalidNameException e) {
-					session.setAttribute("error",
-							"Your registration has failed - your organisation "
-									+ company + " has not been registered. "
-									+ "Please contact the system administrator.");
+					compExistsAsClient = lt.addCompany(company);
+					compExistsAsGroup = lt.addCompanyAsGroup(company);
+				} catch (NamingException e) {
+					// if compExistsAsClient is true, means lt.addCompany(company) run successfully.
+					// and lt.addCompanyAsGroup(company) could not be run successfully
+					if(compExistsAsClient){
+						session.setAttribute("error",
+								"Your registration has failed - your organisation "
+										+ company + " has been added into LDAP Clients, but it could not be added into LDAP Groups. "
+										+ "Please contact the system administrator.");
+					} else {
+						session.setAttribute("error",
+								"Your registration has failed - your organisation "
+										+ company + " has not been registered. "
+										+ "Please contact the system administrator.");
+					}
 					// Flag error
 					good = false;
 				}
@@ -228,27 +239,28 @@ public class RegisterUserServlet extends HttpServlet {
 			} else {
 				session.setAttribute("error",
 						"Your registration has failed - your organisation "
-								+ company + " has not been registered. "
+								+ company + " doesn't contain in Support Tracker Database. "
 								+ "Please contact the system administrator.");
 				// Flag error
 				good = false;
 			}
 		}
 		// If no error has occurred,
-		if (good) {
+		if (compExistsAsClient && compExistsAsGroup && good) {
 			// ADDITIONAL CODE ENDS
 			if (lt.addUser(userDetails)) {
-				session.setAttribute("passed", "You have been registered successfully.");
+				session.setAttribute("passed", "You have been registered into LDAP server successfully.");
 				try {
 					ConcertoAPI.enableNT(username);
 				} catch (ServiceException e) {
-					session.setAttribute("error", e.getMessage());
+					session.setAttribute("error", username + " couldn't register into Concerto. Because of: " +e.getMessage());
 					// we are not logging this error, because it has been logged
 					// in ConcertoAPI.enableNT()
 				}
 			} else {
 				session.setAttribute("error",
-						"Your registration has failed.  Please contact the system administrator.");
+						"Your registration has failed. " + "The " +username +" could not be added into LDAP server"
+						+ "Please contact the system administrator.");
 			}
 		}
 		lt.close();
