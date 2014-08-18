@@ -55,7 +55,7 @@ public class AddOrganisationServlet extends HttpServlet {
 			lt = new LdapTool();
 			
 			try{
-				//Add company as client and as group
+				//Add company as client
 				orgAdded = lt.addCompany(orgname);
 			} catch (NamingException e) {
 				// NameAlreadyBoundException thrown, means the orgname exists in the Clients.
@@ -65,7 +65,7 @@ public class AddOrganisationServlet extends HttpServlet {
 				}
 			}
 			
-			//If successfully added as client
+			//If successfully added as Client
 			if(orgAdded){
 				orgGroupAdded = lt.addCompanyAsGroup(orgname);
 				

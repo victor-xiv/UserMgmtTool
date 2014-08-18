@@ -88,14 +88,21 @@ public class RegisterUserServlet extends HttpServlet {
 		String username = (String)session.getAttribute("username");
 		session.removeAttribute("username");
 		
-		if( username == null ){
-			session.setAttribute("error", "This page can only be accessed from within Concerto.");
+		if( username == null || username.trim().isEmpty()){
+			session.setAttribute("error", "This page can only be accessed from within Concerto. The username is not specified.");
 			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
 			response.sendRedirect(redirectURL);
 			return;
 		}
 		
-		
+		// check if username contains any prohibited chars
+		String temp = username.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+		if(temp.length() < username.length()){
+			session.setAttribute("error", "Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
+		}
 		
 		Map<String, String[]> userDetails = new HashMap<String, String[]>();
 		userDetails.putAll((Map<String, String[]>) request.getParameterMap());
@@ -198,62 +205,78 @@ public class RegisterUserServlet extends HttpServlet {
 		// SPT-316
 		boolean compExistsAsClient = lt.companyExists(company);
 		boolean compExistsAsGroup = lt.companyExistsAsGroup(company);
-		if (!compExistsAsClient && !compExistsAsGroup && good) {
-
-			// Get list of supported companies from database
-			List<String> orgs = null;
-			try {
-				orgs = SupportTrackerJDBC.getOrganisations();
-			} catch (SQLException e) {
-				String errorMessage = String.format("Your registration has failed because of %s. Please contact the system administrator.", e.getMessage());
-				session.setAttribute("error", errorMessage);
-				String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
-				response.sendRedirect(redirectURL);
-				return;
-			}
-
+		
+		// Get list of supported companies from database
+		List<String> orgs = null;
+		try {
+			orgs = SupportTrackerJDBC.getOrganisations();
+		} catch (SQLException e) {
+			String errorMessage = String.format("Your registration has failed because of %s. Please contact the system administrator.", e.getMessage());
+			session.setAttribute("error", errorMessage);
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
+		}
+		
+		if(!compExistsAsClient & good){
 			// If this company is supported, set as OU
 			if (orgs.contains(company)) {
 				try {
 					compExistsAsClient = lt.addCompany(company);
-					compExistsAsGroup = lt.addCompanyAsGroup(company);
 				} catch (NamingException e) {
-					// if compExistsAsClient is true, means lt.addCompany(company) run successfully.
-					// and lt.addCompanyAsGroup(company) could not be run successfully
-					if(compExistsAsClient){
-						session.setAttribute("error",
-								"Your registration has failed - your organisation "
-										+ company + " has been added into LDAP Clients, but it could not be added into LDAP Groups. "
-										+ "Please contact the system administrator.");
-					} else {
-						session.setAttribute("error",
-								"Your registration has failed - your organisation "
-										+ company + " has not been registered. "
-										+ "Please contact the system administrator.");
-					}
+					session.setAttribute("error",
+					"Your registration has failed - your organisation "
+					+ company + " has not been registered. "
+					+ "Please contact the system administrator. "
+					+ "This due to: " + e.getMessage());
 					// Flag error
 					good = false;
 				}
-				
-				// Otherwise error and quit
+							
+			// Otherwise error and quit
 			} else {
 				session.setAttribute("error",
-						"Your registration has failed - your organisation "
-								+ company + " doesn't contain in Support Tracker Database. "
-								+ "Please contact the system administrator.");
+				"Your registration has failed - your organisation "
+				+ company + " doesn't contain in Support Tracker Database. "
+				+ "Please contact the system administrator.");
 				// Flag error
 				good = false;
 			}
 		}
+		
+		if (!compExistsAsGroup && compExistsAsClient && good) {
+			try {
+				compExistsAsGroup = lt.addCompanyAsGroup(company);
+			} catch (NamingException e) {
+				session.setAttribute("error",
+					"Your registration has failed - your organisation "
+					+ company
+					+ " has been added into LDAP Clients, but it could not be added into LDAP Groups. "
+					+ "Please contact the system administrator. "
+					+ "This due to: " + e.getMessage());
+				// Flag error
+				good = false;
+			}
+		}
+
 		// If no error has occurred,
 		if (compExistsAsClient && compExistsAsGroup && good) {
+			boolean addUserStatus = false;
+			
+			try{
+				addUserStatus = lt.addUser(userDetails);
+			} catch (Exception e){
+				session.setAttribute("error", username + " couldn't register into Concerto. Because of: " +e.getMessage());
+			}
+			
 			// ADDITIONAL CODE ENDS
-			if (lt.addUser(userDetails)) {
+			
+			if (addUserStatus) {
 				session.setAttribute("passed", "You have been registered into LDAP server successfully.");
 				try {
 					ConcertoAPI.enableNT(username);
 				} catch (ServiceException e) {
-					session.setAttribute("error", username + " couldn't register into Concerto. Because of: " +e.getMessage());
+					session.setAttribute("error", username + " has been added to LDAP server. But it couldn't be registered into Concerto. Because of: " +e.getMessage());
 					// we are not logging this error, because it has been logged
 					// in ConcertoAPI.enableNT()
 				}

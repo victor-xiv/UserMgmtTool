@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.naming.InvalidNameException;
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,7 +28,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import tools.ConcertoAPI;
-import tools.ConcertoTest;
 import tools.EmailClient;
 import tools.LoggerTool;
 import tools.SupportTrackerJDBC;
@@ -37,7 +35,7 @@ import tools.SupportTrackerJDBC;
 @SuppressWarnings("serial")
 public class AcceptRequestServlet extends HttpServlet {
 	
-	Logger logger = LoggerTool.setupDefaultRootLogger(); // initiate as a default root logger
+	static Logger logger = LoggerTool.setupDefaultRootLogger(); // initiate as a default root logger
 	
 	
 	/**
@@ -69,7 +67,7 @@ public class AcceptRequestServlet extends HttpServlet {
 			return;
 		}
 		
-		Map<String, String[]> maps = null;
+		Map<String, String[]> maps = null; // used to stored attributes for the new account that will be created on ldap server
 		try{
 			maps = processFile(file); //get all the user's properties from the file
 		} catch (IOException e){
@@ -95,19 +93,22 @@ public class AcceptRequestServlet extends HttpServlet {
 		// if account request is accepted
 		}else{
 				
+			
+			
+			/**
+			 * From here to the end of this method is duplicated with servlet.AddUserSevlet.doPost().
+			 * I can't refactor and make this part to a single method and let them use a single method.
+			 * because, they are too strong couple to their respective .jsp.
+			 * 
+			 * So, if you update this part, please double check servlet.AddUserSevlet.doPost(), you might
+			 * also need to update that part as well.
+			 */
+			
+			
 			// sAMAccountName used as LDAP logon (i.e username)
 			// it is allowed to have only these special chars:  ( ) . - _ ` ~ @ $ ^  and other normal chars [a-zA-Z0-9]
 			String sAMAccountName = request.getParameter("username");
-	
-			// check if sAMAccountName contains any prohibited chars
-			String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
-			if(temp.length() < sAMAccountName.length()){
-				response.getWriter().write("false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
-				return;
-			}
-			logger.info("Username: "+sAMAccountName);
-		
-
+			
 			//MODIFIED CODE - SPT-447
 			//Handle code for null and blank usernames SEPARATELY
 			//Previously handled together risking Null Pointer Exception
@@ -121,13 +122,15 @@ public class AcceptRequestServlet extends HttpServlet {
 			}
 			//MODIFIED CODE ENDS
 			
-			maps.put("sAMAccountName", new String[]{sAMAccountName});
+			// check if sAMAccountName contains any prohibited chars
+			String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+			if(temp.length() < sAMAccountName.length()){
+				response.getWriter().write("false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
+				return;
+			}
+			logger.info("Username: "+sAMAccountName);
 			
-			// fullname is used to check whether this name exist in LDAP and concerto.
-			// and used to add into concerto
-			String fullname = "";
-			if(maps.get("displayName")[0] != null) 	fullname = maps.get("displayName")[0];
-			else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
+			maps.put("sAMAccountName", new String[]{sAMAccountName});
 			
 			
 			// connecting to LDAP server
@@ -149,7 +152,7 @@ public class AcceptRequestServlet extends HttpServlet {
 				return;
 			}
 			
-			// if company doesn't exist in LDAP's "Client" add the company into "Client"
+			// if company doesn't exist in LDAP's "Client" => add the company into "Client"
 			if(!lt.companyExists(maps.get("company")[0])){
 				try {
 					if(!lt.addCompany(maps.get("company")[0])){
@@ -162,10 +165,12 @@ public class AcceptRequestServlet extends HttpServlet {
 					return;
 				}
 			}
-			// if company doesn't exist in LDAP's "Groups" add the company into "Groups"
+			// if company doesn't exist in LDAP's "Groups"
 			if(!lt.companyExistsAsGroup(maps.get("company")[0])){
 				try {
+					//  add the company into "Groups"
 					if(!lt.addCompanyAsGroup(maps.get("company")[0])){
+						// if adding company into group failed
 						response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.");
 						return;
 					}
@@ -175,6 +180,12 @@ public class AcceptRequestServlet extends HttpServlet {
 				}
 			}
 			
+			// fullname is used to check whether this name exist in LDAP and concerto.
+			// and used to add into concerto
+			String fullname = "";
+			if(maps.get("displayName")[0] != null) 	fullname = maps.get("displayName")[0];
+			else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
+
 			// check if username exist in LDAP or Concerto
 			boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
 			boolean usrExistsInConcerto = ConcertoAPI.doesClientUserExist(fullname);
@@ -203,18 +214,28 @@ public class AcceptRequestServlet extends HttpServlet {
 				maps.put("info", new String[]{Integer.toString(clientAccountId)});
 				
 				// add user into LDAP server
-				boolean addStatus = lt.addUser(maps);
+				boolean addStatus = false;
+				
+				try{
+					addStatus = lt.addUser(maps);
+				} catch (Exception e){
+					response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added, due to: " + e.getMessage());
+				}
+				
 				if( addStatus ){ // add a user into Ldap successfully
 					// delete the file from the disk
 					file.delete();
 					
-					// add user into Concerto
+					String firstName = maps.get("givenName")[0];
+					String lastName = maps.get("sn")[0];
+					String userName = maps.get("sAMAccountName")[0];
+					String description = maps.get("description")[0];
+					String mail = maps.get("mail")[0];
+					
 					try {
-						ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
-					} catch (ServiceException e) {
-						response.getWriter().write("false|User " +maps.get("displayName")[0]+"added successfully to Support Tracker and Ldap, but Concerto. Due to: "+e.getMessage());
-						return;
-						//no need to log, the error has been logged in ConcertoAPI.addClientUser()
+						ConcertoAPI.addClientUser(userName, firstName, lastName, fullname, description, mail, Integer.toString(clientAccountId));
+					} catch (com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.Exception e) {
+						response.getWriter().write("false|User "+maps.get("displayName")[0]+" was added to LDAP and Support Tracker. But it couldn't be added to Concerto Portal.");
 					}
 					
 					EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
@@ -230,6 +251,12 @@ public class AcceptRequestServlet extends HttpServlet {
 			}else{
 				response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added, due to the failure in adding the user into Support Tracker DB.");
 			}
+			
+			/**
+			 * duplicated codes end here
+			 */
+			
+			
 		}
 	}
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -246,7 +273,7 @@ public class AcceptRequestServlet extends HttpServlet {
 	 * But, it was unsuccessful to add that user to LDAP. So, we need to delete this newly added clientAccountId from Support Tracker.
 	 * @param clientAccountId
 	 */
-	public void deletePreviouslyAddedClientFromSupportTracker(int clientAccountId){
+	public static void deletePreviouslyAddedClientFromSupportTracker(int clientAccountId){
 		// remove the previous added user from Support Tracker DB
 		try {
 			SupportTrackerJDBC.deleteClient(clientAccountId);

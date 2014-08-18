@@ -50,6 +50,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		HttpSession session = request.getSession(true);
 		if(session.getAttribute("dn") != null){
 			userDN = (String)session.getAttribute("dn");
+			
 		} else {
 
 			// validate and encrypt the request

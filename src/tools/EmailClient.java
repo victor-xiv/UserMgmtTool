@@ -22,6 +22,14 @@ public class EmailClient {
 	private static StringBuffer mailBody = new StringBuffer();
 	private static Logger logger = Logger.getRootLogger();
 	
+	
+	// comment out the password part
+	// Recipient name
+	// username
+	// template of the email contents (prefer reading from file)
+	// reading from config file:
+		// subject
+		//
 	public static void sendEmailApproved(String mailTo, String recipientName, String username, String password){
 		init();
 		mailSubject = "Support Tracker Access Approved";

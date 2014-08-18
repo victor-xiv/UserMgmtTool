@@ -47,66 +47,195 @@ public class AddUserServlet extends HttpServlet {
 		maps.put("isLdapClient", new String[]{"true"});
 		maps.put("password01", new String[]{"password1"});
 		
+		
+		
+		/**
+		 * From here to the end of this method is duplicated with servlet.AcceptRequestServlet.doGet().
+		 * I can't refactor and make this part to a single method and let them use a single method.
+		 * because, they are too strong couple to their respective .jsp.
+		 * 
+		 * So, if you update this part, please double check servlet.AcceptRequestServlet.doGet(), you might
+		 * also need to update that part as well.
+		 */
+		
 		String sAMAccountName = request.getParameter("sAMAccountName").trim();
 		logger.info("Username: "+sAMAccountName);
-			if( sAMAccountName == null || sAMAccountName.equals("")){
-				response.getWriter().write("false|User was not added with invalid username.");
+			if( sAMAccountName == null || sAMAccountName.trim().equals("")){
+				String msg = "User was not added with an invalid username.";
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
 				return;
 			}
 			
+			// check if sAMAccountName contains any prohibited chars
+			String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+			if(temp.length() < sAMAccountName.length()){
+				String msg = "User was not added because username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^";
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}
 			
-			LdapTool lt = null;	  
-			int clientAccountId = -1;
+			LdapTool lt = null;	
 			try {
 				// connect to ldap server
 				lt = new LdapTool();
-				// add user into support tracker DB
-				clientAccountId = SupportTrackerJDBC.addClient(maps);
 			} catch (Exception e1) {
 				if(lt != null) lt.close();
-				response.getWriter().write("false|User was not added because: " + e1.getMessage());
+				String msg = "User was not added because: " + e1.getMessage();
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}
+			if( lt == null){
+				logger.error("Unknown Error while connecting to LDAP server");
+				String msg = "User was not added because of an unknown error while connecting to LDAP server";
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
 				return;
 			}
 			
+			// if company doesn't exist in LDAP's "Client" => add the company into "Client"
+			if(!lt.companyExists(maps.get("company")[0])){
+				try {
+					if(!lt.addCompany(maps.get("company")[0])){
+						String msg = "The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.";
+						session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+						String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+						response.sendRedirect(redirectURL);
+						return;
+					}
+				} catch (NamingException e) {
+					
+					String msg = "The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.";
+					msg += " Due to: " + e.getMessage();
+					session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+					String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+					response.sendRedirect(redirectURL);
+					return;
+				}
+			}
+			
+			// if company doesn't exist in LDAP's "Groups"
+			if(!lt.companyExistsAsGroup(maps.get("company")[0])){
+				try {
+					//  add the company into "Groups"
+					if(!lt.addCompanyAsGroup(maps.get("company")[0])){
+						// if adding company into group failed
+						String msg = "The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.";
+						session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+						String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+						response.sendRedirect(redirectURL);
+						return;
+					}
+				} catch (NamingException e) {
+					// if adding company into group failed
+					String msg = "The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups. Due to: " + e.getMessage();
+					session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+					String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+					response.sendRedirect(redirectURL);
+					return;
+				}
+			}
+						
+			// fullname is used to check whether this name exist in LDAP and concerto.
+			// and used to add into concerto
+			String fullname = "";
+			if(maps.get("displayName")[0] != null) 	fullname = maps.get("displayName")[0];
+			else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
+			
+			// check if username exist in LDAP or Concerto
+			boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
+			boolean usrExistsInConcerto = ConcertoAPI.doesClientUserExist(fullname);
+			if(usrExistsInLDAP){
+				String msg = "Requesting user already exists in LDAP server";
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			} else if(usrExistsInConcerto){
+				String msg = "Requesting user already exists in Concerto server";
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}		
+						
+			// ADDING USER ACCOUNT CODE STARTS FROM HERE \\
+			
+			int clientAccountId = -1;
+			try {
+				clientAccountId = SupportTrackerJDBC.addClient(maps);
+			} catch (SQLException e1) {
+				String msg = "User cannot be added to Support Tracker Database, due to: " + e1.getMessage();
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+				//no need to log, the error has been logged in SupportTrackerJDBC.addClient(maps)
+			}		
 			
 			if( clientAccountId > 0 ){
 				maps.put("info", new String[]{Integer.toString(clientAccountId)});	
 				
 				// add user into ldap server
-				boolean addStatus = lt.addUser(maps);
+				boolean addStatus = false;
+				
+				try {
+					addStatus = lt.addUser(maps);
+				} catch (Exception e){
+					String msg = "User has been added into Support Tracker database. But, it could not be added into LDAP because: " + e.getMessage();
+//					response.getWriter().write("false|" + msg);
+					session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+					String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+					response.sendRedirect(redirectURL);
+					return;
+				}
 				lt.close();
 				
 				if( addStatus ){
-					String fullname = "";
-					if(maps.get("displayName")[0] != null){
-						fullname = maps.get("displayName")[0];
-					}else{
-						fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
-					}
-					
-					
+					// add user into concerto
 					try {
 						ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
 					} catch (ServiceException e) {
-						response.getWriter().write("false|User was not added because: " + e.getMessage());
+						String msg = "User has been added into Support Tracker database and LDAP. But, it could not be added into Concerto Portal because: " + e.getMessage();
+//						response.getWriter().write("false|" + msg);
+						session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+						String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+						response.sendRedirect(redirectURL);
 						return;
 					}
 					
 					
 					EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
-					response.getWriter().write("true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0]);
-					session.setAttribute("message", "<font color=\"green\"><b>User '"+sAMAccountName+"' has been added successfully.</b></font>");
-				}else{
-					response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added.");
-					session.setAttribute("message", "<font color=\"red\"><b>Addition of user '"+sAMAccountName+"' has failed.</b></font>");
+					String msg = "User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0];
+//					response.getWriter().write("true|"+msg);
+					session.setAttribute("message", "<font color=\"green\"><b>"+msg+"</b></font>");
+				}else{ // add a user into LDAP is not successful
+					// remove the previous added user from Support Tracker DB
+					AcceptRequestServlet.deletePreviouslyAddedClientFromSupportTracker(clientAccountId);
+					
+					String msg = "User "+maps.get("displayName")[0]+" was not added.";
+//					response.getWriter().write("false|" + msg);
+					session.setAttribute("message", "<font color=\"red\"><b>"+msg+"</b></font>");
 				}
 				
 			}else{
-				response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added to database.");
-				session.setAttribute("message", "<font color=\"red\"><b>Addition of user '"+sAMAccountName+"' has failed.</b></font>");
+				String msg = "User "+maps.get("displayName")[0]+" was not added to SupportTracker database.";
+//				response.getWriter().write("false|" + msg);
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
 			}
 			String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
 			response.sendRedirect(redirectURL);
+			
+			
+			/**
+			 * duplicated codes end here
+			 */
 
 		/*String username = request.getParameter("sAMAccountName");
 		LdapTool lt = new LdapTool();

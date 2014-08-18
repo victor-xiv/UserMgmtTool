@@ -7,6 +7,7 @@ import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
+import javax.naming.ldap.Rdn;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Get user DN
+		//Get user DN 
 		String userDN = request.getParameter("userDN").trim(); 
 		//Get desired group DN
 		String groupDN = request.getParameter("groupDN").trim();
@@ -47,6 +48,7 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 		Set<String> baseGroups = null;
 		LdapTool lt = null;
 		
+		// create xml string that stores data that need to be responded to client
 		StringBuffer sfXml = new StringBuffer();
 		response.setContentType("text/xml");
 	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
@@ -58,18 +60,27 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 			//remove group from user
 			lt.removeUserFromAGroup(userDN, groupDN);
 			
-			Attributes attrs = lt.getUserAttributes(userDN);
+			Attributes attrs = lt.getUserAttributes(userDN); // all the groups that are memberOf userDN
 			Attribute attr = attrs.get("memberOf");
-			namingEnum = attr.getAll();
-			baseGroups = lt.getBaseGroups();
+			baseGroups = lt.getBaseGroups(); // all the groups stored in LDAP, used to create a list of notMemberOf
 			lt.close();
 			
-			while(namingEnum.hasMore()){
-				String thisDN = (String) namingEnum.next();
-				String name = thisDN.split(",")[0].split("=")[1];
-				baseGroups.remove(name);
+			if(attr != null){
+				namingEnum = attr.getAll();
+				// remove all the memberOf groups from baseGroups
+				// so, the result, baseGroups will contains only those groups that userDN is not a memberOf that groups
+				while(namingEnum.hasMore()){
+					String thisDN = (String) namingEnum.next();
+					thisDN = (String) Rdn.unescapeValue(thisDN);
+					String name = LdapTool.getCNValueFromDN(thisDN);
+					baseGroups.remove(name);
+					
+					String value = String.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n", thisDN, name);
+					sfXml.append(value);
+				}
 			}
 			
+			// assign those notMemberOfGroups into the xml response string
 			for(String bsGroup : baseGroups){
 				String value = String.format("\t<notMemberOf> %s </notMemberOf>\n", bsGroup);
 				sfXml.append(value);

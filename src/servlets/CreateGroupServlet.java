@@ -69,7 +69,7 @@ public class CreateGroupServlet extends HttpServlet {
 				lt.close();
 				//If adding as group successful, print success message
 				if( orgAdded ){
-					session.setAttribute("error", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
+					session.setAttribute("pass", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
 					logger.info("Organisation has been added successfully.");
 				//Otherwise, print error message
 				}else{

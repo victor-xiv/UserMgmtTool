@@ -5,6 +5,7 @@ package tools;
 import java.util.Hashtable;
 
 import javax.crypto.SecretKey;
+import javax.naming.ldap.Rdn;
 import javax.servlet.http.HttpServletRequest;
 
 import ldap.ErrorConstants;
@@ -94,7 +95,19 @@ public class ValidatedRequestHandler {
 			for ( RequestParameter rp : reqParaList.getAllParameters()) {
 				String paraName = rp.getName();
 				String paraValue = rp.getValue();
-				parameters.put(paraName, paraValue);
+				if(paraName.equals("userDN")){
+					// if paraName="userDN" cotains an empty String paraValue, then we don't need to put it into the parameters
+					if(!paraValue.trim().isEmpty()){
+						// if the paraName is "userDN". its value is a complete dn-name that sent from portal.
+						// this dn-name is a name that has been escaped the reserve chars. (e.g. 
+						// so, we need to clean up that escaped chars, before using them. (e.g. after clean up: CN=Lisa, She/pherd,OU=Hospira Pty limited *Project*,OU=Clients,DC=orion,DC=dmz)
+						paraValue = (String) Rdn.unescapeValue(paraValue);
+						parameters.put(paraName, paraValue);
+					}
+				} else {
+					// we put any other keys (paraName) regardless of its value (paraValue)
+					parameters.put(paraName, paraValue);
+				}
 				logger.info("Put name-value pair into parameter list: " + paraName+"-"+paraValue);
 			}
 		}

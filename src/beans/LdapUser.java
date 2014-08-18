@@ -93,17 +93,18 @@ public class LdapUser {
 	 * @throws NamingException 
 	 */
 	public void setMemberOfGroups(Attribute memberOfGroups) throws NamingException {
-		if(memberOfGroups == null)
+		if(memberOfGroups == null) {
 			this.memberOfGroups = new String[0];
-		else
+		} else {
 			this.memberOfGroups = new String[memberOfGroups.size()];
-		try {
-			for(int i = 0; i < memberOfGroups.size(); i++){
-				this.memberOfGroups[i] = memberOfGroups.get(i).toString();
+			try {
+				for(int i = 0; i < memberOfGroups.size(); i++){
+					this.memberOfGroups[i] = memberOfGroups.get(i).toString();
+				}
+			} catch (NamingException e) {
+				logger.error(ErrorConstants.FAIL_UPDATE_LDAP, e);
+				throw new NamingException(ErrorConstants.FAIL_UPDATE_LDAP);
 			}
-		} catch (NamingException e) {
-			logger.error(ErrorConstants.FAIL_UPDATE_LDAP, e);
-			throw new NamingException(ErrorConstants.FAIL_UPDATE_LDAP);
 		}
 	}
 	/**

@@ -51,7 +51,7 @@
 	    	baseGroups = lt.getBaseGroups();
 	    	lt.close();
 	    	
-	    	if(attrs==null || attr==null || baseGroups==null){
+	    	if(attrs==null || baseGroups==null){
 	    		session.setAttribute("error", ErrorConstants.UNKNOWN_ERR);
 	    	}
 	    } else {
@@ -219,8 +219,23 @@
 		        	// if failed tag is not defined or null means the process is successful
 		        	if(failed == undefined || failed == null){
 		        		
+		        		// update the memberOf list
+		        		var memberOfList = xmlDoc.getElementsByTagName("memberOf");
+		        		var value = "<table>";
+		        		if(memberOfList.length > 0){
+			        		for(var i=0; i<memberOfList.length; i++){
+			        			var dnValue = memberOfList[i].firstElementChild.firstChild.nodeValue;
+			        			var nameValue = memberOfList[i].lastElementChild.firstChild.nodeValue;
+			        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+dnValue+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
+			        		}
+		        		} else { // there's no group in the list memberOf
+		        			value += "<tr><td> No groups </td></tr>";
+		        		}
+		        		value += "</table>";
+		        		document.getElementById("memberOf").innerHTML = value;	              
+		        		
 		        		// update the drop down menu which is listing all the groups that this user is not bellonging to
-		        		var value = "";
+		        		value = "";
 		        		var nonMemberOfList = xmlDoc.getElementsByTagName("notMemberOf");
 		        		for(var i=0; i<nonMemberOfList.length; i++){
 		        			var nameValue = nonMemberOfList[i].firstChild.nodeValue;
@@ -228,10 +243,8 @@
 		        		}
 		        		document.getElementById("groupselect").innerHTML = value;
 		        		
-		        		// remove the deleted element from html
-            			var elm = document.getElementById(groupDN)
-            			elm.parentNode.removeChild(elm);
-		        		
+            			var passed = "This user has been deleted from group: " + groupDN + " successfully.";
+            			document.getElementById("add-removeGroupPassed").innerHTML = "<font color=\"green\"><b>" + passed +"</b></font>";
 		        	} else {
 		        		var failedMessage = "<font color=\"red\"><b>Deletion of group '" + groupDN 
 														+ "' from user " + dn + " has failed.</b>"
@@ -254,9 +267,11 @@
     function SubmitGroupForm() {
     	cleanUpThePage();
     	
-    	// send a POST request to AddGroupUser servlet with parameters: dn and gropselect 
+    	// send a POST request to AddGroupUser servlet with parameters: dn and gropselect
+    	// this is a dn-name of this user
     	var dn = document.getElementById("dnInput").value;
-    	var groupSelect = document.getElementById("groupselect").value;
+    	// this groupSelect is just a simple name (not a dn-name)
+    	var groupSelect = document.getElementById("groupselect").value; 
     	ajax.open("POST", "AddGroupUser", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
@@ -565,12 +580,6 @@
                       </span>
                       <span class="required">*</span>
                     </div>
-                    
-                    <div class="row">
-                    	<span id="add-removeGroupPassed" style="float: center;" class="passed"></span>
-						<span id="add-removeGroupFailed" style="float: center;" class="failed"></span>
-					</div>
-					
 	
                     <div id="buttonGrp1" class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 200px; height: 20px; display: block">
                       <a class="Button" id="updateButton" onclick="javascript: UpdateForm()" style="display: compact;">Update</a>
@@ -581,6 +590,19 @@
                       <a class="Button" id="cancelButton" onclick="javascript: CancelForm()" style="display: compact;">Cancel</a>
                     </div>
                   </form>
+                  
+                  <div class="row">
+                  <%  if(session.getAttribute("passed") != null){ %> 
+                    	<span id="add-removeGroupPassed" style="float: center;" class="passed"><%=session.getAttribute("passed") %></span>
+                  <%      session.removeAttribute("passed");
+                      } else { %>
+                  		<span id="add-removeGroupPassed" style="float: center;" class="passed"></span>
+                  <% } %>
+                  		
+						<span id="add-removeGroupFailed" style="float: center;" class="failed"></span>
+					</div>
+					
+					
                     <div class="row">
                     <span class="label2">Member of:</span>
                     <div id="memberOf" style="float: right; text-align: left; width:395px; font-size:11px; color:#007186"><table>
@@ -590,7 +612,7 @@ NamingEnumeration e = attr.getAll();
 	while (e.hasMore()) {
 		String dn = (String)e.next();
 		dn = (String)Rdn.unescapeValue(dn);
-		String name = LdapTool.getCNValueFromDN(dn); //dn.split(",")[0].split("=")[1];
+		String name = LdapTool.getCNValueFromDN(dn);
 		baseGroups.remove(name);%>
 	              <tr id='<%= dn %>'>
 	              		<td><a class="Delete" onclick="deleteGroup( '<%= dn %>' )" href="#" title="Delete"></a></td>
@@ -598,7 +620,7 @@ NamingEnumeration e = attr.getAll();
 	              </tr>
 	<%} 
 } else { %>
-				  <tr><td>No groups</tr>
+				  <tr><td>No groups</td></tr>
 <%}%>
                     </table></div>
                   </div>

@@ -192,9 +192,10 @@ public class SupportTrackerJDBC {
 	public static int addClient(Map<String, String[]> maps) throws SQLException{
 		// creating query to select clientId that belong to the given companyName (stored in maps)
 		StringBuffer query = new StringBuffer();
+		String companyName = maps.get("company")[0];
 		// e.g. example of a final query      SELECT clientId FROM Client WHERE companyName = 'Aamal Medical Co'
 		query.append("SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = '"
-				+ maps.get("company")[0] + "'");
+				+ companyName + "'");
 		int clientId = -1;
 		
 		// connecting to Database server
@@ -250,6 +251,9 @@ public class SupportTrackerJDBC {
 					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
 				}
+			} else {
+				// throw new exception because the caller of this method will use this message (of this exception) as the result to inform to the user.
+				throw new SQLException("This company name " + companyName + " deosn't exist in Support Tracker database.");
 			}
 			
 			// this client has been added, try to get and return its clientAccountId  

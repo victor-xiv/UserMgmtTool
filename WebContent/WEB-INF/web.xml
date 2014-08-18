@@ -66,6 +66,10 @@
     <servlet-name>RemoveAGroupFromUser</servlet-name>
     <servlet-class>servlets.RemoveAGroupFromUserServlet</servlet-class>
   </servlet>
+  <servlet>
+    <servlet-name>RemoveAGroupFromGroup</servlet-name>
+    <servlet-class>servlets.RemoveAGroupFromGroupServlet</servlet-class>
+  </servlet>
   
   
 
@@ -133,5 +137,9 @@
   <servlet-mapping>
     <servlet-name>RemoveAGroupFromUser</servlet-name>
   	<url-pattern>/RemoveAGroupFromUser</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>RemoveAGroupFromGroup</servlet-name>
+  	<url-pattern>/RemoveAGroupFromGroup</url-pattern>
   </servlet-mapping>
 </web-app>

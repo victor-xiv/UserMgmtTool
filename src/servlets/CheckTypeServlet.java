@@ -30,12 +30,12 @@ import ldap.LdapProperty;
 import ldap.LdapTool;
 import ldap.UserMgmtConstants;
 
-import com.concerto.remote.exception.DoesNotExistException;
+//import com.concerto.remote.exception.DoesNotExistException;
 import com.concerto.sdk.security.AuthenticatedRequest;
-import com.concerto.webservice.user.UserManagerServiceSEI;
-import com.concerto.webservice.user.UserManagerServiceSEIServiceLocator;
-import com.concerto.webservice.user.dto.UserDTO;
-import com.concerto.webservice.user.exception.UserManagerServiceException;
+//import com.concerto.webservice.user.UserManagerServiceSEI;
+//import com.concerto.webservice.user.UserManagerServiceSEIServiceLocator;
+//import com.concerto.webservice.user.dto.UserDTO;
+//import com.concerto.webservice.user.exception.UserManagerServiceException;
 
 public class CheckTypeServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;

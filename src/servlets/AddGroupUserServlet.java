@@ -46,17 +46,18 @@ public class AddGroupUserServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		//Get organisation name
+		//Get dn name of this user
 		String dn = request.getParameter("dn").trim(); 
-		//Get desired group name
+		//Get name of this group (this is not a dn-name of this group)
 		String group = request.getParameter("groupselect").trim();
 		
 		NamingEnumeration namingEnum = null;
 		Set<String> baseGroups = null;
+		Attribute attr = null;
 		LdapTool lt = null;
 		boolean userAdded = false;
 		
-		
+		// create xml string that stores data for responding to client
 		StringBuffer sfXml = new StringBuffer();
 		response.setContentType("text/xml");
 	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
@@ -71,12 +72,12 @@ public class AddGroupUserServlet extends HttpServlet {
 			// baseGroups will be used to list all groups that this user doesn't belong to
 			// namingEnum will be used to list all groups that this user belong to
 			Attributes attrs = lt.getUserAttributes(dn);
-			Attribute attr = attrs.get("memberOf");
-			namingEnum = attr.getAll();
+			attr = attrs.get("memberOf");
 			baseGroups = lt.getBaseGroups();
 			
 			lt.close();
 		} catch (Exception e){
+			// preapring a failed response to client
 			String value = String.format("\t<failed>Addition of organisation '%s' to group %s has failed. Reason of the failure: %s.</failed>\n", dn, group, e.getMessage());
 		    sfXml.append(value);
 
@@ -89,22 +90,29 @@ public class AddGroupUserServlet extends HttpServlet {
 			return;
 		}
 
-		// If adding as group successful, print success message
-		if (userAdded && namingEnum != null && baseGroups != null) {
+		// If adding as group successful
+		if (userAdded && baseGroups != null) {
 			try {
-				while(namingEnum.hasMore()){
-					String thisDN = (String) namingEnum.next();
-					thisDN = (String) Rdn.unescapeValue(thisDN);
-					String name = LdapTool.getCNValueFromDN(thisDN);
-					baseGroups.remove(name);
-					String value = String.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n", thisDN, name);
-					sfXml.append(value);
+				if(attr != null){
+					namingEnum = attr.getAll();
+					// add memberOf into the xml that will response to client
+					while(namingEnum.hasMore()){
+						String thisDN = (String) namingEnum.next();
+						thisDN = (String) Rdn.unescapeValue(thisDN);
+						String name = LdapTool.getCNValueFromDN(thisDN);
+						// remove memberOf from baseGroups (so, after this loop baseGroups cotains only notMemberOf)
+						baseGroups.remove(name);
+						String value = String.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n", thisDN, name);
+						sfXml.append(value);
+					}
 				}
 			} catch (NamingException e) {
+				// preapring a failed response to client
 				String value = String.format("\t<failed>Addition of organisation '%s' to group %s has been done successfully. But, the groups list cannot be generated because of the groups iteration has failed. Please refresh the page.</failed>\n", dn, group);
 			    sfXml.append(value);
 			}
-					
+			
+			// add all notMemberOf into xml that will response to client
 			for(String bsGroup : baseGroups){
 				String value = String.format("\t<notMemberOf> %s </notMemberOf>\n", bsGroup);
 				sfXml.append(value);
@@ -116,7 +124,7 @@ public class AddGroupUserServlet extends HttpServlet {
 		    
 			logger.info("Organisation has been added to group.");
 
-		// Otherwise, log the error
+		// Otherwise, log the error and preapring a failed response to client
 		} else {
 			String value = String.format("\t<failed>Addition of organisation '%s' to group %s has failed.</failed>\n", dn, group);
 		    sfXml.append(value);
