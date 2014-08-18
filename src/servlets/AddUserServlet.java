@@ -148,9 +148,27 @@ public class AddUserServlet extends HttpServlet {
 			if(maps.get("displayName")[0] != null) 	fullname = maps.get("displayName")[0];
 			else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
 			
+			// these variable used for adding a user into ConcertoAPI
+			String firstName = maps.get("givenName")[0];
+			String lastName = maps.get("sn")[0];
+			String userName = maps.get("sAMAccountName")[0];
+			String description = maps.get("description")[0];
+			String mail = maps.get("mail")[0];
+						
+						
 			// check if username exist in LDAP or Concerto
 			boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
-			boolean usrExistsInConcerto = ConcertoAPI.doesClientUserExist(fullname);
+			boolean usrExistsInConcerto = false;
+			try {
+				usrExistsInConcerto = ConcertoAPI.doesUserExist(userName);
+			} catch (Exception e) {
+				String msg = "Cannot connect to concerto server. " + e.getMessage();
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}
+			
 			if(usrExistsInLDAP){
 				String msg = "Requesting user already exists in LDAP server";
 				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
@@ -200,8 +218,8 @@ public class AddUserServlet extends HttpServlet {
 				if( addStatus ){
 					// add user into concerto
 					try {
-						ConcertoAPI.addClientUser(maps.get("sAMAccountName")[0], Integer.toString(clientAccountId), fullname, maps.get("description")[0], maps.get("mail")[0]);
-					} catch (ServiceException e) {
+						ConcertoAPI.addClientUser(userName, firstName, lastName, fullname, description, mail, ""+clientAccountId);
+					} catch (Exception e) {
 						String msg = "User has been added into Support Tracker database and LDAP. But, it could not be added into Concerto Portal because: " + e.getMessage();
 //						response.getWriter().write("false|" + msg);
 						session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");

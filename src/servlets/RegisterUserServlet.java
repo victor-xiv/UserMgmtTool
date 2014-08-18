@@ -275,7 +275,7 @@ public class RegisterUserServlet extends HttpServlet {
 				session.setAttribute("passed", "You have been registered into LDAP server successfully.");
 				try {
 					ConcertoAPI.enableNT(username);
-				} catch (ServiceException e) {
+				} catch (Exception e) {
 					session.setAttribute("error", username + " has been added to LDAP server. But it couldn't be registered into Concerto. Because of: " +e.getMessage());
 					// we are not logging this error, because it has been logged
 					// in ConcertoAPI.enableNT()

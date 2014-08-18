@@ -185,10 +185,24 @@ public class AcceptRequestServlet extends HttpServlet {
 			String fullname = "";
 			if(maps.get("displayName")[0] != null) 	fullname = maps.get("displayName")[0];
 			else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
+			
+			// these variable used for adding a user into ConcertoAPI
+			String firstName = maps.get("givenName")[0];
+			String lastName = maps.get("sn")[0];
+			String userName = maps.get("sAMAccountName")[0];
+			String description = maps.get("description")[0];
+			String mail = maps.get("mail")[0];
 
 			// check if username exist in LDAP or Concerto
 			boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
-			boolean usrExistsInConcerto = ConcertoAPI.doesClientUserExist(fullname);
+			boolean usrExistsInConcerto = false;
+			try {
+				usrExistsInConcerto = ConcertoAPI.doesUserExist(userName);
+			} catch (Exception e) {
+				response.getWriter().write("false|Cannot connect to Concerto server. Reason: " + e.getMessage());
+				return;
+			}
+			
 			if(usrExistsInLDAP){
 				response.getWriter().write("false|Requesting user already exists in LDAP server");
 				return;
@@ -226,12 +240,6 @@ public class AcceptRequestServlet extends HttpServlet {
 					// delete the file from the disk
 					file.delete();
 					
-					String firstName = maps.get("givenName")[0];
-					String lastName = maps.get("sn")[0];
-					String userName = maps.get("sAMAccountName")[0];
-					String description = maps.get("description")[0];
-					String mail = maps.get("mail")[0];
-					
 					try {
 						ConcertoAPI.addClientUser(userName, firstName, lastName, fullname, description, mail, Integer.toString(clientAccountId));
 					} catch (com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.Exception e) {
@@ -262,7 +270,9 @@ public class AcceptRequestServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
 	{
-		doGet(request, response);
+//		doGet(request, response);
+		EmailClient.sendEmailApproved("srey.vongvithyea@gmail.com", "Vong", "vong.srey", "test");
+		EmailClient.sendEmailRejected("srey.vongvithyea@gmail.com", "vong");
 	}
 	
 	

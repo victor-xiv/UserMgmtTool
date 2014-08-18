@@ -109,7 +109,7 @@ public class ConcertoAPI {
 	/**
 	 * test the connection to Concerto with the given username.
 	 * return true if username exist, false if it doesn't exist
-	 * @param username : username that need to be enabled
+	 * @param username : username that need to be enabled (it should be the same as LDAP's sAMAccount)
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
@@ -148,8 +148,8 @@ public class ConcertoAPI {
 	
 	/**
 	 * check if the username exist in Concerto
-	 * return true if username exist, false if it doesn't exist
-	 * @param username : username that need to be enabled
+	 * return true if username exist, false if it doesn't exist 
+	 * @param username : username that need to be enabled (it should be the same as LDAP's sAMAccount)
 	 * @return true (if username exist in Concerto) false (otherwise)
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 * @throws MalformedURLException if wsdl url is not correct.
@@ -163,7 +163,7 @@ public class ConcertoAPI {
 	/**
 	 * set the user's (that given by username) accountType (in concerto database) to LDAP
 	 * It will return true, if it does successfully. otherwise, it will throw some exception.
-	 * @param username : username that need to be enabled
+	 * @param username : username that need to be enabled (it should be the same as LDAP's sAMAccount)
 	 * @throws MalformedURLException if wsdl url is not correct. 
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 */

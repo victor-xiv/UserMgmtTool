@@ -17,7 +17,7 @@ public class TestServlet extends HttpServlet {
 	{
 		try {
 			ConcertoAPI.testGetClientUser("JackM");
-		} catch (ServiceException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

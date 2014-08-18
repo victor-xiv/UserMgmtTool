@@ -18,9 +18,20 @@ import ldap.LdapProperty;
 
 public class EmailClient {
 	private static Properties mailServerConfig = new Properties();
-	private static String mailSubject;
-	private static StringBuffer mailBody = new StringBuffer();
 	private static Logger logger = Logger.getRootLogger();
+	
+	
+	// all below constants are used for reading the values from configuration file
+	public static final String REJECTED_SUBJECT = "rejected.subject";
+	public static final String REJECTED_BODY = "rejected.body";
+	
+	public static final String APPROVED_SUBJECT = "approved.subject";
+	public static final String APPROVED_BODY = "approved.body";
+	
+	public static final String REPLACEKEY_RECIPIENTNAME = "UsrMgmt_RECIPIENTNAME";
+	public static final String REPLACEKEY_USERNAME = "UsrMgmt_USERNAME";
+	public static final String REPLACEKEY_PASSWORD = "UsrMgmt_PASSWORD";
+	
 	
 	
 	// comment out the password part
@@ -32,21 +43,19 @@ public class EmailClient {
 		//
 	public static void sendEmailApproved(String mailTo, String recipientName, String username, String password){
 		init();
-		mailSubject = "Support Tracker Access Approved";
-		mailBody.append("Dear "+recipientName+",\n\n");
-		mailBody.append("Your account request to Support Tracker has been approved.\n");
-		mailBody.append("Please note your login details are:\n\n");
-		mailBody.append("Username: "+username+"\n");
-		mailBody.append("Password: "+password+"\n\n");
-		mailBody.append("You can now access http://supporttracker.orionhealth.com with the above login.\n\n");
-		mailBody.append("Kind Regards,\n");
-		mailBody.append("Orion Health Support");
+		String mailSubject = LdapProperty.getProperty(APPROVED_SUBJECT);
+		String mailBody = LdapProperty.getProperty(APPROVED_BODY);
+		mailBody = mailBody.replace(REPLACEKEY_RECIPIENTNAME, recipientName);
+		mailBody = mailBody.replace(REPLACEKEY_USERNAME, username);
+		mailBody = mailBody.replace(REPLACEKEY_PASSWORD, password);
+		
 		Session session = Session.getDefaultInstance(mailServerConfig, null);
 		MimeMessage message = new MimeMessage(session);
 		try {
 			message.addRecipient(Message.RecipientType.TO, new InternetAddress(mailTo));
+			message.setFrom(new InternetAddress(LdapProperty.getProperty(EmailConstants.MAIL_FROM)));
 			message.setSubject(mailSubject);
-			message.setText(mailBody.toString());
+			message.setText(mailBody);
 			Transport.send(message);
 		} catch (AddressException e) {
 			logger.error(e.toString());
@@ -59,18 +68,18 @@ public class EmailClient {
 	
 	public static void sendEmailRejected(String mailTo, String recipientName){
 		init();
-		mailSubject = "Support Tracker Access Rejected";
-		mailBody.append("Dear "+recipientName+",\n\n");
-		mailBody.append("Your account request to Support Tracker has been declined.\n");
-		mailBody.append("Please email your request to support@orionhealth.com\n\n");
-		mailBody.append("Kind Regards,\n");
-		mailBody.append("Orion Health Support");
+		String mailSubject = LdapProperty.getProperty(REJECTED_SUBJECT);
+		String mailBody = LdapProperty.getProperty(REJECTED_BODY);
+		mailBody = mailBody.replace(REPLACEKEY_RECIPIENTNAME, recipientName);
+		
 		Session session = Session.getDefaultInstance(mailServerConfig, null);
 		MimeMessage message = new MimeMessage(session);
+		
 		try {
 			message.addRecipient(Message.RecipientType.TO, new InternetAddress(mailTo));
+			message.setFrom(new InternetAddress(LdapProperty.getProperty(EmailConstants.MAIL_FROM)));
 			message.setSubject(mailSubject);
-			message.setText(mailBody.toString());
+			message.setText(mailBody);
 			Transport.send(message);
 		} catch (AddressException e) {
 			logger.error(e.toString());
@@ -82,8 +91,6 @@ public class EmailClient {
 	}
 	
 	private static void init(){
-		mailBody = new StringBuffer();
-		mailServerConfig.put("mail.host", LdapProperty.getProperty(EmailConstants.MAIL_HOST));
-		mailServerConfig.put("mail.from", LdapProperty.getProperty(EmailConstants.MAIL_FROM));
+		mailServerConfig.put("mail.smtp.host", LdapProperty.getProperty(EmailConstants.MAIL_HOST));
 	}
 }
