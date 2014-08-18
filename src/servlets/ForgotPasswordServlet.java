@@ -11,11 +11,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.log4j.Logger;
+
+import tools.LoggerTool;
 import ldap.LdapProperty;
 import ldap.LdapTool;
 import ldap.UserMgmtConstants;
 
 public class ForgotPasswordServlet extends HttpServlet {
+	
+	Logger logger = LoggerTool.setupDefaultRootLogger(); // initiate as a default root logger
+	
 private static final long serialVersionUID = 1L;
     /**
      * @see HttpServlet#HttpServlet()
@@ -55,26 +61,25 @@ private static final long serialVersionUID = 1L;
 		printHeader(out, conserver);
 		
 		
+		logger.info("Connecting to LDAP server.");
 		
 		//Get LdapTool and change Password.
 		LdapTool lt = null;
 		try {
 			lt = new LdapTool();
 		} catch (FileNotFoundException fe){
-			// TODO Auto-generated catch block
-			fe.printStackTrace();					
-		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		// TODO
-		if( lt == null){
+			logger.error("Cannot connect to LDAP server.", fe);
 			
+			out.println("Untable to connect to LDAP sever: " + fe.getMessage() + "<br />"+
+					"Please contact the server administrator for assistance or email your "+
+					"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
+		} catch (NamingException e) {
+			logger.error("Cannot connect to LDAP server.", e);
+			
+			out.println("Untable to connect to LDAP sever: " + e.getMessage() + "<br />"+
+					"Please contact the server administrator for assistance or email your "+
+					"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
 		}
-		
-		
-		
 		
 		out.println("I can't find any page that link to this servlet. So, I made this line to make the request fail."
 				+ "In order to find it and fix it. So, if you see this text, please report to CSS global team."
@@ -82,17 +87,15 @@ private static final long serialVersionUID = 1L;
 				+ "What page you are looking at. A screenshot of this page and the previous page that link to this page."
 				+ "Thanks for your cooperation.");
 		
-		
-		
-		
-		
-		
+		logger.info("about to change password for userDN: " + userDN + " to a new password: " + password);
 		
 		//If successful, print success
-		if (lt.changePassword(userDN, password))
+		if (lt.changePassword(userDN, password)){
 			out.println("Password changed successfully.");
+			logger.info("Password changed successfully, for userDN: " + userDN + " to a new password: " + password);
 		//If fail, print output
-		else {
+		} else {
+			logger.info("Password changed unsuccessfully, for userDN: " + userDN + " to a new password: " + password);
 			out.println("Unable to change password. The password you entered may be too simple or insecure.<br />"+
 					"Please contact the server administrator for assistance or email your "+
 					"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");

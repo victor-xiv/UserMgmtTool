@@ -3,7 +3,6 @@ package servlets;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.rmi.RemoteException;
 import java.util.Properties;
 
 import javax.mail.Message;
@@ -19,23 +18,17 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.xml.rpc.ServiceException;
-
-import org.apache.axis.EngineConfiguration;
-import org.apache.axis.configuration.FileProvider;
-import org.apache.log4j.Logger;
 
 import ldap.EmailConstants;
 import ldap.LdapProperty;
 import ldap.LdapTool;
 import ldap.UserMgmtConstants;
 
-//import com.concerto.remote.exception.DoesNotExistException;
+import org.apache.log4j.Logger;
+
+import tools.ConcertoAPI;
+
 import com.concerto.sdk.security.AuthenticatedRequest;
-//import com.concerto.webservice.user.UserManagerServiceSEI;
-//import com.concerto.webservice.user.UserManagerServiceSEIServiceLocator;
-//import com.concerto.webservice.user.dto.UserDTO;
-//import com.concerto.webservice.user.exception.UserManagerServiceException;
 
 public class CheckTypeServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
@@ -80,29 +73,30 @@ public class CheckTypeServlet extends HttpServlet {
 		
 		//Search LDAP users
 		if (true) {
-			
+			logger.info("Connecting to LDAP server.");
 			
 			LdapTool lt = null;
 			try {
 				lt = new LdapTool();
 			} catch (FileNotFoundException fe){
-				// TODO Auto-generated catch block
-				fe.printStackTrace();					
-			} catch (NamingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			// TODO
-			if( lt == null){
+				logger.error("Cannot connect to LDAP server.", fe);
 				
+				session.setAttribute("message", 
+						"A LDAP error occured upon submitting your request: "+fe.getMessage()+
+						"<br />Please contact the server administrator for assistance or email your "+
+						"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
+			} catch (NamingException e) {
+				logger.error("Cannot connect to LDAP server.", e);
+				
+				session.setAttribute("message", 
+						"A LDAP error occured upon submitting your request: "+e.getMessage()+
+						"<br />Please contact the server administrator for assistance or email your "+
+						"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
 			}
 			
-			
-			
+			//Check if this user actually exists
 			String name = lt.getName(username, organisation);
 			String mail = lt.getEmail(username, organisation);
-			//Check if this user actually exists
 			if (name!=null) {
 				//If user exists, email link to password change screen.
 				String userDN = "CN="+name+",OU="+organisation+",OU=Clients,DC=orion,DC=dmz";
@@ -116,46 +110,24 @@ public class CheckTypeServlet extends HttpServlet {
 		if (!ldap) {
 			//If not found in LDAP, check against concerto users
 			// Get the locator for the web service
-			final EngineConfiguration config = new FileProvider( "client-deploy.wsdd" );
-			UserManagerServiceSEIServiceLocator locator = new UserManagerServiceSEIServiceLocator(config);
-			locator.setUserManagerServiceEndpointAddress(conserver+"/services/UserManagerService" );
-			// Lookup the user management web service
-			UserManagerServiceSEI userManager;
 			try {
-				userManager = locator.getUserManagerService();
-				// Lookup the UserManagerService
-				//UserManagerService userManager = ConcertoServiceLocator.request(UserManagerService.class);
-				// Get a user account from the web service
-				@SuppressWarnings("unused")
-				UserDTO user = userManager.getUser( username );
-				//If successful, user is a Concerto user. Redirect to concerto password utility
-				response.sendRedirect(conserver+"/password/ForgotPassword.action");
-				return;
-			}  catch( UserManagerServiceException e ) {
-				if( e.getCause() instanceof DoesNotExistException ) {
+				
+				if(ConcertoAPI.doesUserExist(username)){
+					//If successful, user is a Concerto user. Redirect to concerto password utility
+					response.sendRedirect(conserver+"/password/ForgotPassword.action");
+					return;
+				} else {
 					// No user was found matching the user ID
 					session.setAttribute("message", 
 							"User not found. Please ensure your username and organisation are correct. ");
-				} else {
-					e.printStackTrace();
-					session.setAttribute("message", 
+				}
+				
+			}  catch( Exception e ) {
+				e.printStackTrace();
+				session.setAttribute("message", 
 							"A Concerto error occured upon submitting your request: "+e.getMessage()+
 							"<br />Please contact the server administrator for assistance or email your "+
 							"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
-				}
-			} catch( RemoteException e ) {
-				// Error occurred while invoking call on the web service
-				e.printStackTrace();
-				session.setAttribute("message", 
-						"A Concerto error occured upon submitting your request: "+err+
-						"<br />Please contact the server administrator for assistance or email your "+
-						"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
-			} catch (ServiceException e) {
-				e.printStackTrace();
-				session.setAttribute("message", 
-						"A Concerto error occured upon submitting your request: "+err+
-						"<br />Please contact the server administrator for assistance or email your "+
-						"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
 			}
 		}
 		

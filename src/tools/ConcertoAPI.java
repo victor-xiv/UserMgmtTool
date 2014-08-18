@@ -6,9 +6,7 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
@@ -17,7 +15,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.xml.namespace.QName;
-import javax.xml.rpc.ServiceException;
 
 import ldap.LdapProperty;
 import ldap.UserMgmtConstants;
@@ -32,17 +29,14 @@ import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.ComOrchestr
 import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.Exception;
 import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.UserManagementService;
 
-//import com.concerto.webservice.user.UserManagerServiceSEI;
-//import com.concerto.webservice.user.UserManagerServiceSEIServiceLocator;
-//import com.concerto.webservice.user.dto.UserAttributeDTO;
-//import com.concerto.webservice.user.dto.UserDTO;
-//import com.concerto.webservice.user.exception.UserManagerServiceException;
-//import com.orchestral.webservice.handler.PasswordCallbackHandler;
-
 public class ConcertoAPI {
 	private static Logger logger = Logger.getRootLogger();
 
 	
+	/**
+	 * Disable the SSL Verification. It is helpful when you need to work with
+	 * requests on HTTPS but the server doesn't have a proper signed certificate. (e.g. on Preprod server).
+	 */
 	public static void disableSslVerification(){
 		try
 	    {
@@ -80,6 +74,12 @@ public class ConcertoAPI {
 	}
 	
 	
+	
+	/**
+	 * Connect to stpreprod with webservice 7.2 and return the port object
+	 * @return
+	 * @throws MalformedURLException
+	 */
 	public static ComOrchestralPortalWebserviceApi72UserUserManagementService getConcertoServicePort() throws MalformedURLException{
 		logger.info("Connecting to concerto portal.");
 		
@@ -95,20 +95,6 @@ public class ConcertoAPI {
 		// get the content of wsdl from web url
 		URL wsdlURL = new URL(LdapProperty.getProperty(UserMgmtConstants.CONCERTO_WSDL_URL));
 		
-
-		// if we don't want to get content directly from web url
-		// we can set it to get from wsdl file that we have saved into hdd. 
-		// below is the code to do so
-//		URL wsdlURL;
-//		File wsdlFile = new File(
-//				"./concerto.wsdl");
-//		if (wsdlFile.exists()) {
-//			wsdlURL = wsdlFile.toURL();
-//		} else {
-//			wsdlURL = new URL(
-//					"https://192.168.21.69/portal/ws/com.orchestral.portal.webservice.api_7_2.user.UserManagementService?wsdl");
-//		}
-		
 		logger.info("Trying to connect to web service with wsdl at: " + wsdlURL);
 		UserManagementService ss = new UserManagementService(wsdlURL,
 				SERVICE_NAME);
@@ -118,94 +104,115 @@ public class ConcertoAPI {
 		return port;
 	}
 	
+	
+	
 	/**
-	 * test the connection to Concerto with the given username
-	 * @param username
-	 * @throws ServiceException if there is an exception during the connection or during the updating.
+	 * test the connection to Concerto with the given username.
+	 * return true if username exist, false if it doesn't exist
+	 * @param username : username that need to be enabled
+	 * @throws Exception if there is an exception during the connection or during the updating.
+	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
-	public static void testGetClientUser(String username) throws ServiceException{
-//		final EngineConfiguration config = new FileProvider( "client-deploy.wsdd" );
-//		final UserManagerServiceSEIServiceLocator locator = new UserManagerServiceSEIServiceLocator( config );
-//		String concertoUrl = LdapProperty.getProperty(UserMgmtConstants.CONCERTO_URL);
-//		locator.setUserManagerServiceEndpointAddress(concertoUrl+"/services/UserManagerService");
-//		try {
-//			final UserManagerServiceSEI userManager = locator.getUserManagerService();
-//			UserDTO user = userManager.getUser(username);
-//			logger.info("JM> "+user.getAccountType());
-//			
-//		} catch (ServiceException e) {
-//			logger.error(ErrorConstants.FAIL_UPDATE_CONCERTO, e);
-//			throw new ServiceException(ErrorConstants.FAIL_UPDATE_CONCERTO);
-//			
-//		} catch (UserManagerServiceException e) {
-//			logger.error(ErrorConstants.FAIL_UPDATE_CONCERTO, e);
-//			throw new ServiceException(ErrorConstants.FAIL_UPDATE_CONCERTO);
-//			
-//		} catch (RemoteException e) {
-//			logger.error(ErrorConstants.FAIL_UPDATE_CONCERTO, e);
-//			throw new ServiceException(ErrorConstants.FAIL_UPDATE_CONCERTO);
-//		}
-
-		throw new ServiceException("This function has not been implemented.");
+	public static boolean testGetClientUser(String username) throws Exception, MalformedURLException{
+		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
+		
+		logger.info("About to get endpoint object from portal's webservice");
+		
+		try {
+			port = getConcertoServicePort();
+		} catch (MalformedURLException e) {
+			logger.error("Failed ot retreive the endpoint object.",e);
+			throw new MalformedURLException("Given wsdl url is not correct.");
+		}
+		
+		logger.info("Endpoint object is successfully retrieved from webservice");
+		
+		User user = null;
+		try{
+			user = port.getUser(username);
+		} catch (Exception e){
+			// if username doesn't exist, just return false (don't need to throw an exception)
+			if(e.getMessage().contains("No user with ID '"+username+"' currently exists")){
+				return false;
+			}
+			
+			logger.error("Failed to retrieve a user from webserivce server.", e);
+			throw new Exception("Failed to retrieve a user from webserivce server.");
+		}
+		
+		logger.info("Working with user: " + username);
+		
+		return true;
 	}
 	
 	
 	/**
 	 * check if the username exist in Concerto
-	 * @param username
+	 * return true if username exist, false if it doesn't exist
+	 * @param username : username that need to be enabled
 	 * @return true (if username exist in Concerto) false (otherwise)
+	 * @throws Exception if there is an exception during the connection or during the updating.
+	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
-	public static boolean doesClientUserExist(String username){
-		// TODO need to implement before closing ticket SPT-609
-		return false;
+	public static boolean doesUserExist(String username) throws MalformedURLException, Exception{
+		return testGetClientUser(username);
 	}
 	
 	
 	
 	/**
 	 * set the user's (that given by username) accountType (in concerto database) to LDAP
-	 * @param username
-	 * @throws ServiceException if there is an exception during the connection or during the updating.
+	 * It will return true, if it does successfully. otherwise, it will throw some exception.
+	 * @param username : username that need to be enabled
+	 * @throws MalformedURLException if wsdl url is not correct. 
+	 * @throws Exception if there is an exception during the connection or during the updating.
 	 */
-	public static void enableNT(String username) throws ServiceException{
-//		final EngineConfiguration config = new FileProvider( "client-deploy.wsdd" );
-//		final UserManagerServiceSEIServiceLocator locator = new UserManagerServiceSEIServiceLocator( config );
-//		String concertoUrl = LdapProperty.getProperty(UserMgmtConstants.CONCERTO_URL);
-//		locator.setUserManagerServiceEndpointAddress(concertoUrl+"/services/UserManagerService");
-//		try {
-//			final UserManagerServiceSEI userManager = locator.getUserManagerService();
-//			UserDTO user = userManager.getUser(username);
-//			user.setAccountType("LDAP");
-//			userManager.updateUser(user);
-//		} catch (ServiceException e) {
-//			logger.error(ErrorConstants.FAIL_UPDATE_CONCERTO, e);
-//			throw new ServiceException(ErrorConstants.FAIL_UPDATE_CONCERTO);
-//			
-//		} catch (UserManagerServiceException e) {
-//			logger.error(ErrorConstants.FAIL_UPDATE_CONCERTO, e);
-//			throw new ServiceException(ErrorConstants.FAIL_UPDATE_CONCERTO);
-//			
-//		} catch (RemoteException e) {
-//			logger.error(ErrorConstants.FAIL_UPDATE_CONCERTO, e);
-//			throw new ServiceException(ErrorConstants.FAIL_UPDATE_CONCERTO);
-//		}
-		throw new ServiceException("This function has not been implemented.");
+	public static boolean enableNT(String username) throws MalformedURLException, Exception{
+		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
+		
+		logger.info("About to get endpoint object from portal's webservice");
+		
+		try {
+			port = getConcertoServicePort();
+		} catch (MalformedURLException e) {
+			logger.error("Failed ot retreive the endpoint object.",e);
+			throw new MalformedURLException("Given wsdl url is not correct.");
+		}
+		
+		logger.info("Endpoint object is successfully retrieved from webservice");
+		
+		User user = null;
+		try{
+			user = port.getUser(username);
+		} catch (Exception e){
+			logger.error("Failed to retrieve a user from webserivce server.", e);
+			throw new Exception("Failed to retrieve a user from webserivce server.");
+		}
+		
+		logger.info("Working with user: " + username);
+		
+		user.setAccountType("LDAP");
+		port.updateUser(user);
+		
+		return true;
 	}
 	
 	
 	
 	/**
 	 * add a user to Concerto. The user detail given by the parameters.
-	 * @param username
-	 * @param clientID
-	 * @param fullName
-	 * @param description
-	 * @param email
-	 * @throws Exception 
-	 * @throws ServiceException if there is an exception during the connection or during the updating.
+	 * @param username : account username (it should be the same as LDAP's sAMAccount)
+	 * @param firstname: user's firstname
+	 * @param lastname: user's lastname
+	 * @param fullName : user's fristname + " " + lastname
+	 * @param description : user's role/position
+	 * @param mail : user's contact email address
+	 * @param clientAccoutnId : an id that received from support tracker database
+	 * @throws Exception if there is an exception during the connection or during the updating.
+	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
 					   
-	public static void addClientUser(String userName, String firstName, String lastName, String fullname, String description, String mail, String clientAccountId) throws Exception{
+	public static void addClientUser(String userName, String firstName, String lastName, String fullname, String description, String mail, String clientAccountId) throws Exception, MalformedURLException{
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
@@ -214,8 +221,11 @@ public class ConcertoAPI {
 		try {
 			port = getConcertoServicePort();
 		} catch (MalformedURLException e) {
-			new MalformedURLException("Given wsdl url is not correct.");
+			logger.error("Failed ot retreive the endpoint object.",e);
+			throw new MalformedURLException("Given wsdl url is not correct.");
 		}
+		
+		logger.info("Endpoint object is successfully retrieved from webservice");
 		
 		User user = new User();
 		user.setUserId(userName);
@@ -252,10 +262,15 @@ public class ConcertoAPI {
 		
 		user.setUserAttributes(new UserAttributes(usrAttrList));
 		user.setAccountType("LDAP");
+		
+		logger.info("About to create a user " + userName + " on webservice server.");
 		try {
 			port.createUser(user);
 		} catch (Exception e) {
-			throw e; 
+			logger.error("User " + userName + " cannot be added to Concerto Portal. An exception is thrown from webservice server.", e);
+			throw new Exception("User " + userName + " cannot be added to Concerto Portal. An exception is thrown from webservice server."); 
 		}
+		
+		logger.info("Creating user: " + userName + " on webservice server is done successfully.");
 	}
 }
