@@ -270,9 +270,7 @@ public class AcceptRequestServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
 	{
-//		doGet(request, response);
-		EmailClient.sendEmailApproved("srey.vongvithyea@gmail.com", "Vong", "vong.srey", "test");
-		EmailClient.sendEmailRejected("srey.vongvithyea@gmail.com", "vong");
+		doGet(request, response);
 	}
 	
 	
