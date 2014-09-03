@@ -81,12 +81,14 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException
 	 */
 	public static ComOrchestralPortalWebserviceApi72UserUserManagementService getConcertoServicePort() throws MalformedURLException{
-		logger.info("Connecting to concerto portal.");
 		
-		// I disable this ssl verification, because the stpreprod server doesn't contain the proper signed certificate (self-signed only)
-		// and I can't configure it correctly on my production machine as well.
-		// you can remove this disabling, if you know what how to deal with those certificates. :)
-		disableSslVerification();
+		/**
+		 * if you receive SSLHandShakeException or any exception related to SSL connection.
+		 * please find the cxf configuration at /WET-INF/classes/cxf.xml
+		 */
+		
+		
+		logger.info("Connecting to concerto portal.");
 		
 		final QName SERVICE_NAME = new QName(
 				"http://www.orionhealth.com/com.orchestral.portal.webservice.api_7_2.user/",
@@ -114,6 +116,13 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
 	public static boolean testGetClientUser(String username) throws Exception, MalformedURLException{
+		
+		/**
+		 * if you receive SSLHandShakeException or any exception related to SSL connection.
+		 * please find the cxf configuration at /WET-INF/classes/cxf.xml
+		 */
+		
+		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
 		logger.info("About to get endpoint object from portal's webservice");
@@ -168,6 +177,13 @@ public class ConcertoAPI {
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 */
 	public static boolean enableNT(String username) throws MalformedURLException, Exception{
+		
+		/**
+		 * if you receive SSLHandShakeException or any exception related to SSL connection.
+		 * please find the cxf configuration at /WET-INF/classes/cxf.xml
+		 */
+		
+		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
 		logger.info("About to get endpoint object from portal's webservice");
@@ -213,6 +229,12 @@ public class ConcertoAPI {
 	 */
 					   
 	public static void addClientUser(String userName, String firstName, String lastName, String fullname, String description, String mail, String clientAccountId) throws Exception, MalformedURLException{
+		
+		/**
+		 * if you receive SSLHandShakeException or any exception related to SSL connection.
+		 * please find the cxf configuration at /WET-INF/classes/cxf.xml
+		 */
+		
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
