@@ -15,11 +15,11 @@
     <http:tlsClientParameters disableCNCheck="true">
       <sec:keyManagers keyPassword="Orionsy5">
         <sec:keyStore type="JKS" password="Orionsy5"
-                      file="/home/adminuser/Desktop/TestLDAPConnection/Test/src/stpreprod.jks"/>
+                      file="/usr/share/tomcat7/conf/stpreprod.jks"/>
       </sec:keyManagers>
       <sec:trustManagers>
         <sec:keyStore type="JKS" password="Orionsy5"
-                      file="/home/adminuser/Desktop/TestLDAPConnection/Test/src/stpreprod.jks"/>
+                      file="//usr/share/tomcat7/conf/stpreprod.jks"/>
       </sec:trustManagers>
       <sec:cipherSuitesFilter>
         <!-- these filters ensure that a ciphersuite with

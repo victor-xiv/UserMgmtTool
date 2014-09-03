@@ -26,7 +26,6 @@ import com.orionhealth.com_orchestral_portal_webservice_api_7_2.User.GroupMember
 import com.orionhealth.com_orchestral_portal_webservice_api_7_2.User.UserAttributes;
 import com.orionhealth.com_orchestral_portal_webservice_api_7_2.UserAttributeDto;
 import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.ComOrchestralPortalWebserviceApi72UserUserManagementService;
-import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.Exception;
 import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.UserManagementService;
 
 public class ConcertoAPI {

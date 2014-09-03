@@ -242,7 +242,7 @@ public class AcceptRequestServlet extends HttpServlet {
 					
 					try {
 						ConcertoAPI.addClientUser(userName, firstName, lastName, fullname, description, mail, Integer.toString(clientAccountId));
-					} catch (com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.Exception e) {
+					} catch (Exception e) {
 						response.getWriter().write("false|User "+maps.get("displayName")[0]+" was added to LDAP and Support Tracker. But it couldn't be added to Concerto Portal.");
 					}
 					
