@@ -255,7 +255,7 @@ public class ConcertoAPI {
 		user.setAccountEnabled(true);
 		List<String> group = new ArrayList<String>();
 		group.add("Clients");
-		user.setGroupMemberships(new GroupMemberships(group));
+		user.setGroupMemberships(new GroupMembershipsExt(group));
 		
 		
 		
@@ -281,7 +281,7 @@ public class ConcertoAPI {
 			usrAttrList.add(attr);
 		}
 		
-		user.setUserAttributes(new UserAttributes(usrAttrList));
+		user.setUserAttributes(new UserAttributesExt(usrAttrList));
 		user.setAccountType("LDAP");
 		
 		logger.info("About to create a user " + userName + " on webservice server.");
@@ -294,4 +294,21 @@ public class ConcertoAPI {
 		
 		logger.info("Creating user: " + userName + " on webservice server is done successfully.");
 	}
+}
+
+
+
+
+/**
+ * GroupMemerships and UserAttributes are the stub classes that provide by
+ * the Portal webservice server. But, these stub classes don't have constructors
+ * which we need them in this program. So, I wrote these two classes GrouMembershipsExt 
+ * and UserAttributes to extends that two classes and it just provides the
+ * constructors.
+ */
+class GroupMembershipsExt extends GroupMemberships{
+	public GroupMembershipsExt(List<String> grp){ group = grp; }
+}
+class UserAttributesExt extends UserAttributes{ 
+	public UserAttributesExt(List<UserAttributeDto> atrs){ attribute = atrs; }
 }

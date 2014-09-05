@@ -503,14 +503,6 @@ public class User {
     })
     public static class GroupMemberships {
 
-    	public GroupMemberships(List<String> group){
-    		this.group = group;
-    	}
-    	
-    	public GroupMemberships(){
-    		group = new ArrayList<String>();
-    	}
-    	
         protected List<String> group;
 
         /**
@@ -748,14 +740,6 @@ public class User {
     public static class UserAttributes {
 
         protected List<UserAttributeDto> attribute;
-        
-        public UserAttributes(){
-        	attribute = new ArrayList<UserAttributeDto>();
-        }
-        
-        public UserAttributes(List<UserAttributeDto> atrs){
-        	attribute = atrs;
-        }
 
         /**
          * Gets the value of the attribute property.
