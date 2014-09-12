@@ -18,7 +18,7 @@ import ldap.LdapProperty;
 
 public class EmailClient {
 	private static Properties mailServerConfig = new Properties();
-	private static Logger logger = Logger.getRootLogger();
+	
 	
 	
 	// all below constants are used for reading the values from configuration file
@@ -43,6 +43,8 @@ public class EmailClient {
 		//
 	public static void sendEmailApproved(String mailTo, String recipientName, String username, String password){
 		init();
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		String mailSubject = LdapProperty.getProperty(APPROVED_SUBJECT);
 		String mailBody = LdapProperty.getProperty(APPROVED_BODY);
 		mailBody = mailBody.replace(REPLACEKEY_RECIPIENTNAME, recipientName);
@@ -68,6 +70,8 @@ public class EmailClient {
 	
 	public static void sendEmailRejected(String mailTo, String recipientName){
 		init();
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		String mailSubject = LdapProperty.getProperty(REJECTED_SUBJECT);
 		String mailBody = LdapProperty.getProperty(REJECTED_BODY);
 		mailBody = mailBody.replace(REPLACEKEY_RECIPIENTNAME, recipientName);

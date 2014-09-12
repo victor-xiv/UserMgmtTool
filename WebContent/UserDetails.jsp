@@ -28,6 +28,7 @@
     		String userDN = request.getParameter("dn");
     		user.processUserDN(userDN);
     		groups.refreshGetUserGroup();
+    		
     	} catch (ConnectException e) {
     		session.setAttribute("error", e.getMessage());
     	}

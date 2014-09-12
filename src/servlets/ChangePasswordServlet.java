@@ -32,7 +32,7 @@ import tools.ValidatedRequestHandler;
 @SuppressWarnings("serial")
 public class ChangePasswordServlet extends HttpServlet {
 	
-	private Logger logger = LoggerTool.setupDefaultRootLogger();
+	private Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	
 	/**
@@ -44,8 +44,6 @@ public class ChangePasswordServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
-		logger = LoggerTool.setupRootLogger(request);
-		
 		String userDN = "";
 		HttpSession session = request.getSession(true);
 		if(session.getAttribute("dn") != null){
@@ -101,9 +99,7 @@ public class ChangePasswordServlet extends HttpServlet {
 	 * Accept the new password request and update that new password in the Ldap server
 	 */
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
-		throws ServletException, IOException
-    {
-		logger = LoggerTool.setupRootLogger(request);
+		throws ServletException, IOException{
 		
 		HttpSession session = request.getSession(true);
 		String userDN = (String)session.getAttribute("userDN");

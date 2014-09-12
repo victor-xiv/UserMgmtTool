@@ -19,13 +19,11 @@ import ldap.LdapTool;
 
 @SuppressWarnings("serial")
 public class UpdateUserDetailsServlet extends HttpServlet {
-	Logger logger = LoggerTool.setupDefaultRootLogger();
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
-    {
-		logger = LoggerTool.setupRootLogger(request);
-		
+    {	
 		String redirectURL = response.encodeRedirectURL("UserDetails.jsp?dn="+request.getParameter("dn"));
 		response.sendRedirect(redirectURL);
     }
@@ -38,8 +36,6 @@ public class UpdateUserDetailsServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
-		logger = LoggerTool.setupRootLogger(request);
-		
 		HttpSession session = request.getSession(true);
 		Map<String,String[]> paramMaps = (Map<String,String[]>)request.getParameterMap();
 		

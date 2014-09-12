@@ -29,7 +29,6 @@ import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.ComOrchestr
 import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.UserManagementService;
 
 public class ConcertoAPI {
-	private static Logger logger = Logger.getRootLogger();
 
 	
 	/**
@@ -80,6 +79,7 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException
 	 */
 	public static ComOrchestralPortalWebserviceApi72UserUserManagementService getConcertoServicePort() throws MalformedURLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		/**
 		 * if you receive SSLHandShakeException or any exception related to SSL connection.
@@ -115,6 +115,7 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
 	public static boolean testGetClientUser(String username) throws Exception, MalformedURLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		/**
 		 * if you receive SSLHandShakeException or any exception related to SSL connection.
@@ -176,6 +177,7 @@ public class ConcertoAPI {
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 */
 	public static boolean enableNT(String username) throws MalformedURLException, Exception{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		/**
 		 * if you receive SSLHandShakeException or any exception related to SSL connection.
@@ -228,6 +230,7 @@ public class ConcertoAPI {
 	 */
 					   
 	public static void addClientUser(String userName, String firstName, String lastName, String fullname, String description, String mail, String clientAccountId) throws Exception, MalformedURLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		/**
 		 * if you receive SSLHandShakeException or any exception related to SSL connection.

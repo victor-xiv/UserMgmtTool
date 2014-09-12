@@ -26,7 +26,7 @@ import ldap.LdapTool;
  */
 public class RemoveAGroupFromUserServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-	Logger logger = Logger.getRootLogger();
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
        
 
 	/**

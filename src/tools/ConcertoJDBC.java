@@ -20,7 +20,7 @@ public class ConcertoJDBC {
 	private static String jdbcUrl;
 	private static String jdbcUser;
 	private static String jdbcPassword;
-	private static Logger logger = Logger.getRootLogger();
+	
 	
 	
 	/**
@@ -30,6 +30,8 @@ public class ConcertoJDBC {
 	 * @throws SQLException if there is an exception in either connecting to DB or execute the sql query.
 	 */
 	public static Map<String,String> getUserDetails(String username) throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		Map<String,String> userDetails = new HashMap<String,String>();
 		
 		// building query statement
@@ -102,6 +104,8 @@ public class ConcertoJDBC {
 	 * @throws SQLException if there is an exception before/during the connection, or exception during the query execution.
 	 */
 	public static boolean toggleUserStatus(String username, boolean enabled) throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// building query statement
 		StringBuffer query = new StringBuffer("UPDATE cUser SET deleted = ");
 		if(enabled){
@@ -156,6 +160,8 @@ public class ConcertoJDBC {
 	 * @throws SQLException if there is an exception before/during the connection.
 	 */
 	private static Connection getConnection() throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// read the concerto DB url, usename and password from conf file
 		jdbcUrl = props.getProperty(DBConstants.CONCERTO_JDBC_URL);
 		jdbcUser = props.getProperty(DBConstants.CONCERTO_JDBC_USER);

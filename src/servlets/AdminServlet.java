@@ -21,7 +21,7 @@ import tools.ValidatedRequestHandler;
 @SuppressWarnings("serial")
 public class AdminServlet extends HttpServlet {
 	
-	private static Logger logger = LoggerTool.setupDefaultRootLogger();	// instantiate a logger
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	
 	/**
@@ -29,19 +29,20 @@ public class AdminServlet extends HttpServlet {
 	 */
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
-	{
-		// setting up a logger
-		logger = LoggerTool.setupRootLogger(request);
-		
+	{	
 		response.setHeader("Cache-Control", "no-cache");
 		response.setHeader("Pragma","no-cache");
 		response.setDateHeader ("Expires", 0);
 
+		// get the existing session or create a new one (if there's no existing) 
+		HttpSession session = request.getSession(true);
+		
+		logger.info("About to descrypt a request from session: " + session.toString());
+		
 		// validate and decrypt the request
 		Hashtable<String, String> parameters = ValidatedRequestHandler.processRequest(request);
 		
-		// get the existing session or create a new one (if there's no existing) 
-		HttpSession session = request.getSession(true);
+		logger.info("Request has been decrypted.");
 
  		// if there is a "error" paramter name, means the validation is incorrect
  		if(parameters.containsKey("error")) {

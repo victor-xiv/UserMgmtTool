@@ -23,9 +23,6 @@ import com.orchestral.security.concerto4.ValidationException;
 import com.orchestral.servlet.security.Concerto4xSecurityHttpServletRequestMarshaller;
 
 public class ValidatedRequestHandler {
-
-	// logger object
-	private static Logger logger = LoggerTool.setupDefaultRootLogger();
 	
 	/**
 	 * It received an HttpServletRequest that contains encrypted parameters
@@ -34,9 +31,7 @@ public class ValidatedRequestHandler {
 	 * @return a Hashtable object that contains name-value pairs of the decrypted request's paramters. 
 	 */
 	public static Hashtable<String, String> processRequest(HttpServletRequest request){
-		
-		// set up the logger
-		logger = LoggerTool.setupRootLogger(request);
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		
 		Hashtable<String, String> parameters = new Hashtable<String, String>();	

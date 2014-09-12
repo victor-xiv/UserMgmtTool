@@ -33,7 +33,7 @@ import tools.ValidatedRequestHandler;
 
 @SuppressWarnings("serial")
 public class AccountRequestServlet extends HttpServlet {
-	Logger logger = LoggerTool.setupDefaultRootLogger(); // initialize as a default root logger
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	
 	
@@ -46,7 +46,6 @@ public class AccountRequestServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
-		logger = LoggerTool.setupRootLogger(request);
 		
 		Hashtable<String, String> parameters = ValidatedRequestHandler.processRequest(request);
 		HttpSession session = request.getSession(true);

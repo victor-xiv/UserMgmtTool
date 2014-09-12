@@ -24,7 +24,7 @@ import tools.LoggerTool;
 import tools.SupportTrackerJDBC;
 
 public class AccountRequestsBean {
-	Logger logger = LoggerTool.setupDefaultRootLogger();
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	ArrayList<HashMap<String, String>> requests = new ArrayList<HashMap<String, String>>();
 

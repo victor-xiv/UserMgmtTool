@@ -17,8 +17,6 @@ public class UpdateNTLoginJDBC {
 	private static String jdbcUser;
 	private static String jdbcPassword;
 	
-	private static Logger logger = LoggerTool.setupDefaultRootLogger();
-	
 	
 	/**
 	 * update usingNTPassword to 1 (in the PasswordStatus column) for any uniqueID that belong to given username. 
@@ -28,8 +26,7 @@ public class UpdateNTLoginJDBC {
 	 * @throws SQLException if there is an exception in either connecting to DB or execute the sql query.
 	 */
 	public static boolean enableNT(String username) throws SQLException{
-		
-		LoggerTool.setupRootLogger(username);
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		StringBuffer query = new StringBuffer();
 		query.append("UPDATE PasswordStatus ");
@@ -83,6 +80,8 @@ public class UpdateNTLoginJDBC {
 	 * @throws SQLException if there is an exception before/during the connection.
 	 */
 	private static Connection getConnection() throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// read the concerto DB url, usename and password from conf file
 		jdbcUrl = props.getProperty(DBConstants.CONCERTO_JDBC_URL);
 		jdbcUser = props.getProperty(DBConstants.CONCERTO_JDBC_USER);

@@ -40,7 +40,7 @@ public class LdapTool {
 	private Hashtable<String, String> env;
 	private Properties props = LdapProperty.getConfiguration();
 	
-	Logger logger = LoggerTool.setupDefaultRootLogger(); //initialize with default root logger
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	// no reserved chars in this method
 	/**
@@ -582,12 +582,14 @@ public class LdapTool {
 		String filter = "("+groupAttr+"=*)";
 		SortedSet<String> output = new TreeSet<String>();
 		try{
+			logger.debug("LdapTool is about searching for groups of: " + baseDN);
 			NamingEnumeration<SearchResult> e = ctx.search(baseDN, filter, null);
 			while(e.hasMore()){
 				SearchResult results = (SearchResult)e.next();
 				Attributes attributes = results.getAttributes();
 				output.add((String)attributes.get(groupAttr).get());
 			}
+			logger.debug("searching is completed successfully.");
 		}catch(NamingException ex){
 			logger.error(ex.toString());
 			ex.printStackTrace();

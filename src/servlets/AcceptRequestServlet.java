@@ -35,7 +35,7 @@ import tools.SupportTrackerJDBC;
 @SuppressWarnings("serial")
 public class AcceptRequestServlet extends HttpServlet {
 	
-	static Logger logger = LoggerTool.setupDefaultRootLogger(); // initiate as a default root logger
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	
 	/**
@@ -48,7 +48,6 @@ public class AcceptRequestServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
-		logger = LoggerTool.setupRootLogger(request);
 		
 		// reading the account request file
 		String filename = request.getParameter("filename");
@@ -282,6 +281,8 @@ public class AcceptRequestServlet extends HttpServlet {
 	 * @param clientAccountId
 	 */
 	public static void deletePreviouslyAddedClientFromSupportTracker(int clientAccountId){
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// remove the previous added user from Support Tracker DB
 		try {
 			SupportTrackerJDBC.deleteClient(clientAccountId);

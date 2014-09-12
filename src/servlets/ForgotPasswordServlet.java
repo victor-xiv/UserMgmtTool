@@ -20,7 +20,7 @@ import ldap.UserMgmtConstants;
 
 public class ForgotPasswordServlet extends HttpServlet {
 	
-	Logger logger = LoggerTool.setupDefaultRootLogger(); // initiate as a default root logger
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 private static final long serialVersionUID = 1L;
     /**

@@ -32,13 +32,11 @@ import ldap.*;
 @SuppressWarnings("serial")
 public class RegisterUserServlet extends HttpServlet {
 	//ADDITIONAL VARIABLE
-	Logger logger = LoggerTool.setupDefaultRootLogger();
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
-    {
-		logger = LoggerTool.setupRootLogger(request);
-		
+    {	
 		String username = "";
 		HttpSession session = request.getSession(true);
 			
@@ -81,9 +79,7 @@ public class RegisterUserServlet extends HttpServlet {
 	@SuppressWarnings("unchecked")
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
-    {
-		logger = LoggerTool.setupRootLogger(request);
-		
+    {	
 		HttpSession session = request.getSession(true);
 		String username = (String)session.getAttribute("username");
 		session.removeAttribute("username");

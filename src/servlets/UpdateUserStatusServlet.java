@@ -6,6 +6,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.ServletException;
 
+import org.apache.log4j.Logger;
+
 import tools.ConcertoJDBC;
 import tools.SupportTrackerJDBC;
 
@@ -18,6 +20,8 @@ import ldap.LdapTool;
 
 @SuppressWarnings("serial")
 public class UpdateUserStatusServlet extends HttpServlet {
+	
+	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	/**
 	 * update the user status in LDAP server, Concerto DB and Support Tracker DB

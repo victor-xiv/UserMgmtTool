@@ -28,7 +28,7 @@ public class SupportTrackerJDBC {
 	private static String jdbcUser;
 	private static String jdbcPassword;
 	
-	private static Logger logger = LoggerTool.setupDefaultRootLogger();
+	
 
 	/**
 	 * get the detail of the given user
@@ -37,6 +37,8 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
 	public static Map<String,String> getUserDetails(String username) throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		Map<String,String> userDetails = new HashMap<String,String>();
 		// building query
 		StringBuffer query = new StringBuffer();
@@ -97,6 +99,8 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
 	public static List<String> getOrganisations() throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// building query
 		List<String> orgs = new ArrayList<String>();
 		StringBuffer query = new StringBuffer();
@@ -114,12 +118,14 @@ public class SupportTrackerJDBC {
 		
 		if(con != null){
 			try {
+				logger.debug("about to query support tracker db: " + query.toString());
 				// executing the query
 				Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery(query.toString());
 				while(rs.next()){
 					orgs.add(rs.getString(1));
 				}
+				logger.debug("query successfully completed");
 			} catch (SQLException e) {
 				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
 				throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
@@ -143,6 +149,8 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
 	public static List<String> getEmails() throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// building query
 		List<String> orgs = new ArrayList<String>();
 		StringBuffer query = new StringBuffer();
@@ -190,6 +198,8 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
 	public static int addClient(Map<String, String[]> maps) throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// creating query to select clientId that belong to the given companyName (stored in maps)
 		StringBuffer query = new StringBuffer();
 		String companyName = maps.get("company")[0];
@@ -297,6 +307,8 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if there's any exception occur before, during and after connection and query execution
 	 */
 	public static boolean deleteClient(int clientAccountId) throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		String query = String.format("DELETE ClientAccount WHERE clientAccountId = %d", clientAccountId);
 		
 		Connection con = null;
@@ -333,6 +345,8 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if the connection to DB failed or SQL query failed to be executed
 	 */
 	public static boolean toggleUserStatus(String username, boolean enabled) throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// building SQL query
 		StringBuffer query = new StringBuffer("UPDATE ClientAccount SET active = ");
 		if(enabled){
@@ -380,6 +394,8 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if it failed to connect to DB server, failed to execute the queries or failed to close the connectioin 
 	 */
 	public static String[] getAvailableUsernames(String firstname, String surname) throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		// remove any special characters that are not allowed to be in user name.
 		// those characters are: " ' , < > : = * [ ] | : ! # + & % { } ? \
 		firstname = firstname.replaceAll("[\\\"\\\'\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?\\\\]", "");
@@ -451,12 +467,17 @@ public class SupportTrackerJDBC {
 	 * @throws SQLException if the connection failed.
 	 */
 	private static Connection getConnection() throws SQLException{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("About to connect to Support Tracker Database");
 		jdbcUrl = props.getProperty(DBConstants.ST_JDBC_URL);
 		jdbcUser = props.getProperty(DBConstants.ST_JDBC_USER);
 		jdbcPassword = props.getProperty(DBConstants.ST_JDBC_PASSWORD);
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 			Connection con = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword);
+			if(con != null) logger.debug("Successfully connected to Support Tracker Database");
+			else logger.error("Fail in connecting to Support Tracker Database. Fail to define the failture reason.");
 			return con;
 			
 		} catch (ClassNotFoundException e) {
