@@ -9,13 +9,15 @@ import java.util.TreeMap;
 import org.apache.log4j.Logger;
 
 public class CountryCode {
-	private static Logger logger = Logger.getRootLogger();
+	
 	
 	/**
 	 * read CountryCode.xml (pathToTomcatConfFolder/CountryCode.xml) assign the key,value pair into countries TreeMap
 	 * @return a TreeMap that contains key,value pair of all countries. i.e. {(Afghanistan, Afghanistan), ...}
 	 */
 	public static TreeMap<String,String> getCountryNameMap(){
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
 		File conf = new File(home, "conf");
@@ -43,6 +45,8 @@ public class CountryCode {
 	 * @return a TreeMap that contains key,value pair of all countries. i.e. {(AF, Afghanistan), ...}
 	 */
 	public static TreeMap<String,String> getCountryCodeMap(){
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
 		File conf = new File(home, "conf");
