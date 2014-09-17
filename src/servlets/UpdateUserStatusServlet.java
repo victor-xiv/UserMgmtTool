@@ -1,22 +1,22 @@
 package servlets;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.SQLException;
+
 import javax.naming.NamingException;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
+
+import ldap.ErrorConstants;
+import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 
 import tools.ConcertoJDBC;
 import tools.SupportTrackerJDBC;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.sql.SQLException;
-
-import ldap.ErrorConstants;
-import ldap.LdapTool;
 
 @SuppressWarnings("serial")
 public class UpdateUserStatusServlet extends HttpServlet {

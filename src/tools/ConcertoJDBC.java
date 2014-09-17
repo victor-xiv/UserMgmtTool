@@ -9,11 +9,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
-
 import ldap.DBConstants;
 import ldap.ErrorConstants;
 import ldap.LdapProperty;
+
+import org.apache.log4j.Logger;
 
 public class ConcertoJDBC {
 	private static Properties props = LdapProperty.getConfiguration();

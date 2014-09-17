@@ -11,12 +11,11 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.Logger;
-
-import tools.LoggerTool;
 import ldap.LdapProperty;
 import ldap.LdapTool;
 import ldap.UserMgmtConstants;
+
+import org.apache.log4j.Logger;
 
 public class ForgotPasswordServlet extends HttpServlet {
 	

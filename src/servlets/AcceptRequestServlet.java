@@ -15,7 +15,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.rpc.ServiceException;
 
 import ldap.ErrorConstants;
 import ldap.LdapConstants;
@@ -29,7 +28,6 @@ import org.xml.sax.SAXException;
 
 import tools.ConcertoAPI;
 import tools.EmailClient;
-import tools.LoggerTool;
 import tools.SupportTrackerJDBC;
 
 @SuppressWarnings("serial")

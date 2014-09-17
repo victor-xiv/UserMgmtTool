@@ -5,11 +5,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
-
 import ldap.DBConstants;
 import ldap.ErrorConstants;
 import ldap.LdapProperty;
+
+import org.apache.log4j.Logger;
 
 public class UpdateNTLoginJDBC {
 	private static Properties props = LdapProperty.getConfiguration();

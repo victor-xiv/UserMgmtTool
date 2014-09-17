@@ -141,7 +141,7 @@ public class ConcertoAPI {
 			user = port.getUser(username);
 		} catch (Exception e){
 			// if username doesn't exist, just return false (don't need to throw an exception)
-			if(e.getMessage().contains("No user with ID '"+username+"' currently exists")){
+			if(e.getMessage().contains("No user")){
 				return false;
 			}
 			

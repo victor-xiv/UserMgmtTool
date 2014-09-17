@@ -1,21 +1,19 @@
 package servlets;
 
-import javax.naming.NamingException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpSession;
-
-import org.apache.log4j.Logger;
-
-import tools.LoggerTool;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
+import javax.naming.NamingException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
 import ldap.LdapTool;
+
+import org.apache.log4j.Logger;
 
 @SuppressWarnings("serial")
 public class UpdateUserDetailsServlet extends HttpServlet {

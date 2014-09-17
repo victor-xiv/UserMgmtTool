@@ -4,7 +4,6 @@
 package servlets;
 
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.Hashtable;
 
 import javax.servlet.ServletException;
@@ -15,7 +14,6 @@ import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
 
-import tools.LoggerTool;
 import tools.ValidatedRequestHandler;
 
 @SuppressWarnings("serial")

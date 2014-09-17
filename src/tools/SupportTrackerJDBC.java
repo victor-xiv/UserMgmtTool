@@ -16,11 +16,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeSet;
 
-import org.apache.log4j.Logger;
-
 import ldap.DBConstants;
 import ldap.ErrorConstants;
 import ldap.LdapProperty;
+
+import org.apache.log4j.Logger;
 
 public class SupportTrackerJDBC {
 	private static Properties props = LdapProperty.getConfiguration();

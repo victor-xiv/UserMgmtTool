@@ -28,7 +28,6 @@ import ldap.LdapTool;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
-import tools.LoggerTool;
 import tools.ValidatedRequestHandler;
 
 @SuppressWarnings("serial")

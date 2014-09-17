@@ -33,8 +33,6 @@ import javax.naming.ldap.Rdn;
 
 import org.apache.log4j.Logger;
 
-import tools.LoggerTool;
-
 public class LdapTool {
 	private DirContext ctx;
 	private Hashtable<String, String> env;
@@ -56,6 +54,7 @@ public class LdapTool {
 		// if LDAP config file is not found
 		// the props will contain an "error" key
 		if(props.getProperty("error") != null){
+			logger.error("ldap.properties file is not found.");
 			throw new FileNotFoundException("LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
 			// don't need to log, because it has been logged in LdapProperty.getConfiguration()
 		}
@@ -1100,12 +1099,50 @@ public class LdapTool {
 			ctx.createSubcontext(ldapCompanyDN, attributes);
 			logger.info("Organisation with DN: "+companyDN+" was added as group successfully");
 			return true;
-		//If error, log detail and stack trace
+		//If error, log detail and stack trace	
 		} catch (NamingException e) {
 			logger.error(String.format("Failed to add organisation: %s, as a Ldap Group", companyName), e);
 			if(e instanceof NameAlreadyBoundException){
 				throw new NameAlreadyBoundException("This group already exist in Clients");
 			}
+			return false;
+		}
+	}
+	
+	
+	/**
+	 * delete the company from "Groups" folder (defined by given groupDN)
+	 * groupDN must has not been escaped value at all. (they will be escaped in this method body)
+	 * (e.g. groupDN="CN=company_name,OU=Group, I,OU=Clients,DC=orion,DC=dmz")
+	 * @param groupDN: given groupDN that has not been escaped value at all. (they will be escaped in this method body) 
+	 * @return true, if the deletion successful, false otherwise.
+	 */
+	public boolean deleteGroupCompany(String groupDN){
+		groupDN = LdapTool.escapedCharsOnCompleteGroupDN(groupDN);
+		try{
+			ctx.destroySubcontext(new LdapName(groupDN));
+			return true;
+		}catch(NamingException ex){
+			logger.error("Exception while deleting a give userDN: " + groupDN, ex);
+			return false;
+		}
+	}
+	
+	
+	/**
+	 * delete the company from "Clients" folder (defined by given groupDN)
+	 * groupDN must has not been escaped value at all. (they will be escaped in this method body)
+	 * (e.g. groupDN="ou=company_name,OU=Clients,DC=orion,DC=dmz")
+	 * @param groupDN: given groupDN that has not been escaped value at all. (they will be escaped in this method body) 
+	 * @return true, if the deletion successful, false otherwise.
+	 */
+	public boolean deleteCompany(String groupDN){
+		groupDN = LdapTool.escapedCharsOnCompleteCompanyDN(groupDN);
+		try{
+			ctx.destroySubcontext(new LdapName(groupDN));
+			return true;
+		}catch(NamingException ex){
+			logger.error("Exception while deleting a give userDN: " + groupDN, ex);
 			return false;
 		}
 	}
@@ -1299,6 +1336,24 @@ public class LdapTool {
 	}
 	
 	
+	/**
+	 * This method is used to escape any reserved chars that contains in the full complete company DN (copmany that stored in Clients folder).
+	 * e.g. given groupDN="ou=group, name,OU=Clients,DC=orion,DC=dmz"
+	 * @param dn is a full complete dn that has not been escaped any reserved chars. 
+	 * @return a final dn that has been escaped all reserved chars (e.g. groupDN="ou=group\, name,OU=Clients,DC=orion,DC=dmz")
+	 */
+	public static String escapedCharsOnCompleteCompanyDN(String originalDN) {
+		// getting cn
+		String cn = LdapTool.getouValueFromDN(originalDN);
+		// ecaspe reserved char on CN value
+		String escapedCn = Rdn.escapeValue(cn);
+		
+		String dn = originalDN.replace(cn, escapedCn);
+
+		return dn;
+	}
+	
+	
 	
 	/**
 	 * a helper method to get only cn value from the dn string. 
@@ -1317,6 +1372,25 @@ public class LdapTool {
 		int cnValueEndIndex = tempDN.indexOf(",OU=", cnValueStartIndex);
 		String cn = dn.substring(cnValueStartIndex, cnValueEndIndex);
 		return cn;
+	}
+	
+	/**
+	 * a helper method to get only ou value from the dn string. 
+	 * Note: that if the given dn contains escaped chars the result also contains the escaped chars.
+	 * And if the give dn doesn't contains an escaped char the result also doesn't contain an escaped char.
+	 * @param dn (e.g. ou=Associated Regional and University Pathologists, I,OU=Clients,DC=orion,DC=dmz)
+	 * @return only ou value (e.g. Associated Regional and University Pathologists, I)
+	 */
+	public static String getouValueFromDN(String dn) {
+		// used to get CN and OU value (preventing CN and OU were written in
+		// lowercacse)
+		String tempDN = dn.toUpperCase();
+
+		// getting CN value
+		int ouValueStartIndex = tempDN.indexOf("OU=") + "OU=".length();
+		int ouValueEndIndex = tempDN.indexOf(",OU=", ouValueStartIndex);
+		String ou = dn.substring(ouValueStartIndex, ouValueEndIndex);
+		return ou;
 	}
 	
 	

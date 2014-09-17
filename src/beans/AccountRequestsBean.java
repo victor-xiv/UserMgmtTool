@@ -20,7 +20,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import tools.CountryCode;
-import tools.LoggerTool;
 import tools.SupportTrackerJDBC;
 
 public class AccountRequestsBean {

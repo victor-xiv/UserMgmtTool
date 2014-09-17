@@ -10,11 +10,11 @@ import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 
-import org.apache.log4j.Logger;
-
 import ldap.EmailConstants;
 import ldap.LdapProperty;
 //import ldap.LdapTool;
+
+import org.apache.log4j.Logger;
 
 public class EmailClient {
 	private static Properties mailServerConfig = new Properties();

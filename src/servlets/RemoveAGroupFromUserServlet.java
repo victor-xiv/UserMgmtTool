@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.Set;
 
 import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.ldap.Rdn;
@@ -12,11 +11,10 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
-import org.apache.log4j.Logger;
 
 import ldap.LdapTool;
+
+import org.apache.log4j.Logger;
 
 /**
  * Servlet implementation class AddOrganisationServlet
