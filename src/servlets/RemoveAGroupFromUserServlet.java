@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import ldap.LdapTool;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -49,8 +50,8 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 		// create xml string that stores data that need to be responded to client
 		StringBuffer sfXml = new StringBuffer();
 		response.setContentType("text/xml");
-	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-	    sfXml.append("<response>\n");
+	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+	    sfXml.append("<response>");
 		
 		try {
 			
@@ -73,32 +74,34 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 					String name = LdapTool.getCNValueFromDN(thisDN);
 					baseGroups.remove(name);
 					
-					String value = String.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n", thisDN, name);
+					String value = String.format("<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>", 
+							StringEscapeUtils.escapeXml(thisDN), StringEscapeUtils.escapeXml(name));
 					sfXml.append(value);
 				}
 			}
 			
 			// assign those notMemberOfGroups into the xml response string
 			for(String bsGroup : baseGroups){
-				String value = String.format("\t<notMemberOf> %s </notMemberOf>\n", bsGroup);
+				String value = String.format("<notMemberOf> %s </notMemberOf>", StringEscapeUtils.escapeXml(bsGroup));
 				sfXml.append(value);
 			}
 			
 			// If removal is successful, response with a "passed" tag.
-			String value = String.format("\t<passed></passed>\n");
+			String value = String.format("<passed></passed>");
 		    sfXml.append(value);
 		    
-			logger.info(String.format("Group '%s' has been removed from user '%s' successfully.", groupDN, userDN));
+			logger.info(String.format("Group '%s' has been removed from user '%s' successfully.", 
+					StringEscapeUtils.escapeXml(groupDN), StringEscapeUtils.escapeXml(userDN)));
 			
 		} catch (Exception e){
 			// if failed
-			String value = String.format("\t<failed>Reason of the failure: %s.</failed>\n", e.getMessage());
+			String value = String.format("<failed>Reason of the failure: %s.</failed>", StringEscapeUtils.escapeXml(e.getMessage()));
 			sfXml.append(value);
 			
 			logger.info("Removal of user: '" + userDN + "' from group " + groupDN + " has failed.", e);
 		}
 
-		sfXml.append("</response>\n");
+		sfXml.append("</response>");
 	    response.getWriter().write(sfXml.toString());
 	    response.getWriter().flush();
 	    response.getWriter().close();

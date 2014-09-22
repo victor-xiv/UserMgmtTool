@@ -203,6 +203,18 @@ public class SupportTrackerJDBC {
 		// creating query to select clientId that belong to the given companyName (stored in maps)
 		StringBuffer query = new StringBuffer();
 		String companyName = maps.get("company")[0];
+		
+		
+		// handle special case, which the companyName is Orion Health
+		// the account being created is for the internal staff
+		if(companyName.trim().equalsIgnoreCase("Orion Health")){
+			return addStaffAccount(maps);
+		}
+		
+		
+		
+		
+		
 		// e.g. example of a final query      SELECT clientId FROM Client WHERE companyName = 'Aamal Medical Co'
 		query.append("SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = '"
 				+ companyName + "'");
@@ -295,6 +307,89 @@ public class SupportTrackerJDBC {
 			return clientAccountId;
 			//Extended } to encompass large block, to prevent null pointer exceptions on con - SPT-448
 		}
+		return -1;
+	}
+	
+	
+	public static int addStaffAccount(Map<String, String[]> maps) throws SQLException {
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		// connecting to Database server
+		Connection con = null;
+		try {
+			con = getConnection();
+		} catch (SQLException e1) {
+			throw e1;
+			// no need to log, it has been logged in the getConnection()
+		}
+
+		int status = 0;
+		if (con != null) {
+				String query = "INSERT INTO Staff "
+						+ "(positionCodeId, familyName, givenName, email, workPhone, "
+						+ "mobile, page, recordStatus, userPrivilegeId, loginName, "
+						+ "receiveSms) "
+						+ "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				
+				try {
+					// building parameterized query
+					PreparedStatement pst = con.prepareStatement(query);
+					pst.setInt(1, 14);
+					pst.setString(2, maps.get("sn")[0]);
+					pst.setString(3, maps.get("givenName")[0]);
+					pst.setString(4, maps.get("mail")[0]);
+					pst.setString(5, maps.get("telephoneNumber")[0]);
+					pst.setString(6, maps.get("mobile")[0]);
+					pst.setString(7, ""); // page column
+					pst.setString(8, "Y"); // recordStatus column
+					pst.setInt(9, 2);   // userPrivilegeId column
+					pst.setString(10, maps.get("sAMAccountName")[0]);
+					pst.setString(11, "N");
+										
+					// execute the query
+					status = pst.executeUpdate();
+					
+					logger.info(String
+							.format("Added user with name: %s successfully",
+									maps.get("displayName")[0]));
+				} catch (SQLException e) {
+					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
+				}
+			
+			// this staff account has been added, try to get and return its
+			// staffId
+			int staffId = -1;
+			if (status > 0) {
+				// building a query to query for staffId from
+				// Staff table
+				// the staffId which just created with the insertion
+				// query earlier
+				query = "SELECT staffId FROM Staff WHERE loginName = '" + 
+						maps.get("sAMAccountName")[0] + "'"; 
+
+				try {
+					Statement st = con.createStatement();
+					ResultSet rs = st.executeQuery(query.toString());
+					// get the staffId from the query result
+					while (rs.next()) {
+						staffId = rs.getInt(1);
+					}
+				} catch (SQLException e) {
+					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
+				}
+			}
+
+			// closing connection
+			try {
+				con.close();
+			} catch (SQLException e) {
+				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+			}
+			return staffId;
+		}
+		
 		return -1;
 	}
 	

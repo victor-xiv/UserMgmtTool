@@ -1,19 +1,13 @@
 package beans;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.ConnectException;
-import java.net.URL;
-import java.util.Enumeration;
 import java.util.TreeMap;
-import java.util.jar.Manifest;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 
 import ldap.LdapTool;
-
-import com.jcabi.manifests.Manifests;
 
 public class LdapOrganisation{
 	private TreeMap<String,String[]> users;
@@ -73,32 +67,6 @@ public class LdapOrganisation{
 		names = users.keySet().toArray(names);
 		return names;
 	}
-//	
 	
-	public String getManifestVersion() throws IOException{
-		String version = Manifests.read("UserMgmtVersion");
-		
-		Enumeration<URL> resources =  getClass().getClassLoader().getResources("META-INF/MANIFEST.MF");
-		while(resources.hasMoreElements()){
-			try{
-				Manifest manifest = new Manifest(resources.nextElement().openStream());
-				Attributes attrs = (Attributes) manifest.getAttributes("UserMgmtVersion");
-				System.out.println(manifest.getEntries());
-				System.out.println(manifest.getMainAttributes().entrySet());
-				System.out.println(attrs);
-				System.out.println("\n\n");
-			} catch(IOException e){
-				
-			}
-		}
-		
-		
-		
-//		ServletContext application = getServletConfig().getServletContext();
-//		InputStream inputStream = application.getResourceAsStream("/META-INFO/MENIFEST.MF");
-//		Manifest manifest = new Manifest(inputStream);
-//		Attributes attributes = (Attributes) manifest.getMainAttributes();
-//		String version = ((java.util.jar.Attributes) attributes).getValue("Implementation-Version");
-		return version;
-	}
+
 }

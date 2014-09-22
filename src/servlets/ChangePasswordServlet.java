@@ -2,13 +2,9 @@ package servlets;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Hashtable;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 
 import javax.naming.NamingException;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -46,16 +42,6 @@ public class ChangePasswordServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
-		
-		ServletContext application = getServletConfig().getServletContext();
-		InputStream inputStream = application.getResourceAsStream("/META-INF/MANIFEST.MF");
-		Manifest manifest = new Manifest(inputStream);
-		Attributes attributes = manifest.getMainAttributes();
-        String impVersion = attributes.getValue("UserMgmtVersion");
-        System.out.println(impVersion);
-        
-		
-		
 		String userDN = "";
 		HttpSession session = request.getSession(true);
 		if(session.getAttribute("dn") != null){

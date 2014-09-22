@@ -1370,6 +1370,9 @@ public class LdapTool {
 		// getting CN value
 		int cnValueStartIndex = tempDN.indexOf("CN=") + "CN=".length();
 		int cnValueEndIndex = tempDN.indexOf(",OU=", cnValueStartIndex);
+		if(cnValueEndIndex < 0){
+			cnValueEndIndex = tempDN.indexOf(",CN=", cnValueStartIndex);
+		}
 		String cn = dn.substring(cnValueStartIndex, cnValueEndIndex);
 		return cn;
 	}

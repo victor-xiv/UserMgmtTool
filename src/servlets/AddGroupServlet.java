@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import ldap.LdapTool;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -60,8 +61,8 @@ public class AddGroupServlet extends HttpServlet {
 
 			StringBuffer sfXml = new StringBuffer();
 			response.setContentType("text/xml");
-			sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-			sfXml.append("<response>\n");
+			sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+			sfXml.append("<response>");
 
 			try {
 				lt = new LdapTool();
@@ -80,14 +81,14 @@ public class AddGroupServlet extends HttpServlet {
 			} catch (Exception e) {
 				// prepareing a failed response to client
 				String value = String
-						.format("\t<failed>Addition of group '%s' to group %s has failed. Reason of the failure: %s.</failed>\n",
-								thisGroupDN, newGroupName, e.getMessage());
+						.format("<failed>Addition of group '%s' to group %s has failed. Reason of the failure: %s.</failed>",
+								StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName), StringEscapeUtils.escapeXml(e.getMessage()));
 				sfXml.append(value);
 
 				logger.info("Addition of organisation '" + thisGroupDN
 						+ "' to group " + newGroupName + " has failed.");
 
-				sfXml.append("</response>\n");
+				sfXml.append("</response>");
 				response.getWriter().write(sfXml.toString());
 				response.getWriter().flush();
 				response.getWriter().close();
@@ -107,46 +108,46 @@ public class AddGroupServlet extends HttpServlet {
 							// remove memberOf from baseGroups (so, after this loop baseGroups cotains only notMemberOf)
 							baseGroups.remove(name);
 							String value = String
-									.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n",
-											thisDN, name);
+									.format("<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>",
+											StringEscapeUtils.escapeXml(thisDN), StringEscapeUtils.escapeXml(name));
 							sfXml.append(value);
 						}
 					}
 				} catch (NamingException e) {
 					// preapring a failed response to client
 					String value = String
-							.format("\t<failed>Addition of group '%s' to group %s has been done successfully. But, the groups list cannot be generated because of the groups iteration has failed. Please refresh the page.</failed>\n",
-									thisGroupDN, newGroupName);
+							.format("<failed>Addition of group '%s' to group %s has been done successfully. But, the groups list cannot be generated because of the groups iteration has failed. Please refresh the page.</failed>",
+									StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName));
 					sfXml.append(value);
 				}
 				
 				// add all notMemberOf into xml that will response to client
 				for (String bsGroup : baseGroups) {
 					String value = String.format(
-							"\t<notMemberOf> %s </notMemberOf>\n", bsGroup);
+							"<notMemberOf> %s </notMemberOf>", StringEscapeUtils.escapeXml(bsGroup));
 					sfXml.append(value);
 				}
 
 				String value = String
-						.format("\t<passed>'User %s' has been successfully added to group %s.</passed>\n",
-								thisGroupDN, newGroupName);
+						.format("<passed>'User %s' has been successfully added to group %s.</passed>",
+								StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName));
 				sfXml.append(value);
 
 				logger.info(String.format("Group %s has been added to group %s.",
-						thisGroupDN, newGroupName));
+						StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName)));
 
 				// Otherwise, log the error and preapre a failed response to client
 			} else {
 				String value = String
-						.format("\t<failed>Addition of group '%s' to group %s has failed.</failed>\n",
-								thisGroupDN, newGroupName);
+						.format("<failed>Addition of group '%s' to group %s has failed.</failed>",
+								StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName));
 				sfXml.append(value);
 
 				logger.info("Addition of group '" + thisGroupDN + "' to group "
 						+ newGroupName + " has failed.");
 			}
 
-			sfXml.append("</response>\n");
+			sfXml.append("</response>");
 			response.getWriter().write(sfXml.toString());
 			response.getWriter().flush();
 			response.getWriter().close();

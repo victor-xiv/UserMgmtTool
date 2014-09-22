@@ -56,7 +56,7 @@ public class AddUserServlet extends HttpServlet {
 		String sAMAccountName = request.getParameter("sAMAccountName").trim();
 		logger.info("Username: "+sAMAccountName);
 			if( sAMAccountName == null || sAMAccountName.trim().equals("")){
-				String msg = "User was not added with an invalid username.";
+				String msg = "User was not added with an empty or null .";
 				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
 				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
 				response.sendRedirect(redirectURL);

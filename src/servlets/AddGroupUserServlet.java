@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import ldap.LdapTool;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -60,8 +61,8 @@ public class AddGroupUserServlet extends HttpServlet {
 		// create xml string that stores data for responding to client
 		StringBuffer sfXml = new StringBuffer();
 		response.setContentType("text/xml");
-	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-	    sfXml.append("<response>\n");
+	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+	    sfXml.append("<response>");
 	    
 	    
 		try {
@@ -78,12 +79,13 @@ public class AddGroupUserServlet extends HttpServlet {
 			lt.close();
 		} catch (Exception e){
 			// preapring a failed response to client
-			String value = String.format("\t<failed>Addition of organisation '%s' to group %s has failed. Reason of the failure: %s.</failed>\n", dn, group, e.getMessage());
+			String value = String.format("<failed>Addition of organisation '%s' to group %s has failed. Reason of the failure: %s.</failed>", 
+					StringEscapeUtils.escapeXml(dn), StringEscapeUtils.escapeXml(group), StringEscapeUtils.escapeXml(e.getMessage()));
 		    sfXml.append(value);
 
 			logger.info("Addition of organisation '" + dn + "' to group " + group + " has failed.");
 			
-			sfXml.append("</response>\n");
+			sfXml.append("</response>");
 		    response.getWriter().write(sfXml.toString());
 		    response.getWriter().flush();
 		    response.getWriter().close();
@@ -102,31 +104,35 @@ public class AddGroupUserServlet extends HttpServlet {
 						String name = LdapTool.getCNValueFromDN(thisDN);
 						// remove memberOf from baseGroups (so, after this loop baseGroups cotains only notMemberOf)
 						baseGroups.remove(name);
-						String value = String.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n", thisDN, name);
+						String value = String.format("<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>", 
+								StringEscapeUtils.escapeXml(thisDN), StringEscapeUtils.escapeXml(name));
 						sfXml.append(value);
 					}
 				}
 			} catch (NamingException e) {
 				// preapring a failed response to client
-				String value = String.format("\t<failed>Addition of organisation '%s' to group %s has been done successfully. But, the groups list cannot be generated because of the groups iteration has failed. Please refresh the page.</failed>\n", dn, group);
+				String value = String.format("<failed>Addition of organisation '%s' to group %s has been done successfully. But, the groups list cannot be generated because of the groups iteration has failed. Please refresh the page.</failed>", 
+						StringEscapeUtils.escapeXml(dn), StringEscapeUtils.escapeXml(group));
 			    sfXml.append(value);
 			}
 			
 			// add all notMemberOf into xml that will response to client
 			for(String bsGroup : baseGroups){
-				String value = String.format("\t<notMemberOf> %s </notMemberOf>\n", bsGroup);
+				String value = String.format("<notMemberOf> %s </notMemberOf>", StringEscapeUtils.escapeXml(bsGroup));
 				sfXml.append(value);
 			}
 	
 		    
-		    String value = String.format("\t<passed>'User %s' has been successfully added to group %s.</passed>\n", dn, group);
+		    String value = String.format("<passed>'User %s' has been successfully added to group %s.</passed>", 
+		    		StringEscapeUtils.escapeXml(dn), StringEscapeUtils.escapeXml(group));
 		    sfXml.append(value);
 		    
 			logger.info("Organisation has been added to group.");
 
 		// Otherwise, log the error and preapring a failed response to client
 		} else {
-			String value = String.format("\t<failed>Addition of organisation '%s' to group %s has failed.</failed>\n", dn, group);
+			String value = String.format("<failed>Addition of organisation '%s' to group %s has failed.</failed>", 
+					StringEscapeUtils.escapeXml(dn), StringEscapeUtils.escapeXml(group));
 		    sfXml.append(value);
 		    
 			logger.info("Addition of organisation '" + dn + "' to group "
@@ -134,7 +140,7 @@ public class AddGroupUserServlet extends HttpServlet {
 		}
 		
 		
-	    sfXml.append("</response>\n");
+	    sfXml.append("</response>");
 	    response.getWriter().write(sfXml.toString());
 	    response.getWriter().flush();
 	    response.getWriter().close();

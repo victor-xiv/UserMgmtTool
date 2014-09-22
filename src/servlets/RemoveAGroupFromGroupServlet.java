@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import ldap.LdapTool;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
 
 /**
@@ -49,8 +50,8 @@ public class RemoveAGroupFromGroupServlet extends HttpServlet {
 		// create xml string that stores data that need to be responded to client
 		StringBuffer sfXml = new StringBuffer();
 		response.setContentType("text/xml");
-	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-	    sfXml.append("<response>\n");
+	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+	    sfXml.append("<response>");
 		
 		try {
 			
@@ -72,32 +73,34 @@ public class RemoveAGroupFromGroupServlet extends HttpServlet {
 					thisDN = (String) Rdn.unescapeValue(thisDN);
 					String name = LdapTool.getCNValueFromDN(thisDN);
 					baseGroups.remove(name);
-					String value = String.format("\t<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>\n", thisDN, name);
+					String value = String.format("<memberOf> <dn>%s</dn> <name>%s</name> </memberOf>", 
+							StringEscapeUtils.escapeXml(thisDN), StringEscapeUtils.escapeXml(name));
 					sfXml.append(value);
 				}
 			}
 			
 			// assign those notMemberOfGroups into the xml response string
 			for(String bsGroup : baseGroups){
-				String value = String.format("\t<notMemberOf> %s </notMemberOf>\n", bsGroup);
+				String value = String.format("<notMemberOf> %s </notMemberOf>", StringEscapeUtils.escapeXml(bsGroup));
 				sfXml.append(value);
 			}
 			
 			// If removal is successful, response with a "passed" tag.
-			String value = String.format("\t<passed></passed>\n");
+			String value = String.format("<passed></passed>");
 		    sfXml.append(value);
 		    
-			logger.info(String.format("A Group '%s' has been removed from this group '%s' successfully.", fromGroupDN, thisGroupDN));
+			logger.info(String.format("A Group '%s' has been removed from this group '%s' successfully.", 
+					StringEscapeUtils.escapeXml(fromGroupDN), StringEscapeUtils.escapeXml(thisGroupDN)));
 			
 		} catch (Exception e){
 			// if failed
-			String value = String.format("\t<failed>Reason of the failure: %s.</failed>\n", e.getMessage());
+			String value = String.format("<failed>Reason of the failure: %s.</failed>", StringEscapeUtils.escapeXml(e.getMessage()));
 			sfXml.append(value);
 			
 			logger.info("Removal of a Group: '" + fromGroupDN + "' from this group " + thisGroupDN + " has failed.", e);
 		}
 
-		sfXml.append("</response>\n");
+		sfXml.append("</response>");
 	    response.getWriter().write(sfXml.toString());
 	    response.getWriter().flush();
 	    response.getWriter().close();

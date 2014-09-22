@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee"  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
   <display-name>Ldap User Management</display-name>
-  
   <servlet>
     <servlet-name>ChangePassword</servlet-name>
     <servlet-class>servlets.ChangePasswordServlet</servlet-class>
@@ -70,76 +69,72 @@
     <servlet-name>RemoveAGroupFromGroup</servlet-name>
     <servlet-class>servlets.RemoveAGroupFromGroupServlet</servlet-class>
   </servlet>
-  
-  
-
-
   <servlet-mapping>
-  	<servlet-name>ChangePassword</servlet-name>
-  	<url-pattern>/ChangePassword</url-pattern>
+    <servlet-name>ChangePassword</servlet-name>
+    <url-pattern>/ChangePassword</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
-  	<servlet-name>AddUser</servlet-name>
-  	<url-pattern>/AddUser</url-pattern>
+    <servlet-name>AddUser</servlet-name>
+    <url-pattern>/AddUser</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>UpdateUserDetails</servlet-name>
-  	<url-pattern>/UpdateUserDetails</url-pattern>
+    <url-pattern>/UpdateUserDetails</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>UpdateUserStatus</servlet-name>
-  	<url-pattern>/UpdateUserStatus</url-pattern>
+    <url-pattern>/UpdateUserStatus</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>AccountRequest</servlet-name>
-  	<url-pattern>/AccountRequest</url-pattern>
+    <url-pattern>/AccountRequest</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>AcceptRequest</servlet-name>
-  	<url-pattern>/AcceptRequest</url-pattern>
+    <url-pattern>/AcceptRequest</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>AdminHandler</servlet-name>
-  	<url-pattern>/AdminHandler</url-pattern>
+    <url-pattern>/AdminHandler</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>RegisterUser</servlet-name>
-  	<url-pattern>/RegisterUser</url-pattern>
+    <url-pattern>/RegisterUser</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>Test</servlet-name>
-  	<url-pattern>/Test</url-pattern>
+    <url-pattern>/Test</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>AddOrganisation</servlet-name>
-  	<url-pattern>/AddOrganisation</url-pattern>
+    <url-pattern>/AddOrganisation</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>CreateGroup</servlet-name>
-  	<url-pattern>/CreateGroup</url-pattern>
+    <url-pattern>/CreateGroup</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>CheckType</servlet-name>
-  	<url-pattern>/CheckType</url-pattern>
+    <url-pattern>/CheckType</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>ForgotPassword</servlet-name>
-  	<url-pattern>/ForgotPassword</url-pattern>
+    <url-pattern>/ForgotPassword</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>AddGroup</servlet-name>
-  	<url-pattern>/AddGroup</url-pattern>
+    <url-pattern>/AddGroup</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>AddGroupUser</servlet-name>
-  	<url-pattern>/AddGroupUser</url-pattern>
+    <url-pattern>/AddGroupUser</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>RemoveAGroupFromUser</servlet-name>
-  	<url-pattern>/RemoveAGroupFromUser</url-pattern>
+    <url-pattern>/RemoveAGroupFromUser</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
     <servlet-name>RemoveAGroupFromGroup</servlet-name>
-  	<url-pattern>/RemoveAGroupFromGroup</url-pattern>
+    <url-pattern>/RemoveAGroupFromGroup</url-pattern>
   </servlet-mapping>
 </web-app>

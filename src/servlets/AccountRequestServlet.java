@@ -246,7 +246,7 @@ public class AccountRequestServlet extends HttpServlet {
 				String val = map.getValue()[0];
 				//escaping XML reserved characters 
 				val = StringEscapeUtils.escapeXml10(val.trim());
-				bw.write("\t<field name=\""+map.getKey()+"\">"+val+"</field>");
+				bw.write("<field name=\""+StringEscapeUtils.escapeXml(map.getKey())+"\">"+val+"</field>");
 				//MODIFIED CODE
 				bw.newLine();
 				logger.info(map.getKey()+"="+map.getValue()[0]);
