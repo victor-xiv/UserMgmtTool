@@ -624,6 +624,28 @@ public class LdapTool {
 				Attributes attributes = results.getAttributes();
 				output.add((String)attributes.get(groupAttr).get());
 			}
+			
+			// query all the groups that are stored in "Orion Health" organisation
+			String orionHealthBasedDN = props.getProperty("orionhealthOrganisationBasedDN");
+			if(orionHealthBasedDN == null){
+				orionHealthBasedDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+			}
+			String orionHealthGroupsFilter = props.getProperty("orionhealthOrganisationBasedAttribute");
+			if(orionHealthGroupsFilter == null){
+				orionHealthGroupsFilter = "(CN=*)";
+			} else {
+				// if it is not null, it should be "orionHealthGroupsFilter = CN"
+				// so need to add bracelet
+				orionHealthGroupsFilter = "(" + orionHealthGroupsFilter + "=*)";
+			}
+			e = ctx.search(orionHealthBasedDN, orionHealthGroupsFilter, null);
+			while(e.hasMore()){ // the result from the search contains both Users and Groups
+				SearchResult results = (SearchResult)e.next();
+				Attributes attributes = results.getAttributes();
+				if(attributes.get("grouptype") != null){ // add only groups into output object
+					output.add((String)attributes.get("cn").get());
+				}
+			}
 		}catch(NamingException ex){
 			logger.error(ex.toString());
 			ex.printStackTrace();
@@ -1150,11 +1172,55 @@ public class LdapTool {
 
 
 	/**
-	 * Produce groupDN (without escapping reserved charsA) from group name
-	 * @param groupName - group name
+	 * Produce groupDN (without escapping reserved chars) from group name
+	 * @param groupName - groupName must not have been escaped the reserved chars
 	 * @return group DN
 	 */
 	public String getDNFromGroup(String groupName) {
+
+		// generally, the dn is the combination of CN=groupName and basedDN
+		//normally, basedDN is OU=Groups,DC=orion,DC=dmz
+		//so, dn should be CN=groupName,OU=Groups,DC=orion,DC=dmz
+		// in a special case that groupName is a group from Orion Health folder
+		// its basedDN is OU=Orion Health,OU=Clients,DC=orion,DC=dmz
+
+		
+		// 1). so, in order to distinguish between a special case and a normal case
+		//     we search for this group from the OU=Orion Health,OU=Clients,DC=orion,DC=dmz
+		//     if it is found, means it is a special case.
+		//     so, return this special case dn
+		try{
+			// search for groupName from "Orion Health" organisation
+			String orionHealthBasedDN = props.getProperty("orionhealthOrganisationBasedDN");
+			if(orionHealthBasedDN == null){
+				orionHealthBasedDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+			}
+			String orionHealthGroupsFilter = props.getProperty("orionhealthOrganisationBasedAttribute");
+			if(orionHealthGroupsFilter == null){
+				orionHealthGroupsFilter = "(CN=" + groupName + ")";
+			} else {
+				// if it is not null, it should be "orionHealthGroupsFilter = CN"
+				// so need to add bracelet
+				orionHealthGroupsFilter = "(" + orionHealthGroupsFilter + "=" +groupName+ ")";
+			}
+			
+			NamingEnumeration e = ctx.search(orionHealthBasedDN, orionHealthGroupsFilter, null);
+			// if it found, e must have only one index
+			while(e.hasMore()){ 
+				SearchResult results = (SearchResult)e.next();
+				String dn = results.getNameInNamespace();
+				return dn; // return the dn we found
+			}
+		}catch(NamingException ex){
+			logger.error(ex.toString());
+			ex.printStackTrace();
+		}catch(NullPointerException ex){
+			logger.error(ex.toString());
+			ex.printStackTrace();
+		}
+		
+		// 2). if we can't find groupName in the OU=Orion Health,OU=Clients,DC=orion,DC=dmz
+		//     then it means the groupName is a general case (combination between CN=groupName and basedDN)
 		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
 		String attrName = props.getProperty(LdapConstants.BASEGROUP_ATTR);
 		String dn = attrName+"="+groupName+","+baseDN;
