@@ -116,10 +116,10 @@ public class EmailClient {
 			Transport.send(message);
 			
 			// sending email contains password
-			message.setSubject(mailSubject + " - attachement");
-			message.setContent(passwordMail, "text/html");
-			message.saveChanges();
-			Transport.send(message);
+//			message.setSubject(mailSubject + " - attachement");
+//			message.setContent(passwordMail, "text/html");
+//			message.saveChanges();
+//			Transport.send(message);
 		} catch (AddressException e) {
 			logger.error("Could not send out an email",e);
 			throw e;
