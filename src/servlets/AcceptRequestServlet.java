@@ -80,7 +80,13 @@ public class AcceptRequestServlet extends HttpServlet {
 		if(action.equals("decline")){
 			// delete file and send rejected email to client
 			if(file.delete()){
-				EmailClient.sendEmailRejected(maps.get("mail")[0], maps.get("displayName")[0]);
+				try{
+					EmailClient.sendEmailRejected(maps.get("mail")[0], maps.get("displayName")[0]);
+				} catch (Exception e){
+					logger.error("Account request has been declined. But it couldn't send out a rejected email to: " + maps.get("mail")[0] + ". Because: " + e.getMessage(), e);
+					response.getWriter().write("true|Account request has been declined. But it couldn't send out a rejected email to: " + maps.get("mail")[0] + ". Because: " + e.getMessage());
+				}
+				
 				response.getWriter().write("true|Account request has been declined.");
 			} else {
 				response.getWriter().write("false|Failed to delete the stored request.");
@@ -243,7 +249,15 @@ public class AcceptRequestServlet extends HttpServlet {
 						response.getWriter().write("false|User "+maps.get("displayName")[0]+" was added to LDAP and Support Tracker. But it couldn't be added to Concerto Portal.");
 					}
 					
-					EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
+					try{
+						EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
+					} catch (Exception e){
+						
+						String rsp = "true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0] + ". " +
+								"But, it couldn't send out an approval email to: " + maps.get("mail")[0] +". Because: " + e.getMessage();
+						logger.error(rsp, e);
+						response.getWriter().write(rsp);
+					}
 					response.getWriter().write("true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0]);
 				
 				}else{ // add a user into Ldap is not successful

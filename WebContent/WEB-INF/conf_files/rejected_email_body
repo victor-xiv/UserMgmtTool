@@ -1,0 +1,13 @@
+<!-- In this body contents please watch out: "UsrMgmt_RECIPIENTNAME", "UsrMgmt_USERNAME" and "UsrMgmt_PASSWORD". they will be replaced programmatically with the proper values. So, please double check your spelling. The tool will not be able to replace with the proper values, if you make any mistake with the spelling and cases (i.e. All are UPPERCASES).-->
+
+
+<p> Dear UsrMgmt_RECIPIENTNAME, </p>
+<br/>
+<br/>
+<p> Your account request to Support Tracker has been declined. </p>
+<br/>
+<p> Please email your request to support@orionhealth.com </p>
+<br/>
+<p> Kind Regards, </p>
+<br/>
+<p> Orion Health Support </p>

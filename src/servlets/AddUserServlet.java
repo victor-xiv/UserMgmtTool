@@ -202,6 +202,7 @@ public class AddUserServlet extends HttpServlet {
 					addStatus = lt.addUser(maps);
 				} catch (Exception e){
 					String msg = "User has been added into Support Tracker database. But, it could not be added into LDAP because: " + e.getMessage();
+					logger.error(msg, e);
 //					response.getWriter().write("false|" + msg);
 					session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
 					String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
@@ -223,9 +224,16 @@ public class AddUserServlet extends HttpServlet {
 						return;
 					}
 					
+					String msg;
+					try{
+						EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
+						msg = "User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0];
+					} catch (Exception e){
+						logger.error("Couldn't send the approval email to " + maps.get("mail")[0], e);
+						msg = "Adding a user was done successfully. But it couldn't send the approval email to " + maps.get("mail")[0];
+					}
 					
-					EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
-					String msg = "User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0];
+					
 //					response.getWriter().write("true|"+msg);
 					session.setAttribute("message", "<font color=\"green\"><b>"+msg+"</b></font>");
 				}else{ // add a user into LDAP is not successful

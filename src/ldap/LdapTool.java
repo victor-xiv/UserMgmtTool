@@ -50,7 +50,7 @@ public class LdapTool {
 	 * @throws NamingException when connection with LDAP server failed
 	 */
 	public LdapTool() throws FileNotFoundException, NamingException{
-		
+		logger.debug("About to connect to LDAP server");
 		// if LDAP config file is not found
 		// the props will contain an "error" key
 		if(props.getProperty("error") != null){
@@ -74,6 +74,8 @@ public class LdapTool {
 			System.setProperty("javax.net.debug", "ssl");
 			System.setProperty("javax.net.ssl.trustStore", props.getProperty(LdapConstants.SSL_CERT_LOC));
 			System.setProperty( "javax.net.ssl.trustStorePassword", props.getProperty(LdapConstants.SSL_CERT_PWD));
+			logger.debug("Using keystore: " + props.getProperty(LdapConstants.SSL_CERT_LOC));
+			logger.debug("keystore password: " + props.getProperty(LdapConstants.SSL_CERT_PWD));
 		}
 		
 		try{

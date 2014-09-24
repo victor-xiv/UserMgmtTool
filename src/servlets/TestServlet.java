@@ -25,6 +25,7 @@ import ldap.LdapTool;
 import org.apache.log4j.Logger;
 
 import tools.ConcertoAPI;
+import tools.EmailClient;
 import tools.SupportTrackerJDBC;
 
 @SuppressWarnings("serial")
@@ -83,10 +84,25 @@ public class TestServlet extends HttpServlet {
 			case "UserMgmt-Version" :		// Getting the UserMgmt-Version (development or built version)
 				response.getWriter().write(getUserMgmtVersion());
 				break;
+				
+			case "emailSending" :
+				String mailTo = request.getParameter("mailTo");
+				response.getWriter().write(testSendingEmailTo(mailTo));
+				break;
 			default:
 				response.getWriter().write("Your requested test cannot be understood.");
 				throw new IllegalArgumentException("hell oworld");
 		}
+	}
+	
+	
+	public String testSendingEmailTo(String mailTo){
+		try{
+			EmailClient.sendEmailApproved(mailTo, "Test Reception Name", "Test User Name", "Test Password");
+		} catch (Exception e){
+			return "Failed to send an emai to " + mailTo + " because: " + e.getMessage();
+		}
+		return "An email was sent, please check your email.";
 	}
 	
 	
@@ -197,14 +213,14 @@ public class TestServlet extends HttpServlet {
 		if (!lt.companyExistsAsGroup(maps.get("company")[0])) {
 			try {
 				if (!lt.addCompanyAsGroup(maps.get("company")[0])) {
-					result += " The tested company: \"" + maps.get("company")[0]  + "\" cannot be added into groups.";
+					result += " But cannot be added into groups.";
 					return result;
 				}
 			} catch (NamingException e) {
-				result += " The tested company: \"" + maps.get("company")[0]  + "\" cannot be added into groups because: " + e.getMessage();
+				result += " But cannot be added into groups because: " + e.getMessage();
 				return result;
 			}
-			result += " The tested company was added successfully into groups.";
+			result += " And was added successfully into groups.";
 		}
 		
 		// adding the test user into LDAP
@@ -246,7 +262,7 @@ public class TestServlet extends HttpServlet {
 			return result;
 		}
 		
-		return "Ldap was successful connected.";
+		return "Ldap was successfully connected.";
 	}
 	
 	
