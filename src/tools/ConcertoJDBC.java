@@ -16,7 +16,6 @@ import ldap.LdapProperty;
 import org.apache.log4j.Logger;
 
 public class ConcertoJDBC {
-	private static Properties props = LdapProperty.getConfiguration();
 	private static String jdbcUrl;
 	private static String jdbcUser;
 	private static String jdbcPassword;
@@ -163,9 +162,9 @@ public class ConcertoJDBC {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		// read the concerto DB url, usename and password from conf file
-		jdbcUrl = props.getProperty(DBConstants.CONCERTO_JDBC_URL);
-		jdbcUser = props.getProperty(DBConstants.CONCERTO_JDBC_USER);
-		jdbcPassword = props.getProperty(DBConstants.CONCERTO_JDBC_PASSWORD);
+		jdbcUrl = LdapProperty.getProperty(DBConstants.CONCERTO_JDBC_URL);
+		jdbcUser = LdapProperty.getProperty(DBConstants.CONCERTO_JDBC_USER);
+		jdbcPassword = LdapProperty.getProperty(DBConstants.CONCERTO_JDBC_PASSWORD);
 		try {
 			// connecting to the database
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");

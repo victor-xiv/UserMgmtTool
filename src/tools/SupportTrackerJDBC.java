@@ -23,7 +23,6 @@ import ldap.LdapProperty;
 import org.apache.log4j.Logger;
 
 public class SupportTrackerJDBC {
-	private static Properties props = LdapProperty.getConfiguration();
 	private static String jdbcUrl;
 	private static String jdbcUser;
 	private static String jdbcPassword;
@@ -565,9 +564,9 @@ public class SupportTrackerJDBC {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		logger.debug("About to connect to Support Tracker Database");
-		jdbcUrl = props.getProperty(DBConstants.ST_JDBC_URL);
-		jdbcUser = props.getProperty(DBConstants.ST_JDBC_USER);
-		jdbcPassword = props.getProperty(DBConstants.ST_JDBC_PASSWORD);
+		jdbcUrl = LdapProperty.getProperty(DBConstants.ST_JDBC_URL);
+		jdbcUser = LdapProperty.getProperty(DBConstants.ST_JDBC_USER);
+		jdbcPassword = LdapProperty.getProperty(DBConstants.ST_JDBC_PASSWORD);
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 			Connection con = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword);

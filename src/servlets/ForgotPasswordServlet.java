@@ -45,8 +45,7 @@ private static final long serialVersionUID = 1L;
 		PrintWriter out;
 		
 		//Initialise constants
-		Properties props = LdapProperty.getConfiguration();
-		String conserver = props.getProperty(UserMgmtConstants.CONCERTO_URL);//"supporttracker.orionhealth.com";
+		String conserver = LdapProperty.getProperty(UserMgmtConstants.CONCERTO_URL);//"supporttracker.orionhealth.com";
 		
 		//Get output writer and set to output html
 		out = response.getWriter();

@@ -33,8 +33,6 @@ public class TestServlet extends HttpServlet {
 	
 	// set up logger
 	private Logger logger = Logger.getRootLogger();
-	// set up reader who is reading ldap.property (normally it is stored at $Catalina/conf/
-	private Properties props = LdapProperty.getConfiguration();
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
@@ -114,12 +112,12 @@ public class TestServlet extends HttpServlet {
 	 * @return the result as a string
 	 */
 	public String testSupportTrackerDBConnection() {
-		if(props.getProperty("error") != null){
+		if(LdapProperty.getProperty("error") != null){
 			logger.error("ldap.properties file is not found.");
 			return "Config file cannot be found";
 		}
 		
-		String userName = props.getProperty("spt.searchFor.user");
+		String userName = LdapProperty.getProperty("spt.searchFor.user");
 		try {
 			// if the connection was done successful, it will only return user detail as a Map object
 			// so, we don't care.
@@ -155,29 +153,29 @@ public class TestServlet extends HttpServlet {
 	 * has been failed.
 	 */
 	public String testLdapConnection(){
-		if(props.getProperty("error") != null){
+		if(LdapProperty.getProperty("error") != null){
 			logger.error("ldap.properties file is not found.");
 			return "Config file cannot be found";
 		}
 		
 		// build attributes for a tested user
 		Map<String, String[]> maps = new HashMap<String, String[]>();
-		maps.put("givenName", new String[]{props.getProperty("ldap.test.givenName")});
-		maps.put("company", new String[]{props.getProperty("ldap.test.company")});
-		maps.put("sAMAccountName", new String[]{props.getProperty("ldap.test.sAMAccountName")});
-		maps.put("sn", new String[]{ props.getProperty("ldap.test.sn")  });
-		maps.put("displayName", new String[]{props.getProperty("ldap.test.displayName")});
-		maps.put("description", new String[]{ props.getProperty("ldap.test.description") });
-		maps.put("department", new String[]{ props.getProperty("ldap.test.department") });
-		maps.put("streetAddress", new String[]{ props.getProperty("ldap.test.streetAddress") });
-		maps.put("l", new String[]{ props.getProperty("ldap.test.l") });
-		maps.put("st", new String[]{ props.getProperty("ldap.test.st") });
-		maps.put("postalCode", new String[]{ props.getProperty("ldap.test.postalCode") });
-		maps.put("c", new String[]{ props.getProperty("ldap.test.c") });
-		maps.put("telephoneNumber", new String[]{ props.getProperty("ldap.test.telephoneNumber") });
-		maps.put("facsimileTelephoneNumber", new String[]{ props.getProperty("ldap.test.facsimileTelephoneNumber") });
-		maps.put("mobile", new String[]{ props.getProperty("ldap.test.mobile") });
-		maps.put("mail", new String[]{props.getProperty("ldap.test.mail")});
+		maps.put("givenName", new String[]{LdapProperty.getProperty("ldap.test.givenName")});
+		maps.put("company", new String[]{LdapProperty.getProperty("ldap.test.company")});
+		maps.put("sAMAccountName", new String[]{LdapProperty.getProperty("ldap.test.sAMAccountName")});
+		maps.put("sn", new String[]{ LdapProperty.getProperty("ldap.test.sn")  });
+		maps.put("displayName", new String[]{LdapProperty.getProperty("ldap.test.displayName")});
+		maps.put("description", new String[]{ LdapProperty.getProperty("ldap.test.description") });
+		maps.put("department", new String[]{ LdapProperty.getProperty("ldap.test.department") });
+		maps.put("streetAddress", new String[]{ LdapProperty.getProperty("ldap.test.streetAddress") });
+		maps.put("l", new String[]{ LdapProperty.getProperty("ldap.test.l") });
+		maps.put("st", new String[]{ LdapProperty.getProperty("ldap.test.st") });
+		maps.put("postalCode", new String[]{ LdapProperty.getProperty("ldap.test.postalCode") });
+		maps.put("c", new String[]{ LdapProperty.getProperty("ldap.test.c") });
+		maps.put("telephoneNumber", new String[]{ LdapProperty.getProperty("ldap.test.telephoneNumber") });
+		maps.put("facsimileTelephoneNumber", new String[]{ LdapProperty.getProperty("ldap.test.facsimileTelephoneNumber") });
+		maps.put("mobile", new String[]{ LdapProperty.getProperty("ldap.test.mobile") });
+		maps.put("mail", new String[]{LdapProperty.getProperty("ldap.test.mail")});
 		maps.put("password01", new String[]{"password"});
 		maps.put("isLdapClient", new String[]{"true"});
 		
@@ -245,7 +243,7 @@ public class TestServlet extends HttpServlet {
 		}
 		
 		// delete the company from the Groups folder
-		String baseDN = LdapProperty.getConfiguration().getProperty(LdapConstants.BASEGROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		if (baseDN==null) baseDN = "OU=Groups,DN=orion,DN=dmz";
 		String companyDN = "CN="+ maps.get("company")[0] +","+baseDN;
 		if(!lt.deleteGroupCompany(companyDN)){
@@ -254,7 +252,7 @@ public class TestServlet extends HttpServlet {
 		}
 		
 		// delete the company from the Clients folder
-		baseDN = LdapProperty.getConfiguration().getProperty(LdapConstants.GROUP_DN);
+		baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		companyDN = "ou="+ maps.get("company")[0] +","+baseDN;
 		if (baseDN==null) baseDN = "OU=Clients,DC=orion,DC=dmz";
 		if(!lt.deleteCompany(companyDN)){
@@ -275,7 +273,7 @@ public class TestServlet extends HttpServlet {
 	 * @return the result as a string
 	 */
 	public String testPortalConnection(){
-		if(props.getProperty("error") != null){
+		if(LdapProperty.getProperty("error") != null){
 			logger.error("ldap.properties file is not found.");
 			return "Config file cannot be found";
 		}
@@ -284,7 +282,7 @@ public class TestServlet extends HttpServlet {
 			// if the connection was done successful, it will only return true or false.
 			// so, we don't care.
 			// we care only if it's throwing an except, which means that the connection is failed.
-			boolean result = ConcertoAPI.testGetClientUser(props.getProperty("portal.searchFor.user"));
+			boolean result = ConcertoAPI.testGetClientUser(LdapProperty.getProperty("portal.searchFor.user"));
 			return "Portal has been connected successfully.";
 
 		} catch (Exception e) {

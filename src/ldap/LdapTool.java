@@ -36,7 +36,6 @@ import org.apache.log4j.Logger;
 public class LdapTool {
 	private DirContext ctx;
 	private Hashtable<String, String> env;
-	private Properties props = LdapProperty.getConfiguration();
 	
 	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
@@ -53,7 +52,7 @@ public class LdapTool {
 		logger.debug("About to connect to LDAP server");
 		// if LDAP config file is not found
 		// the props will contain an "error" key
-		if(props.getProperty("error") != null){
+		if(LdapProperty.getProperty("error") != null){
 			logger.error("ldap.properties file is not found.");
 			throw new FileNotFoundException("LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
 			// don't need to log, because it has been logged in LdapProperty.getConfiguration()
@@ -61,21 +60,21 @@ public class LdapTool {
 		
 		// setup environment map to connect to ldap server
 		env = new Hashtable<String, String>();
-		env.put(Context.INITIAL_CONTEXT_FACTORY, props.getProperty(LdapConstants.LDAP_CLASS));
-		env.put(Context.PROVIDER_URL, props.getProperty(LdapConstants.LDAP_URL));
+		env.put(Context.INITIAL_CONTEXT_FACTORY, LdapProperty.getProperty(LdapConstants.LDAP_CLASS));
+		env.put(Context.PROVIDER_URL, LdapProperty.getProperty(LdapConstants.LDAP_URL));
 		env.put(Context.SECURITY_AUTHENTICATION, "simple");
-		env.put(Context.SECURITY_PRINCIPAL, props.getProperty(LdapConstants.ADMIN_DN));
-		env.put(Context.SECURITY_CREDENTIALS, props.getProperty(LdapConstants.ADMIN_PWD));
+		env.put(Context.SECURITY_PRINCIPAL, LdapProperty.getProperty(LdapConstants.ADMIN_DN));
+		env.put(Context.SECURITY_CREDENTIALS, LdapProperty.getProperty(LdapConstants.ADMIN_PWD));
 		
 		// if the config file declared to connect ldap server through ssl
-		boolean sslEnabled = props.getProperty(LdapConstants.SSL_ENABLED).equals("true");
+		boolean sslEnabled = LdapProperty.getProperty(LdapConstants.SSL_ENABLED).equals("true");
 		if( sslEnabled ){
 			env.put(Context.SECURITY_PROTOCOL, "ssl" ); // SSL
 			System.setProperty("javax.net.debug", "ssl");
-			System.setProperty("javax.net.ssl.trustStore", props.getProperty(LdapConstants.SSL_CERT_LOC));
-			System.setProperty( "javax.net.ssl.trustStorePassword", props.getProperty(LdapConstants.SSL_CERT_PWD));
-			logger.debug("Using keystore: " + props.getProperty(LdapConstants.SSL_CERT_LOC));
-			logger.debug("keystore password: " + props.getProperty(LdapConstants.SSL_CERT_PWD));
+			System.setProperty("javax.net.ssl.trustStore", LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
+			System.setProperty( "javax.net.ssl.trustStorePassword", LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
+			logger.debug("Using keystore: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
+			logger.debug("keystore password: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
 		}
 		
 		try{
@@ -172,7 +171,7 @@ public class LdapTool {
 		String newUserDN = "";
 		if(replaceMap.containsKey("displayName")){
 			String fullname = replaceMap.get("displayName")[0];
-			String groupBaseDN = props.getProperty(LdapConstants.GROUP_DN);
+			String groupBaseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
 			
 			// if replaceMap contains "company" key, then use this new key to update user
 			if(replaceMap.containsKey("company")){
@@ -279,10 +278,10 @@ public class LdapTool {
 				}
 			}
 			
-			String groupBaseDN = props.getProperty(LdapConstants.GROUP_DN);
-			String unescapedValuecompanyDN = props.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+","+groupBaseDN;
+			String groupBaseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+			String unescapedValuecompanyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+","+groupBaseDN;
 			String unescapedValueUserDN = "CN="+fullname+","+unescapedValuecompanyDN;
-			String escapedValueCompanyDN = props.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+","+groupBaseDN;
+			String escapedValueCompanyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+","+groupBaseDN;
 			String escapedValueUserDN = "CN="+Rdn.escapeValue(fullname)+","+escapedValueCompanyDN;
 			Attributes attributes = new BasicAttributes(true);
 			//attributes.put("distinguishedName", userDN);
@@ -306,7 +305,7 @@ public class LdapTool {
 			attributes.put("sn", paramMaps.get("sn")[0]);
 			attributes.put("displayName", fullname);
 			attributes.put("userPrincipalName",paramMaps.get("sAMAccountName")[0] + "@" +
-							props.getProperty(LdapConstants.LDAP_DOMAIN));
+							LdapProperty.getProperty(LdapConstants.LDAP_DOMAIN));
 			attributes.put("description", paramMaps.get("description")[0]);
 			attributes.put("department", paramMaps.get("department")[0]);
 			attributes.put("company", paramMaps.get("company")[0]);
@@ -353,7 +352,7 @@ public class LdapTool {
 			
 			//ADDITIONAL CODE
 			//Get 'Groups' base DN
-			String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
+			String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 			if (baseDN==null)
 				baseDN = "OU=Groups,DN=orion,DN=dmz";
 			//Set DN for company organisational group
@@ -370,11 +369,11 @@ public class LdapTool {
 			
 			// add user into the default groups (default groups specified in ldap.properties config file)
 			String defaultGroupID = LdapConstants.GROUP_DEFAULT;
-			for(Enumeration<?> e = props.propertyNames(); e.hasMoreElements(); ){
+			for(Enumeration<?> e = LdapProperty.propertyNames(); e.hasMoreElements(); ){
 				String key = (String)e.nextElement();
 				// looking for key: "group.default" and defaultGroupID: "group.default.1"
 				if (key.length() >= defaultGroupID.length() && key.indexOf(defaultGroupID)==0){
-					if(!addUserToGroup(unescapedValueUserDN, props.getProperty(key))){
+					if(!addUserToGroup(unescapedValueUserDN, LdapProperty.getProperty(key))){
 						deleteUser(unescapedValueUserDN);
 						return false;
 					}
@@ -382,7 +381,7 @@ public class LdapTool {
 			}
 			
 			if(paramMaps.get("isLdapClient") != null){
-				String groupDN = props.getProperty(LdapConstants.GROUP_LDAP_CLIENT);
+				String groupDN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_CLIENT);
 				if(!addUserToGroup(unescapedValueUserDN, groupDN)){
 					deleteUser(unescapedValueUserDN);
 					return false;
@@ -578,8 +577,8 @@ public class LdapTool {
 	 * @return
 	 */
 	public SortedSet<String> getUserGroups(){
-		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
-		String groupAttr = props.getProperty(LdapConstants.GROUP_ATTR);
+		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
 		String filter = "("+groupAttr+"=*)";
 		SortedSet<String> output = new TreeSet<String>();
 		try{
@@ -611,10 +610,10 @@ public class LdapTool {
 	 * @return
 	 */
 	public SortedSet<String> getBaseGroups(){
-		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		if (baseDN == null)
 			baseDN = "OU=Groups,DC=orion,DC=dmz";
-		String groupAttr = props.getProperty(LdapConstants.BASEGROUP_ATTR);
+		String groupAttr = LdapProperty.getProperty(LdapConstants.BASEGROUP_ATTR);
 		if (groupAttr == null)
 			groupAttr = "cn";
 		String filter = "("+groupAttr+"=*)";
@@ -628,11 +627,11 @@ public class LdapTool {
 			}
 			
 			// query all the groups that are stored in "Orion Health" organisation
-			String orionHealthBasedDN = props.getProperty("orionhealthOrganisationBasedDN");
+			String orionHealthBasedDN = LdapProperty.getProperty("orionhealthOrganisationBasedDN");
 			if(orionHealthBasedDN == null){
 				orionHealthBasedDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
 			}
-			String orionHealthGroupsFilter = props.getProperty("orionhealthOrganisationBasedAttribute");
+			String orionHealthGroupsFilter = LdapProperty.getProperty("orionhealthOrganisationBasedAttribute");
 			if(orionHealthGroupsFilter == null){
 				orionHealthGroupsFilter = "(CN=*)";
 			} else {
@@ -670,8 +669,8 @@ public class LdapTool {
 		// escape all the reserve key words.
 		name = Rdn.escapeValue(name);
 		TreeMap<String,String[]> users = new TreeMap<String,String[]>();
-		String baseDN = "OU="+name+","+props.getProperty(LdapConstants.GROUP_DN);
-		String userAttr = props.getProperty(LdapConstants.USER_ATTR);
+		String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String userAttr = LdapProperty.getProperty(LdapConstants.USER_ATTR);
 		String filter = "("+userAttr+"=*)";
 		try{
 			NamingEnumeration<SearchResult> e = ctx.search(new LdapName(baseDN), filter, null);
@@ -711,7 +710,7 @@ public class LdapTool {
 		name = Rdn.escapeValue(name);
 		
 		try{
-			String baseDN = "OU="+name+","+props.getProperty(LdapConstants.GROUP_DN);
+			String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 			Attributes attrs = ctx.getAttributes(new LdapName(baseDN));
 			return attrs;
 		}catch(NamingException ex){
@@ -753,7 +752,7 @@ public class LdapTool {
 	 * @return
 	 */
 	public Attributes getGroupAttributes(String companyName){
-		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		if (baseDN==null)
 			baseDN = "OU=Groups,DN=orion,DN=dmz";
 			String companyDN = "CN="+Rdn.escapeValue(companyName)+","+baseDN;
@@ -800,8 +799,8 @@ public class LdapTool {
 	 * @return true if the given companyName is in Ldap Server, false otherwise
 	 */
 	public boolean companyExists(String companyName){
-		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
-		String filter = "("+props.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+")";
+		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String filter = "("+LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+")";
 		NamingEnumeration<SearchResult> e;
 		try {
 			e = ctx.search(new LdapName(baseDN), filter, null);
@@ -823,7 +822,7 @@ public class LdapTool {
 	public boolean companyExistsAsGroup(String companyName){
 		companyName = Rdn.escapeValue(companyName);
 		//Get DN for 'Groups'
-		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		//Create search string (CN=<companyName>)
 		String filter = "(CN="+companyName+")";
 		NamingEnumeration<SearchResult> e;
@@ -855,9 +854,9 @@ public class LdapTool {
 		company = Rdn.escapeValue(company);
 		
 		//Search user's company
-		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		//Create search string (sAMAccountName=<username>)
-		String filter = "("+props.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
+		String filter = "("+LdapProperty.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
 		NamingEnumeration<SearchResult> e;
 		try {
 			//Run search. If more than zero matches, return true
@@ -886,7 +885,7 @@ public class LdapTool {
 	public boolean emailExists(String email, String company){
 		company = Rdn.escapeValue(company);
 		//Search user's company
-		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		//Create search string (mail=<email>)
 		String filter = "(mail="+email+")";
 		NamingEnumeration<SearchResult> e;
@@ -914,7 +913,7 @@ public class LdapTool {
 	 */
 	public boolean userDNExists(String fullname, String company){
 		//Search user's company
-		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		//Create search string (CN=Display Name)
 		String filter = "CN="+fullname;
 		NamingEnumeration<SearchResult> e;
@@ -946,9 +945,9 @@ public class LdapTool {
 		company = Rdn.escapeValue(company);
 		username = Rdn.escapeValue(username);
 		//Search user's company
-		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		//Create search string (sAMAccountName=<username>)
-		String filter = "("+props.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
+		String filter = "("+LdapProperty.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
 		NamingEnumeration<SearchResult> e;
 		try {
 			//Run search. If more than zero matches, return true
@@ -980,9 +979,9 @@ public class LdapTool {
 		username = Rdn.escapeValue(username);
 		company = Rdn.escapeValue(company);
 		//Search user's company
-		String baseDN = "OU="+company+","+props.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		//Create search string (sAMAccountName=<username>)
-		String filter = "("+props.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
+		String filter = "("+LdapProperty.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
 		NamingEnumeration<SearchResult> e;
 		try {
 			//Run search. If more than zero matches, return the CN
@@ -1009,10 +1008,10 @@ public class LdapTool {
 		}else{
 			fullname = paramMaps.get("givenName")[0] + " " + paramMaps.get("sn")[0];
 		}
-		String groupBaseDN = props.getProperty(LdapConstants.GROUP_DN);
+		String groupBaseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		String companyName = paramMaps.get("company")[0];
 
-		String companyDN = props.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+","+groupBaseDN;
+		String companyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+","+groupBaseDN;
 		String userDN = "CN="+fullname+","+companyDN;
 		if (getUsername(userDN).equals("")) {
 			return false;
@@ -1034,7 +1033,7 @@ public class LdapTool {
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
 		
 		// get baseDN for the user (it should be: OU=Clients,DC=orion,DC=dmz)
-		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		
 		Attributes attributes = new BasicAttributes(true);
 		attributes.put("objectClass", "top");
@@ -1047,7 +1046,7 @@ public class LdapTool {
 		
 		// all DN need escape char for any reserve char
 		// companyDN = "ou=AMICAS\, Inc (Now Merge),OU=Clients,DC=orion,DC=dmz"
-		String companyDN = props.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+","+baseDN;
+		String companyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+","+baseDN;
 		Name ldapCompanyDN = null;
 		try {
 			ldapCompanyDN = new LdapName(companyDN);
@@ -1090,7 +1089,7 @@ public class LdapTool {
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
 				
 		//Get base DN for 'Groups'
-		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		if (baseDN==null)
 			baseDN = "OU=Groups,DN=orion,DN=dmz";
 		
@@ -1193,11 +1192,11 @@ public class LdapTool {
 		//     so, return this special case dn
 		try{
 			// search for groupName from "Orion Health" organisation
-			String orionHealthBasedDN = props.getProperty("orionhealthOrganisationBasedDN");
+			String orionHealthBasedDN = LdapProperty.getProperty("orionhealthOrganisationBasedDN");
 			if(orionHealthBasedDN == null){
 				orionHealthBasedDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
 			}
-			String orionHealthGroupsFilter = props.getProperty("orionhealthOrganisationBasedAttribute");
+			String orionHealthGroupsFilter = LdapProperty.getProperty("orionhealthOrganisationBasedAttribute");
 			if(orionHealthGroupsFilter == null){
 				orionHealthGroupsFilter = "(CN=" + groupName + ")";
 			} else {
@@ -1223,8 +1222,8 @@ public class LdapTool {
 		
 		// 2). if we can't find groupName in the OU=Orion Health,OU=Clients,DC=orion,DC=dmz
 		//     then it means the groupName is a general case (combination between CN=groupName and basedDN)
-		String baseDN = props.getProperty(LdapConstants.BASEGROUP_DN);
-		String attrName = props.getProperty(LdapConstants.BASEGROUP_ATTR);
+		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
+		String attrName = LdapProperty.getProperty(LdapConstants.BASEGROUP_ATTR);
 		String dn = attrName+"="+groupName+","+baseDN;
 		return dn;
 	}
@@ -1237,8 +1236,8 @@ public class LdapTool {
 	 * @return organisation DN
 	 */
 	public String getDNFromOrg(String orgName) {
-		String baseDN = props.getProperty(LdapConstants.GROUP_DN);
-		String attrName = props.getProperty(LdapConstants.GROUP_ATTR);
+		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String attrName = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
 		String dn = attrName+"="+orgName+","+baseDN;
 		return dn;
 	}

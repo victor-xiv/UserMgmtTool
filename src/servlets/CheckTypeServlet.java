@@ -57,9 +57,8 @@ public class CheckTypeServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		//Initialise constants
 		//String conserver = "supporttracker.orionhealth.com";
-		Properties props = LdapProperty.getConfiguration();
-		String conserver = props.getProperty(UserMgmtConstants.CONCERTO_URL);//"jonathanf-vm";
-		String smtp = props.getProperty(EmailConstants.MAIL_HOST);//"zimbra.orion.internal";
+		String conserver = LdapProperty.getProperty(UserMgmtConstants.CONCERTO_URL);//"jonathanf-vm";
+		String smtp = LdapProperty.getProperty(EmailConstants.MAIL_HOST);//"zimbra.orion.internal";
 		String appserver = request.getServerName()+":"+request.getServerPort();//"http://jonathanf-vm";
 		String supportMail = "support@orionhealth.com";
 		
