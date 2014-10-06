@@ -1,6 +1,7 @@
 package servlets;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import javax.naming.NamingEnumeration;
@@ -12,6 +13,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import ldap.LdapTool;
 
@@ -53,6 +55,8 @@ public class AddGroupUserServlet extends HttpServlet {
 		String group = request.getParameter("groupselect").trim();
 		
 		NamingEnumeration namingEnum = null;
+		HttpSession session = request.getSession(true);
+		List<String> ohGroupsThisUserCanAccess = (List<String>)session.getAttribute(AdminServlet.OHGROUPS_ALLOWED_ACCESSED);
 		Set<String> baseGroups = null;
 		Attribute attr = null;
 		LdapTool lt = null;
@@ -74,8 +78,13 @@ public class AddGroupUserServlet extends HttpServlet {
 			// namingEnum will be used to list all groups that this user belong to
 			Attributes attrs = lt.getUserAttributes(dn);
 			attr = attrs.get("memberOf");
-			baseGroups = lt.getBaseGroups();
 			
+			if(ohGroupsThisUserCanAccess == null){
+				baseGroups = lt.getBaseGroups(); // all the groups stored in LDAP, used to create a list of notMemberOf
+			} else {
+				baseGroups = lt.getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(ohGroupsThisUserCanAccess);
+			}
+				
 			lt.close();
 		} catch (Exception e){
 			// preapring a failed response to client

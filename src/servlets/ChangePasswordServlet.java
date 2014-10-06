@@ -52,16 +52,10 @@ public class ChangePasswordServlet extends HttpServlet {
 			// validate and encrypt the request
 			Hashtable<String, String> reqParams = ValidatedRequestHandler.processRequest(request);
 			
-			/*
-			for(String s:reqParams.){
-				System.out.println(s);
-				System.out.println();
-			}*/
-			
 			
 			if (reqParams.containsKey("userDN") && reqParams.get("userDN") != null) {
 				userDN = reqParams.get("userDN");
-			
+				
 			// if there is no "userDN" key and no "error" key in the request parameters
 			// It means that the request is valid but the request doesn't contains "userDN" => can't process further
 			} else if (!reqParams.containsKey("error")) {

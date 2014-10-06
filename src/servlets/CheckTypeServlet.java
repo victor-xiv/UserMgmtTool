@@ -3,7 +3,6 @@ package servlets;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Properties;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;

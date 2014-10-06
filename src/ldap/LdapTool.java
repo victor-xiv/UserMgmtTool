@@ -7,8 +7,10 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -39,6 +41,210 @@ public class LdapTool {
 	
 	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	//
+	// codes dealing with Orion Health Groups Permission
+	//
+	
+	
+	// this list stored, the groups that are stored in OU=Orion Health,OU=Clients,DC=orion,DC=dmz
+	// the list is sorted based on its permission level
+	// the group at index 0 is the highest power (can access to any other groups that have lower power)
+	// the group at the end of the list (i.e. index size()-1) is the lowest power (cann't access to any other groups.
+	// the permission level is configured in ldap.properties file
+	private static ArrayList<String> orionHealthGroupsOrderedByPermissionLevel = null;
+	
+	
+	/**
+	 * 1). It read the entire configuration file (ldap.properties) and search for the attributes
+	 *  ldap.group.permission.level.i : where i is the number from 0 to something and i determines the
+	 *  the permission level. 
+	 *  i.e. 
+	 *  the lowest i (e.g. 0) is the one that has the highest power. so, any user that is a memberOf of this group, 
+	 *      has the access right to any other groups that defined by lower i (e.g. i > 0)
+	 *  the bigger of i means the lower power group. e.g. any user that is a memberOf of the group defined by i=3
+	 *      cannot access to any groups that defined by i=0, 1 and 2
+	 *  e.g. if a user that is a memberOf of multiple orion health groups (e.g. a memberOf i=2 and i=4) then that
+	 *  user has the access right of the lowest power group (e.g. the group defined by i=4 if it is a memberOf groups that defined by i=2 and i=4)
+	 * 2). then it creates an ArrayList<String> that store the name of that groups based on is hierachy of i.
+	 * which means that the i is used as the index of list.
+	 * e.g. the group that is the value of attribute ldap.group.permission.level.3 is stored in the list at index 3
+	 * 3). then this ArrayList<String> is assigned to the static field orionHealthGroupsOrderedByPermissionLevel for the later use.
+	 */
+	public static void readGroupsAndPermissionLevelFromConfigureFile(){
+		Logger.getRootLogger().debug("About to read the groups with permission level from ldap.properties file");
+		
+		orionHealthGroupsOrderedByPermissionLevel = new ArrayList<String>();
+		
+		// this is the attribute name that is used in ldap.properties. please do not change this value (either here or in ldap.properties)
+		final String GrpPermsnAttrName = "ldap.group.permission.level.";
+		
+		String prop="";
+		HashMap<Integer, String> prmsLvlMap = new HashMap<Integer, String>();
+		for(Enumeration<?> e = LdapProperty.propertyNames(); e.hasMoreElements(); prop=(String)e.nextElement()){
+			if(prop.contains(GrpPermsnAttrName)){
+				// permission level come with the form of:  "ldap.group.permission.level.3"
+				// replace "ldap.group.permission.level" with "" so, we have "3" left
+				int permissionLevel = Integer.parseInt(prop.replace(GrpPermsnAttrName, ""));
+				String groupName = LdapProperty.getProperty(prop);
+				prmsLvlMap.put(permissionLevel, groupName);
+			}
+		}
+		
+		//After completing adding the for loop
+		// we should have prmsLvlMap = {1:"group1", 5:"group5", ...}
+		// So, we sort its key to get [0, 1, 2, 3,...]
+		// then we use this key to get a sorted list based on permission level, which should be: [group0, group1, group2, ...]
+		SortedSet<Integer> sortedPrmsLvl = new TreeSet<Integer>(prmsLvlMap.keySet());
+		for(int i : sortedPrmsLvl){
+			String groupName = prmsLvlMap.get(i);
+			orionHealthGroupsOrderedByPermissionLevel.add(groupName);
+		}
+		
+		Logger.getRootLogger().debug("Finished reading the groups with permission level.");
+	}
+	
+	
+	/**
+	 * This method look at the memberOf attributes (stored in Ldap server) of the given userDN
+	 * and determine whether this given user is a memberOf of any orion health group.
+	 * 
+	 * and it will return the list of orion health groups that this user has access right to access to those groups.
+	 * 
+	 * if it is not a memberOf of any orion health groups, then it will return an empty list.
+	 * 
+	 * e.g. if there are 10 orion health groups in total (this groups stored in orionHealthGroupsOrderedByPermissionLevel)
+	 *    where the group at index 0 is the highest power who can access to any others groups that below it
+	 *    and the group at the biggest index is the lowest power who cannot access to any groups at all.
+	 *    
+	 *    1). if it is a memberOf of the group at index i, then it will have access right to any groups that are at index >= i
+	 *    so, the method will return a list that has the groups which is a sublist of orionHealthGroupsOrderedByPermissionLevel
+	 *    from i to the last group.
+	 *    
+	 *    2). if it is not a memberOf of any group, it will return an empty list
+	 *    
+	 *    3). if it is a memberOf of many groups, then the lowest power group will be used (or the group at the biggest index is used)
+	 *    so, the method will return a list that has the groups which is a sublist of orionHealthGroupsOrderedByPermissionLevel
+	 *    from i (where i is the biggest index that store the group name that this user is a memberOf) to the last group
+	 *   
+	 * @param unescappedUserDN: is the dn of the user and it must has not been escaped any chars at all 
+	 * (e.g.     unescappedUserDN="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz"
+	 *     not   unescappedUserDN="CN=Mike\\+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz"
+	 *     not   unescappedUserDN="Mike+Jr")  
+	 * @return
+	 */
+	public List<String> getOrionHealthGroupsThisUserAllowToAccess(String unescappedUserDN){
+		logger.debug("about to process the groups that this user: " + unescappedUserDN + " has the access right on.");
+		if (unescappedUserDN != null && !unescappedUserDN.trim().isEmpty()) {
+			try {
+				// get all the attributes of the given unescappedUserDN
+				// process attribute that has key "memberOf"
+				// add the CN value of each group (each value of the memberOf attribute) to memberOfGroups
+				Attributes attrs = getUserAttributes(unescappedUserDN);
+				NamingEnumeration values = attrs.get("memberOf").getAll();
+				ArrayList<String> memberOfGroups = new ArrayList<String>();
+				while (values.hasMore()) {
+					Object obj = values.next();
+					if(obj instanceof String){
+						String groupDN = (String)obj;
+						memberOfGroups.add(LdapTool.getCNValueFromDN(groupDN));
+					}
+				}
+				// when finishing this while loop
+				// memberOfGroups should be s.th like this: ["ldap"]
+				
+				// d't want to modify value of  orionHealthGroupsOrderedByPermissionLevel
+				// so, create a hard copy of orionHealthGroupsOrderedByPermissionLevel
+				ArrayList<String> ohGroupsPermissionLevel = new ArrayList<String>(LdapTool.orionHealthGroupsOrderedByPermissionLevel);
+				ArrayList<String> groupsThisUserAllowedToAccess = new ArrayList<String>();
+				// iterate through the orionHealthGroupsOrderedByPermissionLevel
+				// because orionHealthGroupsOrderedByPermissionLevel list should be smaller than the list of memberOf of the given user
+				for(int i=ohGroupsPermissionLevel.size()-1; i>=0; i--){
+					String groupPermissionAtI = ohGroupsPermissionLevel.get(i);
+					if(memberOfGroups.contains(groupPermissionAtI)){
+						groupsThisUserAllowedToAccess = new ArrayList<String>(ohGroupsPermissionLevel.subList(i, ohGroupsPermissionLevel.size()));
+						break;
+					}
+				}
+				
+				return groupsThisUserAllowedToAccess;
+				
+			} catch (Exception e) {
+				logger.error("Error while processing Orion Health Groups that the user " + unescappedUserDN + " has access right on", e);
+			}
+		}
+		
+		logger.debug("finished the process of the groups that the given user has access rigth.");
+		return new ArrayList<String>();
+	}
+	
+	
+	/**
+	 * We want to enforce the permission level. Orion Health has a few groups that have different permission levels
+	 * the groups sorted by permission level are stored in this orionHealthGroupsOrderedByPermissionLevel field
+	 * e.g. in group at index 0 in orionHealthGroupsOrderedByPermissionLevel, has the highest power compare to those that are at other indexes.
+	 * So, the given groups (in the list) are the groups that the user has the access rights on.
+	 * 
+	 * by using getBaseGroups() we will get all the groups that stored in Ldap servers and all the Orion Health groups.
+	 * so, we will use getbaseGroups() and remove those Orion Health Groups that are not listed in the given groups (ohGroupsAllowedToBeAccessed)
+
+	 * @param groupName that used to match to the list orionHealthGroupsOrderedByPermissionLevel.
+	 * 		groupName is the name of the group, it is not the DN of the group
+	 * (e.g. groupName is XX, but it is not CN=XX,OU=Client,DC=orion,DC=dmz)
+	 * 		groupName is also a simple name without any escaped chars (e.g. it should "Group #1" not "Group \\#1"
+	 * @return all groups that are stored in Groups folder (in Ldap server) 
+	 * 			+ the groups in the list given as parameter
+	 * 			+ those Orion Health groups that have lower power than those in the given list
+	 */
+	public Set<String> getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(List<String> ohGroupsAllowedToBeAccessed){
+		// get all groups that are stored in Groups folder (of LDAP server)
+		ArrayList<String> allGroups = new ArrayList<String>(getBaseGroups());
+		
+		// remove all the Orion Health Groups (from the allGroups) that have the higher power than the groups in the given list
+		ArrayList<String> ohGroupsHaveHigherPower = new ArrayList<String>(orionHealthGroupsOrderedByPermissionLevel);
+		ohGroupsHaveHigherPower.removeAll(ohGroupsAllowedToBeAccessed);
+		allGroups.removeAll(ohGroupsHaveHigherPower);
+
+		// add any group that contained in the given list
+		// but doesn't contained in the allGroups
+		// but, theoretically, all the groups stored in the given list must already storedin the allGroups
+		for(String group : ohGroupsAllowedToBeAccessed){
+			if(!allGroups.contains(group)){
+				allGroups.add(group);
+			}
+		}
+		System.out.println(allGroups);
+		return new LinkedHashSet<String>(allGroups);
+	}
+	
+	
+	
+	//
+	// codes dealing with Orion Health Groups Permission ends here
+	//
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	// no reserved chars in this method
 	/**
 	 * LdapTool represent the connection with LDAP server.
@@ -49,6 +255,11 @@ public class LdapTool {
 	 * @throws NamingException when connection with LDAP server failed
 	 */
 	public LdapTool() throws FileNotFoundException, NamingException{
+		if(orionHealthGroupsOrderedByPermissionLevel == null){
+			readGroupsAndPermissionLevelFromConfigureFile();
+		}
+		
+		
 		logger.debug("About to connect to LDAP server");
 		// if LDAP config file is not found
 		// the props will contain an "error" key
@@ -605,48 +816,60 @@ public class LdapTool {
 	
 	//ADDITIONAL FUNCTION
 	/**
-	 * Get a list of all Groups (not organizations in Clients) in the AD
+	 * Get a list of all groups (not organizations in Clients) stored in Groups folder + groups that stored in Orion Health folder
 	 * The group name in this list doesn't contains any escaped chars. So, please escape the reserve chars if you need to use these names agains the LDAP server.
 	 * @return
 	 */
-	public SortedSet<String> getBaseGroups(){
-		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
-		if (baseDN == null)
-			baseDN = "OU=Groups,DC=orion,DC=dmz";
-		String groupAttr = LdapProperty.getProperty(LdapConstants.BASEGROUP_ATTR);
-		if (groupAttr == null)
-			groupAttr = "cn";
-		String filter = "("+groupAttr+"=*)";
-		SortedSet<String> output = new TreeSet<String>();
-		try{
-			NamingEnumeration<SearchResult> e = ctx.search(baseDN, filter, null);
-			while(e.hasMore()){
-				SearchResult results = (SearchResult)e.next();
-				Attributes attributes = results.getAttributes();
-				output.add((String)attributes.get(groupAttr).get());
-			}
-			
-			// query all the groups that are stored in "Orion Health" organisation
+	public Set<String> getBaseGroups(){
+		Set<String> output = new LinkedHashSet<String>();
+		try {
+			// query all the groups that are stored in "Orion Health"
+			// organisation
+			SortedSet<String> orionHealthGroups = new TreeSet<String>();
 			String orionHealthBasedDN = LdapProperty.getProperty("orionhealthOrganisationBasedDN");
-			if(orionHealthBasedDN == null){
+			if (orionHealthBasedDN == null) {
 				orionHealthBasedDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
 			}
 			String orionHealthGroupsFilter = LdapProperty.getProperty("orionhealthOrganisationBasedAttribute");
-			if(orionHealthGroupsFilter == null){
+			if (orionHealthGroupsFilter == null) {
 				orionHealthGroupsFilter = "(CN=*)";
 			} else {
-				// if it is not null, it should be "orionHealthGroupsFilter = CN"
-				// so need to add bracelet
+				// if it is not null, it should be "orionHealthGroupsFilter = CN" so need to add bracelet
 				orionHealthGroupsFilter = "(" + orionHealthGroupsFilter + "=*)";
 			}
-			e = ctx.search(orionHealthBasedDN, orionHealthGroupsFilter, null);
-			while(e.hasMore()){ // the result from the search contains both Users and Groups
-				SearchResult results = (SearchResult)e.next();
+			NamingEnumeration<SearchResult> e = ctx.search(orionHealthBasedDN, orionHealthGroupsFilter, null);
+			while (e.hasMore()) { // the result from the search contains both
+									// Users and Groups
+				SearchResult results = (SearchResult) e.next();
 				Attributes attributes = results.getAttributes();
-				if(attributes.get("grouptype") != null){ // add only groups into output object
-					output.add((String)attributes.get("cn").get());
+				if (attributes.get("grouptype") != null) { // add only groups
+															// into output
+															// object
+					orionHealthGroups.add((String) attributes.get("cn").get());
 				}
 			}
+
+			// query all the groups that are stored in "Groups" folder
+			SortedSet<String> generalGroups = new TreeSet<String>();
+			String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
+			if (baseDN == null)
+				baseDN = "OU=Groups,DC=orion,DC=dmz";
+			String groupAttr = LdapProperty.getProperty(LdapConstants.BASEGROUP_ATTR);
+			if (groupAttr == null)
+				groupAttr = "cn";
+			String filter = "("+groupAttr+"=*)";
+			e = ctx.search(baseDN, filter, null);
+			while(e.hasMore()){
+				SearchResult results = (SearchResult)e.next();
+				Attributes attributes = results.getAttributes();
+				generalGroups.add((String)attributes.get(groupAttr).get());
+			}
+			
+			
+			output.addAll(orionHealthGroups);
+			output.addAll(generalGroups);
+			
+
 		}catch(NamingException ex){
 			logger.error(ex.toString());
 			ex.printStackTrace();
@@ -672,6 +895,7 @@ public class LdapTool {
 		String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		String userAttr = LdapProperty.getProperty(LdapConstants.USER_ATTR);
 		String filter = "("+userAttr+"=*)";
+		String dn = "";
 		try{
 			NamingEnumeration<SearchResult> e = ctx.search(new LdapName(baseDN), filter, null);
 			while(e.hasMore()){
@@ -679,7 +903,7 @@ public class LdapTool {
 					SearchResult results = (SearchResult)e.next();
 					Attributes attributes = results.getAttributes();
 					String cn = attributes.get("cn").get().toString(); // displayName
-					String dn = attributes.get("distinguishedName").get().toString();
+					dn = attributes.get("distinguishedName").get().toString();
 					dn = (String) Rdn.unescapeValue(dn);
 					int userAccountControl = Integer.parseInt(attributes.get("userAccountControl").get().toString());
 					String disabled = "enabled";
@@ -688,7 +912,7 @@ public class LdapTool {
 					}
 					users.put(cn, new String[]{dn, "enabled"});
 				} catch (NullPointerException ne){
-					logger.error("Exception while querying all users from " + baseDN, ne);
+					logger.error("Exception while querying dn: "+ dn + " from " + baseDN, ne);
 				}
 			}
 		}catch(NamingException ex){
@@ -779,7 +1003,7 @@ public class LdapTool {
 		try{
 			Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 			if(attrs.get("company") == null ){
-				String company = LdapTool.getOUvalueFromDN(userDN);
+				String company = LdapTool.getOUvalueFromDNThasHasTwoOU(userDN);
 				return company;
 			}else{
 				return attrs.get("company").get().toString();
@@ -1174,7 +1398,8 @@ public class LdapTool {
 
 	/**
 	 * Produce groupDN (without escapping reserved chars) from group name
-	 * @param groupName - groupName must not have been escaped the reserved chars
+	 * @param groupName - groupName must not have been escaped the reserved chars.
+	 * 		groupName is just the name of the group, it is not DN. (i.e. groupname is XX, it is not CN=XX,OU=Groups,DC=orion,DC=dmz)
 	 * @return group DN
 	 */
 	public String getDNFromGroup(String groupName) {
@@ -1198,7 +1423,7 @@ public class LdapTool {
 			}
 			String orionHealthGroupsFilter = LdapProperty.getProperty("orionhealthOrganisationBasedAttribute");
 			if(orionHealthGroupsFilter == null){
-				orionHealthGroupsFilter = "(CN=" + groupName + ")";
+				orionHealthGroupsFilter = "(CN=" + Rdn.escapeValue(groupName) + ")";
 			} else {
 				// if it is not null, it should be "orionHealthGroupsFilter = CN"
 				// so need to add bracelet
@@ -1411,7 +1636,7 @@ public class LdapTool {
 	 */
 	public static String escapedCharsOnCompleteCompanyDN(String originalDN) {
 		// getting cn
-		String cn = LdapTool.getouValueFromDN(originalDN);
+		String cn = LdapTool.getOUvalueFromDNThasHasTwoOU(originalDN);
 		// ecaspe reserved char on CN value
 		String escapedCn = Rdn.escapeValue(cn);
 		
@@ -1448,18 +1673,29 @@ public class LdapTool {
 	 * a helper method to get only ou value from the dn string. 
 	 * Note: that if the given dn contains escaped chars the result also contains the escaped chars.
 	 * And if the give dn doesn't contains an escaped char the result also doesn't contain an escaped char.
-	 * @param dn (e.g. ou=Associated Regional and University Pathologists, I,OU=Clients,DC=orion,DC=dmz)
-	 * @return only ou value (e.g. Associated Regional and University Pathologists, I)
+	 * @param dn that has two OU values: e.g. CN=XX,OU=YY,OU=Clients,DC=orion,DC=dmz
+	 * @return first ou value (e.g. YY)
 	 */
-	public static String getouValueFromDN(String dn) {
+	public static String getOUvalueFromDNThasHasTwoOU(String dn) {
 		// used to get CN and OU value (preventing CN and OU were written in
 		// lowercacse)
 		String tempDN = dn.toUpperCase();
 
-		// getting CN value
-		int ouValueStartIndex = tempDN.indexOf("OU=") + "OU=".length();
-		int ouValueEndIndex = tempDN.indexOf(",OU=", ouValueStartIndex);
-		String ou = dn.substring(ouValueStartIndex, ouValueEndIndex);
+		String ou = null;
+		
+		try{
+			// we believe that dn has two OU values (i.e. CN=XX,OU=YY,OU=Clients,DC=orion,DC=dmz)
+			// but, if the case that dn has only one OU value occured (i.e. CN=XX,OU=Clients,DC=orion,DC=dmz)
+			// then it will throw StringIndexOutOfBoundsException
+			int ouValueStartIndex = tempDN.indexOf("OU=") + "OU=".length();
+			int ouValueEndIndex = tempDN.indexOf(",OU=", ouValueStartIndex);
+			ou = dn.substring(ouValueStartIndex, ouValueEndIndex);
+			
+			// So, instead of let the program through exception
+			// we try to assume that dn has only one OU value
+		} catch (StringIndexOutOfBoundsException e){
+			ou = getOUvalueFromDNThatHasOneOU(dn);
+		}
 		return ou;
 	}
 	
@@ -1469,10 +1705,10 @@ public class LdapTool {
 	 * a helper method to get only ou value from the dn string.
 	 * Note: that if the given dn contains escaped chars => the result also contains the escaped cahrs.
 	 * And if the given dn doesn't contains escaped chars => the result also doesn't contains the escaped cahrs.
-	 * @param dn: full DN: e.g. CN=Lisa, She/pherd,OU=Hospira Pty limited *Project*,OU=Clients,DC=orion,DC=dmz
-	 * @return the ou value e.g. "Hospira Pty limited *Project*"
+	 * @param dn: full DN that has only one OU value: e.g. CN=XX,OU=Clients,DC=orion,DC=dmz
+	 * @return the ou value e.g. "Clients"
 	 */
-	public static String getOUvalueFromDN(String dn){
+	public static String getOUvalueFromDNThatHasOneOU(String dn){
 		// used to get OU and DC value (preventing the case that DC and OU were written in lowercacse)
 		String tempDN = dn.toUpperCase();
 		

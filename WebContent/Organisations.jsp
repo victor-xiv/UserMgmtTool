@@ -57,17 +57,21 @@
 <%  }else{ %>
                 <br />
                 <div style="width: 600px; padding: 5px; margin: 5px auto ";>
+<!-- Show a list of the groups that are stored in Ldap's Clients folder. each group is displayed with a link to OrganisationDetails.jsp -->
 <%  String[] userGroups = groups.getUserGroups();
 	List<String> userGroupsList = Arrays.asList(userGroups);
   for( int i = 0; i < userGroups.length; i++ ){  %>
                   <div class="row">
                     <a href="OrganisationDetails.jsp?name=<%=userGroups[i] %>"><%=userGroups[i] %></a>
                   </div>
-<%  } List<String> orgs = SupportTrackerJDBC.getOrganisations();
+<%  } 
+  List<String> orgs = SupportTrackerJDBC.getOrganisations();
   if (orgs.size()>userGroups.length) { %>
                 <form id="addnew" method="post" action="AddOrganisation">
                   <br /><span id="addlabel"><b>Add Organisation:</b></span><br />
                   <select name="org" id="org">
+
+<!-- make a drop down list of groups that are stored in SupportTrakcerJDBC, but not stored in Ldap's Clients folder -->
 <% for (String organisation : orgs) {
 	  if (!userGroupsList.contains(organisation.trim())) {
 		  %>

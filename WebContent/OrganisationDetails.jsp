@@ -19,6 +19,8 @@
   <%@ page import="javax.naming.NamingException" %>
   <%@ page import="java.net.ConnectException" %>
   <%@ page import="javax.naming.ldap.Rdn" %>
+  <%@ page import="java.util.List" %>
+  <%@ page import="servlets.AdminServlet" %>
   <%	
   
   	TreeMap<String,String[]> users = null;
@@ -298,7 +300,13 @@
                     	<table>
 		<% Attributes attrs = lt.getGroupAttributes(request.getParameter("name"));
 		Attribute attr = attrs.get("memberOf");
-		Set<String> groups = lt.getBaseGroups();
+		List<String> ohGroupsThisUserCanAccess = (List<String>)session.getAttribute(AdminServlet.OHGROUPS_ALLOWED_ACCESSED);
+		Set<String> groups = null;
+		if(ohGroupsThisUserCanAccess == null){
+			groups = lt.getBaseGroups();
+		} else {
+			groups = lt.getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(ohGroupsThisUserCanAccess);
+		}
 		if (attr != null) {
 			NamingEnumeration e = attr.getAll(); 
 			while (e.hasMore()) {

@@ -3,7 +3,6 @@ package servlets;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Properties;
 
 import javax.naming.NamingException;
 import javax.servlet.ServletException;

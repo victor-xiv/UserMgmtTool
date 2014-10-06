@@ -22,6 +22,8 @@
   	<%@ page import="java.net.ConnectException" %>
   	<%@ page import="ldap.ErrorConstants" %>
   	<%@ page import="javax.naming.ldap.Rdn" %>
+  	<%@ page import="java.util.List" %>
+  	<%@ page import="servlets.AdminServlet" %>
   	
   	
     <% 	try{
@@ -49,7 +51,12 @@
 	    if(lt != null){
 	    	attrs = lt.getUserAttributes(request.getParameter("dn"));
 	    	attr = attrs.get("memberOf");
-	    	baseGroups = lt.getBaseGroups();
+	    	List<String> ohGroupsThisUserCanAccess = (List<String>)session.getAttribute(AdminServlet.OHGROUPS_ALLOWED_ACCESSED);
+	    	if(ohGroupsThisUserCanAccess == null){
+	    		baseGroups = lt.getBaseGroups();
+	    	} else {
+				baseGroups = lt.getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(ohGroupsThisUserCanAccess);
+	    	}
 	    	lt.close();
 	    	
 	    	if(attrs==null || baseGroups==null){
