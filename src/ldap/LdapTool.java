@@ -171,8 +171,10 @@ public class LdapTool {
 				ArrayList<String> ohGroupsPermissionLevel = new ArrayList<String>(LdapTool.orionHealthGroupsOrderedByPermissionLevel);
 				ArrayList<String> groupsThisUserAllowedToAccess = new ArrayList<String>();
 				// iterate through the orionHealthGroupsOrderedByPermissionLevel
-				// because orionHealthGroupsOrderedByPermissionLevel list should be smaller than the list of memberOf of the given user
-				for(int i=ohGroupsPermissionLevel.size()-1; i>=0; i--){
+				// we are not iterating through the memberOfGroups list,
+				// because we don't kn the size of memberOfGroups list. if the memberOfGroups list is too big, then it will slow
+				// and we know orionHealthGroupsOrderedByPermissionLevel list is fix, thats why we are iterating through this list (not memberOfGroups)
+				for(int i=0; i<ohGroupsPermissionLevel.size(); i++){
 					String groupPermissionAtI = ohGroupsPermissionLevel.get(i);
 					if(memberOfGroups.contains(groupPermissionAtI)){
 						groupsThisUserAllowedToAccess = new ArrayList<String>(ohGroupsPermissionLevel.subList(i, ohGroupsPermissionLevel.size()));
@@ -217,16 +219,9 @@ public class LdapTool {
 		// remove all the Orion Health Groups (from the allGroups) that have the higher power than the groups in the given list
 		ArrayList<String> ohGroupsHaveHigherPower = new ArrayList<String>(orionHealthGroupsOrderedByPermissionLevel);
 		ohGroupsHaveHigherPower.removeAll(ohGroupsAllowedToBeAccessed);
-		allGroups.removeAll(ohGroupsHaveHigherPower);
+		ArrayList<String> ohGroupsNotAllowedToBeAccessed = ohGroupsHaveHigherPower;
+		allGroups.removeAll(ohGroupsNotAllowedToBeAccessed);
 
-		// add any group that contained in the given list
-		// but doesn't contained in the allGroups
-		// but, theoretically, all the groups stored in the given list must already storedin the allGroups
-		for(String group : ohGroupsAllowedToBeAccessed){
-			if(!allGroups.contains(group)){
-				allGroups.add(group);
-			}
-		}
 		logger.debug("finished getting the base groups and the Orion Health groups");
 		return new LinkedHashSet<String>(allGroups);
 	}
