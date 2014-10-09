@@ -79,7 +79,7 @@ public class LdapTool {
 	 *      cannot access to any groups that defined by i=0, 1 and 2
 	 *  e.g. if a user that is a memberOf of multiple orion health groups (e.g. a memberOf i=2 and i=4) then that
 	 *  user has the access right of the lowest power group (e.g. the group defined by i=4 if it is a memberOf groups that defined by i=2 and i=4)
-	 * 2). then it creates an ArrayList<String> that store the name of that groups based on is hierachy of i.
+	 * 2). then it creates an ArrayList<String> that store the name of that groups based on is hierarchy of i.
 	 * which means that the i is used as the index of list.
 	 * e.g. the group that is the value of attribute ldap.group.permission.level.3 is stored in the list at index 3
 	 * 3). then this ArrayList<String> is assigned to the static field orionHealthGroupsOrderedByPermissionLevel for the later use.
@@ -120,7 +120,7 @@ public class LdapTool {
 	
 	/**
 	 * This method look at the memberOf attributes (stored in Ldap server) of the given userDN
-	 * and determine whether this given user is a memberOf of any orion health group.
+	 * and determine whether this given user is a memberOf of any orion health groups.
 	 * 
 	 * and it will return the list of orion health groups that this user has access right to access to those groups.
 	 * 
@@ -136,9 +136,9 @@ public class LdapTool {
 	 *    
 	 *    2). if it is not a memberOf of any group, it will return an empty list
 	 *    
-	 *    3). if it is a memberOf of many groups, then the lowest power group will be used (or the group at the biggest index is used)
+	 *    3). if it is a memberOf of many groups, then the highest power group will be used (or the group at the lowest index is used)
 	 *    so, the method will return a list that has the groups which is a sublist of orionHealthGroupsOrderedByPermissionLevel
-	 *    from i (where i is the biggest index that store the group name that this user is a memberOf) to the last group
+	 *    from i (where i is the lowest index that store the group name that this user is a memberOf) to the last group
 	 *   
 	 * @param unescappedUserDN: is the dn of the user and it must has not been escaped any chars at all 
 	 * (e.g.     unescappedUserDN="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz"
