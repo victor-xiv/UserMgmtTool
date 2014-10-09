@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TreeSet;
 
 import ldap.DBConstants;
@@ -37,6 +36,8 @@ public class SupportTrackerJDBC {
 	 */
 	public static Map<String,String> getUserDetails(String username) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("about to get the details of user from Support Tracker DB " + username);
 		
 		Map<String,String> userDetails = new HashMap<String,String>();
 		// building query
@@ -69,11 +70,11 @@ public class SupportTrackerJDBC {
 				ResultSetMetaData meta = rs.getMetaData();
 				meta.getColumnCount();
 				while(rs.next()){
-					logger.info("Found user details: "+username);
+					logger.debug("Found user details: "+username);
 					// put user info (from the query results) into a Map object (userDetails)
 					for(int i = 1; i <= meta.getColumnCount(); i++){
 						userDetails.put(meta.getColumnName(i), rs.getString(i));
-						logger.info(meta.getColumnName(i)+"|"+rs.getString(i));
+						logger.debug(meta.getColumnName(i)+"|"+rs.getString(i));
 					}
 				}
 			} catch (SQLException e) {
@@ -88,6 +89,9 @@ public class SupportTrackerJDBC {
 				}
 			}
 		}
+		
+		logger.debug("finished getting the details of user from Support Tracker DB " + username);
+		
 		return userDetails;
 	}
 	
@@ -99,6 +103,8 @@ public class SupportTrackerJDBC {
 	 */
 	public static List<String> getOrganisations() throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("about to get all the organisations from Support Tracker DB ");
 		
 		// building query
 		List<String> orgs = new ArrayList<String>();
@@ -138,6 +144,9 @@ public class SupportTrackerJDBC {
 			}
 		}
 		Collections.sort(orgs);
+		
+		logger.debug("finished getting all the organisations from Support Tracker DB ");
+		
 		return orgs;
 	}
 	
@@ -149,6 +158,8 @@ public class SupportTrackerJDBC {
 	 */
 	public static List<String> getEmails() throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("about to get all the emails from Support Tracker DB ");
 		
 		// building query
 		List<String> orgs = new ArrayList<String>();
@@ -185,6 +196,9 @@ public class SupportTrackerJDBC {
 			}
 		}
 		Collections.sort(orgs);
+		
+		logger.debug("fnished getting all the organisations from Support Tracker DB ");
+		
 		return orgs;
 	}
 	
@@ -198,6 +212,11 @@ public class SupportTrackerJDBC {
 	 */
 	public static int addClient(Map<String, String[]> maps) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("about to add client to Support Tracker DB: ");
+		for(Map.Entry<String, String[]> es : maps.entrySet()){
+			logger.debug(es.getKey() + " : " + es.getValue()[0]);
+		}
 		
 		// creating query to select clientId that belong to the given companyName (stored in maps)
 		StringBuffer query = new StringBuffer();
@@ -267,7 +286,7 @@ public class SupportTrackerJDBC {
 					pst.setString(10, "Y");
 					// execute the query
 					status = pst.executeUpdate();
-					logger.info(String.format("Added user with name: %s and clientId %d successfully",  maps.get("displayName")[0], clientId));
+					logger.debug(String.format("Added user with name: %s and clientId %d successfully",  maps.get("displayName")[0], clientId));
 				} catch (SQLException e) {
 					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
@@ -303,6 +322,9 @@ public class SupportTrackerJDBC {
 			} catch (SQLException e) {
 				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 			}
+			
+			logger.debug("finished adding client to Support Tracker DB");
+			
 			return clientAccountId;
 			//Extended } to encompass large block, to prevent null pointer exceptions on con - SPT-448
 		}
@@ -312,6 +334,11 @@ public class SupportTrackerJDBC {
 	
 	public static int addStaffAccount(Map<String, String[]> maps) throws SQLException {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("about to add staff to Support Tracker DB: ");
+		for(Map.Entry<String, String[]> es : maps.entrySet()){
+			logger.debug(es.getKey() + " : " + es.getValue()[0]);
+		}
 		
 		// connecting to Database server
 		Connection con = null;
@@ -348,7 +375,7 @@ public class SupportTrackerJDBC {
 					// execute the query
 					status = pst.executeUpdate();
 					
-					logger.info(String
+					logger.debug(String
 							.format("Added user with name: %s successfully",
 									maps.get("displayName")[0]));
 				} catch (SQLException e) {
@@ -386,6 +413,9 @@ public class SupportTrackerJDBC {
 			} catch (SQLException e) {
 				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 			}
+			
+			logger.debug("finished adding staff to Support Tracker DB: ");
+			
 			return staffId;
 		}
 		
@@ -403,6 +433,8 @@ public class SupportTrackerJDBC {
 	public static boolean deleteClient(int clientAccountId) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
+		logger.debug("deleting client that has ID from support tracker DB " + clientAccountId);
+		
 		String query = String.format("DELETE ClientAccount WHERE clientAccountId = %d", clientAccountId);
 		
 		Connection con = null;
@@ -418,13 +450,15 @@ public class SupportTrackerJDBC {
 			Statement st = con.createStatement();
 			
 			if(st.executeUpdate(query)!=0){
-				logger.info(String.format("Deleted clientAccountId: %d successfully", clientAccountId));
+				logger.debug(String.format("Deleted clientAccountId: %d successfully", clientAccountId));
 				return true;
 			} else {
-				logger.info(String.format("There's no row affected when attampted to delete clientAccountId: %d.", clientAccountId));
+				logger.debug(String.format("There's no row affected when attampted to delete clientAccountId: %d.", clientAccountId));
 				return false;
 			}
 		}
+		
+		logger.debug("finished deleting client that has ID from support tracker DB " + clientAccountId);
 		
 		return false;
 	}
@@ -440,6 +474,8 @@ public class SupportTrackerJDBC {
 	 */
 	public static boolean toggleUserStatus(String username, boolean enabled) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("toggling user in support tracker DB " + username + " to: " + enabled);
 		
 		// building SQL query
 		StringBuffer query = new StringBuffer("UPDATE ClientAccount SET active = ");
@@ -477,6 +513,9 @@ public class SupportTrackerJDBC {
 				}
 			}
 		}
+		
+		logger.debug("finished toggling user in support tracker DB " + username + " to: " + enabled);
+		
 		return result > 0;
 	}
 	
@@ -489,6 +528,8 @@ public class SupportTrackerJDBC {
 	 */
 	public static String[] getAvailableUsernames(String firstname, String surname) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("getting all available username for: " + firstname + ", " + surname );
 		
 		// remove any special characters that are not allowed to be in user name.
 		// those characters are: " ' , < > : = * [ ] | : ! # + & % { } ? \
@@ -511,7 +552,7 @@ public class SupportTrackerJDBC {
 			query.append("', '" + it.next());
 		}
 		query.append("')");
-		logger.info(query.toString());
+		logger.debug(query.toString());
 		
 		// connecting to Database server
 		Connection con= null;
@@ -531,7 +572,7 @@ public class SupportTrackerJDBC {
 				while(rs.next()){
 					String str = rs.getString(1);
 					names.remove(str);
-					logger.info("Found: "+str);
+					logger.debug("Found: "+str);
 				}
 			} catch (SQLException e) {
 				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
@@ -549,6 +590,8 @@ public class SupportTrackerJDBC {
 		String[] strNames = new String[names.size()];
 		strNames = names.toArray(strNames);
 		
+		logger.debug("finished getting all available username for: " + firstname + ", " + surname );
+		
 		// return all possible names that have not been stored in the database
 		return strNames;
 	}
@@ -564,14 +607,17 @@ public class SupportTrackerJDBC {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		logger.debug("About to connect to Support Tracker Database");
+		
 		jdbcUrl = LdapProperty.getProperty(DBConstants.ST_JDBC_URL);
 		jdbcUser = LdapProperty.getProperty(DBConstants.ST_JDBC_USER);
 		jdbcPassword = LdapProperty.getProperty(DBConstants.ST_JDBC_PASSWORD);
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 			Connection con = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword);
+			
 			if(con != null) logger.debug("Successfully connected to Support Tracker Database");
 			else logger.error("Fail in connecting to Support Tracker Database. Fail to define the failture reason.");
+			
 			return con;
 			
 		} catch (ClassNotFoundException e) {

@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import ldap.DBConstants;
 import ldap.ErrorConstants;
@@ -30,6 +29,8 @@ public class ConcertoJDBC {
 	 */
 	public static Map<String,String> getUserDetails(String username) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("getting user details from concerto: " + username);
 		
 		Map<String,String> userDetails = new HashMap<String,String>();
 		
@@ -57,12 +58,12 @@ public class ConcertoJDBC {
 			try {
 				Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery(query.toString());
-				logger.info("Found user details: "+username);
+				logger.debug("Found user details: "+username);
 				
 				// put the key,value from the results into Map Object
 				while(rs.next()){
 					userDetails.put(rs.getString(1), rs.getString(2));
-					logger.info(rs.getString(1)+"|"+rs.getString(2));
+					logger.debug(rs.getString(1)+"|"+rs.getString(2));
 				}
 				
 			} catch (SQLException e) {
@@ -89,6 +90,9 @@ public class ConcertoJDBC {
 				// we are not re-throwing this exception, because we're just trying to close the connection.
 			}
 		}
+		
+		logger.debug("finished getting user details from concerto: " + username);
+		
 		return userDetails;
 	}
 	
@@ -104,6 +108,8 @@ public class ConcertoJDBC {
 	 */
 	public static boolean toggleUserStatus(String username, boolean enabled) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("toggling user enable : " + username + " to: " + enabled);
 		
 		// building query statement
 		StringBuffer query = new StringBuffer("UPDATE cUser SET deleted = ");
@@ -148,6 +154,9 @@ public class ConcertoJDBC {
 				// we are not re-throwing this exception, because we're just trying to close the connection.
 			}
 		}
+		
+		logger.debug("finished toggling user enable : " + username + " to: " + enabled);
+		
 		return result > 0;
 	}
 	
@@ -160,6 +169,8 @@ public class ConcertoJDBC {
 	 */
 	private static Connection getConnection() throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("connecting to Concerto DB");
 		
 		// read the concerto DB url, usename and password from conf file
 		jdbcUrl = LdapProperty.getProperty(DBConstants.CONCERTO_JDBC_URL);

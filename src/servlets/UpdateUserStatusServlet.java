@@ -29,6 +29,8 @@ public class UpdateUserStatusServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
+		logger.debug("UpdateUserStatusServlet about to process Get request: " + request.getQueryString());
+		
 		String userDN = request.getParameter("dn");
 		String action = request.getParameter("action");
 		boolean updated = false;

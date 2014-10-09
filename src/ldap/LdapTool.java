@@ -210,6 +210,7 @@ public class LdapTool {
 	 * 			+ those Orion Health groups that have lower power than those in the given list
 	 */
 	public Set<String> getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(List<String> ohGroupsAllowedToBeAccessed){
+		logger.debug("about to get the base groups and the Orion Health groups");
 		// get all groups that are stored in Groups folder (of LDAP server)
 		ArrayList<String> allGroups = new ArrayList<String>(getBaseGroups());
 		
@@ -226,7 +227,7 @@ public class LdapTool {
 				allGroups.add(group);
 			}
 		}
-		System.out.println(allGroups);
+		logger.debug("finished getting the base groups and the Orion Health groups");
 		return new LinkedHashSet<String>(allGroups);
 	}
 	
@@ -284,12 +285,13 @@ public class LdapTool {
 			System.setProperty("javax.net.debug", "ssl");
 			System.setProperty("javax.net.ssl.trustStore", LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
 			System.setProperty( "javax.net.ssl.trustStorePassword", LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
-			logger.debug("Using keystore: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
-			logger.debug("keystore password: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
+			logger.debug("Connecting Ldap on SSL, using keystore: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
+			logger.debug("Connecting Ldap on SSL, keystore password: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
 		}
 		
 		try{
 			ctx = new InitialDirContext(env);
+			logger.debug("Connecting to Ldap server successfully");
 		}catch(ServiceUnavailableException se){
 			se.printStackTrace();
 			logger.error("Connecting to LDAP server", se);
@@ -328,8 +330,14 @@ public class LdapTool {
 	 *          {"true", userDN} or {"true", newUserDN} otherwise.
 	 */
 	public String[] updateUser(Map<String,String[]> paramMaps){
+		logger.debug("About to update user with the value: ");
+		for(Map.Entry<String, String[]> es : paramMaps.entrySet()){
+			logger.debug(es.getKey() + " : " + es.getValue()[0]);
+		}
+		
 		// userDN has not been escaped any reserved chars
 		String userDN = paramMaps.get("dn")[0];
+		
 		Attributes attrs = getUserAttributes(userDN);
 		// escaped the reserved chars.
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
@@ -430,7 +438,7 @@ public class LdapTool {
 			}else{
 				ctx.modifyAttributes(new LdapName(userDN), mods);
 			}
-			logger.info("Updated details for user: "+userDN);
+			logger.debug("Updated details for user: "+userDN);
 		} catch (NamingException e) {
 			logger.error("Exception while updating the Ldap user's attribute", e);
 			return new String[]{"false","Failed to update details for user: "+userDN + " into Ldap Server."};
@@ -439,7 +447,7 @@ public class LdapTool {
 		// updating password => this.changePassword() will handle this
 		if(!password.equals("")){
 			if(!changePassword((String)Rdn.unescapeValue(userDN), password)){
-				logger.info("Failed to update password for user: "+userDN);
+				logger.debug("Failed to update password for user: "+userDN);
 				return new String[]{"false","Failed to update password for user: "+userDN};
 			}
 		}
@@ -462,6 +470,11 @@ public class LdapTool {
 	 */
 	public boolean addUser(Map<String,String[]> paramMaps) throws Exception{		
 		try{
+			logger.debug("About to add a user with the value: ");
+			for(Map.Entry<String, String[]> es : paramMaps.entrySet()){
+				logger.debug(es.getKey() + " : " + es.getValue()[0]);
+			}
+			
 			// http://forums.sun.com/thread.jspa?threadID=582103
 			// http://msdn.microsoft.com/en-us/library/ms675090(VS.85).aspx
 			String fullname = "";
@@ -554,7 +567,7 @@ public class LdapTool {
 			attributes.put("userAccountControl",Integer.toString(UF_NORMAL_ACCOUNT +
 												UF_PASSWD_NOTREQD + UF_DONT_EXPIRE_PASSWD));
 			
-			logger.info("About to create User: " + escapedValueUserDN);
+			logger.debug("About to create User: " + escapedValueUserDN);
 
 			// add userDN into LDAP
 			// we need to escape reserved chars for the ldap name that we put in .createSubcontext() method.
@@ -571,7 +584,7 @@ public class LdapTool {
 			//Add user to company organistion group
 			addUserToGroup(unescapedValueUserDN, orgGroupDN);
 			//ADDITIONAL CODE ENDS
-			logger.info("Successfully created User: " + escapedValueUserDN);
+			logger.debug("Successfully created User: " + escapedValueUserDN);
 			String password = paramMaps.get("password01")[0];
 			if(!changePassword(unescapedValueUserDN, password)){
 				deleteUser(unescapedValueUserDN);
@@ -621,13 +634,14 @@ public class LdapTool {
 	 * @throws NamingException if an exception thrown during the process
 	 */
 	public boolean addUserToGroup(String userDN, String groupDN) throws NamingException{
+		logger.debug("about to add user: " + userDN + " to group: " + groupDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		groupDN = LdapTool.escapedCharsOnCompleteGroupDN(groupDN);
 		try	{
 			ModificationItem member[] = new ModificationItem[1];
 			member[0]= new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("member", userDN)); 
 			ctx.modifyAttributes(new LdapName(groupDN),member);
-			logger.info("Added user "+userDN+" to group: " + groupDN);
+			logger.debug("Added user "+userDN+" to group: " + groupDN);
 			return true;
 		}
 		catch (NamingException e) {
@@ -650,6 +664,7 @@ public class LdapTool {
 	 * @throws NamingException if an exception thrown during the process
 	 */
 	public boolean addGroup1InToGroup2(String groupDN1, String groupDN2) throws NamingException{
+		logger.debug("about to add group "+groupDN1+" to group: " + groupDN2);
 		groupDN1 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN1);
 		groupDN2 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN2);
 
@@ -657,7 +672,7 @@ public class LdapTool {
 			ModificationItem member[] = new ModificationItem[1];
 			member[0]= new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("member", groupDN1)); 
 			ctx.modifyAttributes(new LdapName(groupDN2),member);
-			logger.info("Added group "+groupDN1+" to group: " + groupDN2);
+			logger.debug("Added group "+groupDN1+" to group: " + groupDN2);
 			return true;
 		}
 		catch (NamingException e) {
@@ -678,6 +693,8 @@ public class LdapTool {
 	 * @throws NamingException if it cannot remove this userDN from the groupDN
 	 */
 	public boolean removeUserFromAGroup(String userDN, String groupDN) throws NamingException{
+		logger.debug("about to remove user "+userDN+" from group: " + groupDN);
+		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		groupDN = LdapTool.escapedCharsOnCompleteGroupDN(groupDN);
 		try	{
@@ -686,7 +703,7 @@ public class LdapTool {
 			member[0]= new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute("member", userDN)); 
 			// apply the remove attribute
 			ctx.modifyAttributes(new LdapName(groupDN),member);
-			logger.info("Removed user "+userDN+" from group: " + groupDN);
+			logger.debug("Removed user "+userDN+" from group: " + groupDN);
 			return true;
 		}
 		catch (NamingException e) {
@@ -709,6 +726,8 @@ public class LdapTool {
 	 */
 	public boolean removeGroup1FromGroup2(String groupDN1, String groupDN2)
 			throws NamingException {
+		logger.debug("about to remove group " + groupDN1 + " from group: " + groupDN2);
+		
 		groupDN1 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN1);
 		groupDN2 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN2);
 		try {
@@ -718,7 +737,7 @@ public class LdapTool {
 					new BasicAttribute("member", groupDN1));
 			// apply the remove attribute
 			ctx.modifyAttributes(new LdapName(groupDN2), member);
-			logger.info("removed group " + groupDN1 + " from group: " + groupDN2);
+			logger.debug("removed group " + groupDN1 + " from group: " + groupDN2);
 			return true;
 		} catch (NamingException e) {
 			logger.error("Problem in removing group: " + groupDN1 + " from group: " + groupDN2, e);
@@ -741,6 +760,8 @@ public class LdapTool {
 	 * @return true if the modification is successful. false otherwise.
 	 */
 	public boolean changePassword(String userDN, String password){
+		logger.debug("about to update password for user: " + userDN + " with new psw: " + password);
+		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
 			String quotedPwd = "\""+password+"\"";
@@ -750,7 +771,7 @@ public class LdapTool {
 			mods[1] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("unicodePwd", encodedPwd));
 			// this method must be performed on SSL or TSL connection
 			ctx.modifyAttributes(new LdapName(userDN), mods);
-			logger.info("Updated password for user: "+userDN);
+			logger.debug("Updated password for user: "+userDN);
 			return true;
 		}catch(NamingException ex){
 			logger.error(String.format("Exception while modifying user's password, (userDN, psw) = (%s, %s)", userDN, password), ex);
@@ -770,9 +791,12 @@ public class LdapTool {
 	 * @return true, if the deletion successful, false otherwise.
 	 */
 	public boolean deleteUser(String userDN){
+		logger.debug("about to delete user: " + userDN);
+		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
 			ctx.destroySubcontext(new LdapName(userDN));
+			logger.debug("Deleted user: " + userDN + "successfully");
 			return true;
 		}catch(NamingException ex){
 			logger.error("Exception while deleting a give userDN: " + userDN, ex);
@@ -788,6 +812,8 @@ public class LdapTool {
 	 * @return
 	 */
 	public SortedSet<String> getUserGroups(){
+		logger.debug("about to search for all the organisations that are stored in Clients folder");
+		
 		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
 		String filter = "("+groupAttr+"=*)";
@@ -821,6 +847,7 @@ public class LdapTool {
 	 * @return
 	 */
 	public Set<String> getBaseGroups(){
+		logger.debug("about to search for all groups that are stored in Orion Health group");
 		Set<String> output = new LinkedHashSet<String>();
 		try {
 			// query all the groups that are stored in "Orion Health"
@@ -848,7 +875,9 @@ public class LdapTool {
 					orionHealthGroups.add((String) attributes.get("cn").get());
 				}
 			}
+			logger.debug("Finished searching for groups that are stored in Orion Health groups");
 
+			logger.debug("about to search for all groups that are stored in Clients folder");
 			// query all the groups that are stored in "Groups" folder
 			SortedSet<String> generalGroups = new TreeSet<String>();
 			String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
@@ -868,7 +897,7 @@ public class LdapTool {
 			
 			output.addAll(orionHealthGroups);
 			output.addAll(generalGroups);
-			
+			logger.debug("finished searching for all groups that are stored in Clients folder");
 
 		}catch(NamingException ex){
 			logger.error(ex.toString());
@@ -889,6 +918,8 @@ public class LdapTool {
 	 * @return: all the dn in the Map were unescaped the reserved ldap chars (because it is the original value returning from Ldap) (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz"
 	 */
 	public TreeMap<String,String[]> getGroupUsers(String name){
+		logger.debug("about to search for the DN of the group: " + name);
+		
 		// escape all the reserve key words.
 		name = Rdn.escapeValue(name);
 		TreeMap<String,String[]> users = new TreeMap<String,String[]>();
@@ -911,6 +942,8 @@ public class LdapTool {
 						disabled = "disabled";
 					}
 					users.put(cn, new String[]{dn, "enabled"});
+					
+					logger.debug("search for the DN of the group " + name + " finished");
 				} catch (NullPointerException ne){
 					logger.error("Exception while querying dn: "+ dn + " from " + baseDN, ne);
 				}
@@ -930,12 +963,16 @@ public class LdapTool {
 	 * @return
 	 */
 	public Attributes getOrganisationAttributes(String name){
+		logger.debug("about to search for the attributes of the organisation: " + name);
 		// escape all the reserve key words.
 		name = Rdn.escapeValue(name);
 		
 		try{
 			String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 			Attributes attrs = ctx.getAttributes(new LdapName(baseDN));
+			
+			logger.debug("finished searching for the attributes of the organisation: " + name);
+			
 			return attrs;
 		}catch(NamingException ex){
 			logger.error(ex.toString());
@@ -956,10 +993,14 @@ public class LdapTool {
 	 *         null otherwise.
 	 */
 	public Attributes getUserAttributes(String userDN){
+		logger.debug("about to search for the attributes of the user: " + userDN);
+		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
 			LdapName ldapUserDN = new LdapName(userDN);
 			Attributes attrs = ctx.getAttributes(ldapUserDN);
+			
+			logger.debug("fnished searching for the attributes of the user: " + userDN);
 			return attrs;
 		}catch(NamingException ex){
 			logger.error("Exception while querying all attribtues of a user: " + userDN, ex);
@@ -976,12 +1017,16 @@ public class LdapTool {
 	 * @return
 	 */
 	public Attributes getGroupAttributes(String companyName){
+		logger.debug("about to search for the attributes of the group: " + companyName);
+		
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		if (baseDN==null)
 			baseDN = "OU=Groups,DN=orion,DN=dmz";
 			String companyDN = "CN="+Rdn.escapeValue(companyName)+","+baseDN;
+			
 		try{
 			Attributes attrs = ctx.getAttributes(new LdapName(companyDN));
+			logger.debug("fnished searching for the attributes of the group: " + companyName);
 			return attrs;
 		}catch(NamingException ex){
 			logger.error(ex.toString());
@@ -999,13 +1044,18 @@ public class LdapTool {
 	 * @return company simple name in String (not the DN name)
 	 */
 	public String getUserCompany(String userDN){
+		logger.debug("about to search for the company name of user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
 			Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 			if(attrs.get("company") == null ){
 				String company = LdapTool.getOUvalueFromDNThasHasTwoOU(userDN);
+				logger.debug("finished searching for the company name of user: " + userDN);
+				
 				return company;
 			}else{
+				logger.debug("finished searching for the company name of user: " + userDN);
+				
 				return attrs.get("company").get().toString();
 			}
 		}catch(NamingException ex){
@@ -1023,11 +1073,13 @@ public class LdapTool {
 	 * @return true if the given companyName is in Ldap Server, false otherwise
 	 */
 	public boolean companyExists(String companyName){
+		logger.debug("about to search for the company: " + companyName);
 		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		String filter = "("+LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+")";
 		NamingEnumeration<SearchResult> e;
 		try {
 			e = ctx.search(new LdapName(baseDN), filter, null);
+			logger.debug("finished searching for the company: " + companyName);
 			if(e.hasMore()){
 				return true;
 			}
@@ -1044,6 +1096,8 @@ public class LdapTool {
 	 * @return true if more than zero search matches. false otherwise
 	 */
 	public boolean companyExistsAsGroup(String companyName){
+		logger.debug("about to search for the company group: " + companyName);
+		
 		companyName = Rdn.escapeValue(companyName);
 		//Get DN for 'Groups'
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
@@ -1053,6 +1107,7 @@ public class LdapTool {
 		try {
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
+			logger.debug("finished searching for the company group: " + companyName);
 			if(e.hasMore()){
 				return true;
 			}
@@ -1074,6 +1129,7 @@ public class LdapTool {
 	 * @return true if more than zero search matches.
 	 */
 	public boolean usernameExists(String username, String company){
+		logger.debug("about to search for user: " + username + " from company: " + company);
 		username = Rdn.escapeValue(username);
 		company = Rdn.escapeValue(company);
 		
@@ -1085,6 +1141,7 @@ public class LdapTool {
 		try {
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
+			logger.debug("finished searching for user: " + username + " from company: " + company);
 			if(e.hasMore()){
 				return true;
 			}
@@ -1107,6 +1164,8 @@ public class LdapTool {
 	 * @return true if more than zero search matches.
 	 */
 	public boolean emailExists(String email, String company){
+		logger.debug("about to search for email: " + email + " from company: " + company);
+		
 		company = Rdn.escapeValue(company);
 		//Search user's company
 		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
@@ -1116,6 +1175,9 @@ public class LdapTool {
 		try {
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
+			
+			logger.debug("finished searching for email: " + email + " from company: " + company);
+			
 			if(e.hasMore()){
 				return true;
 			}
@@ -1136,6 +1198,8 @@ public class LdapTool {
 	 * @return true if more than zero search matches (means userDN exists).
 	 */
 	public boolean userDNExists(String fullname, String company){
+		logger.debug("about to search for user: " + fullname + " from company: " + company);
+		
 		//Search user's company
 		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		//Create search string (CN=Display Name)
@@ -1144,6 +1208,9 @@ public class LdapTool {
 		try {
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
+			
+			logger.debug("finished searching for user: " + fullname + " from company: " + company);
+			
 			if(e.hasMore()){
 				return true;
 			}
@@ -1166,6 +1233,8 @@ public class LdapTool {
 	 * @return the first matching email, if there is a match, else returns null
 	 */
 	public String getEmail(String username, String company){
+		logger.debug("about to search for email of user: " + username + " from company: " + company);
+		
 		company = Rdn.escapeValue(company);
 		username = Rdn.escapeValue(username);
 		//Search user's company
@@ -1179,6 +1248,7 @@ public class LdapTool {
 			if(e.hasMore()){
 				SearchResult ne = e.next();
 				String mail = (String) ne.getAttributes().get("mail").get();
+				logger.debug("finished searching for email of user: " + username + " from company: " + company);
 				return mail;
 			}
 		} catch (NamingException ex) {
@@ -1200,6 +1270,7 @@ public class LdapTool {
 	 * @return the first matching name, if there is a match, else returns null.
 	 */
 	public String getName(String username, String company){
+		logger.debug("about to search for fullname of user: " + username + " from : " + company);
 		username = Rdn.escapeValue(username);
 		company = Rdn.escapeValue(company);
 		//Search user's company
@@ -1212,8 +1283,9 @@ public class LdapTool {
 			e = ctx.search(new LdapName(baseDN), filter, null);
 			if(e.hasMore()){
 				SearchResult ne = e.next();
-				String mail = (String) ne.getAttributes().get("cn").get();
-				return mail;
+				String cn = (String) ne.getAttributes().get("cn").get();
+				logger.debug("about to search for fullname of user: " + username + " from : " + company);
+				return cn;
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
@@ -1256,6 +1328,8 @@ public class LdapTool {
 	public boolean addCompany(String companyName) throws NamingException{
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
 		
+		logger.debug("about to add company: " + companyName + "into Clients folder (of Ldap Server)");
+		
 		// get baseDN for the user (it should be: OU=Clients,DC=orion,DC=dmz)
 		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
 		
@@ -1282,9 +1356,9 @@ public class LdapTool {
 		
 		try {
 			if (ctx == null)
-				logger.info("ctx uninitialised");
+				logger.debug("ctx uninitialised");
 			ctx.createSubcontext(ldapCompanyDN, attributes);
-			logger.info("Company with DN: "+companyDN+" was added successfully");
+			logger.debug("Company with DN: "+companyDN+" was added successfully");
 			return true;
 		} catch (NamingException e) {
 			logger.error(String.format("Exception while adding %s into Ldap server as a user.", companyName), e);
@@ -1311,6 +1385,8 @@ public class LdapTool {
 	 */
 	public boolean addCompanyAsGroup(String companyName) throws NamingException{
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
+		
+		logger.debug("about to add company: " + companyName + "into Groups folder (of Ldap Server)");
 				
 		//Get base DN for 'Groups'
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
@@ -1341,10 +1417,10 @@ public class LdapTool {
 				
 		try {
 			if (ctx == null)
-				logger.info("ctx uninitialised");
+				logger.debug("ctx uninitialised");
 			//Create company group and log success
 			ctx.createSubcontext(ldapCompanyDN, attributes);
-			logger.info("Organisation with DN: "+companyDN+" was added as group successfully");
+			logger.debug("Organisation with DN: "+companyDN+" was added as group successfully");
 			return true;
 		//If error, log detail and stack trace	
 		} catch (NamingException e) {
@@ -1365,9 +1441,11 @@ public class LdapTool {
 	 * @return true, if the deletion successful, false otherwise.
 	 */
 	public boolean deleteGroupCompany(String groupDN){
+		logger.debug("about to delete group: " + groupDN);
 		groupDN = LdapTool.escapedCharsOnCompleteGroupDN(groupDN);
 		try{
 			ctx.destroySubcontext(new LdapName(groupDN));
+			logger.debug("finished deleting groupDN");
 			return true;
 		}catch(NamingException ex){
 			logger.error("Exception while deleting a give userDN: " + groupDN, ex);
@@ -1384,9 +1462,11 @@ public class LdapTool {
 	 * @return true, if the deletion successful, false otherwise.
 	 */
 	public boolean deleteCompany(String groupDN){
+		logger.debug("about to delete Client: " + groupDN);
 		groupDN = LdapTool.escapedCharsOnCompleteCompanyDN(groupDN);
 		try{
 			ctx.destroySubcontext(new LdapName(groupDN));
+			logger.debug("finished deleting Client: " + groupDN);
 			return true;
 		}catch(NamingException ex){
 			logger.error("Exception while deleting a give userDN: " + groupDN, ex);
@@ -1404,6 +1484,7 @@ public class LdapTool {
 	 */
 	public String getDNFromGroup(String groupName) {
 
+		logger.debug("about to search for the DN of the group: " + groupName);
 		// generally, the dn is the combination of CN=groupName and basedDN
 		//normally, basedDN is OU=Groups,DC=orion,DC=dmz
 		//so, dn should be CN=groupName,OU=Groups,DC=orion,DC=dmz
@@ -1450,6 +1531,7 @@ public class LdapTool {
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		String attrName = LdapProperty.getProperty(LdapConstants.BASEGROUP_ATTR);
 		String dn = attrName+"="+groupName+","+baseDN;
+		logger.debug("finished searching for the DN of the group: " + groupName);
 		return dn;
 	}
 	
@@ -1486,10 +1568,12 @@ public class LdapTool {
 	
 	
 	public boolean isAccountDisabled(String userDN){
+		logger.debug("about to search whether this user is disabled or enabled: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try {
 			Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 			int userAccountControl = Integer.parseInt(attrs.get("userAccountControl").get().toString());
+			logger.debug("finished searching whether this user is disabled or enabled: " + userDN);
 			return (userAccountControl & 2) > 0;
 		} catch (NamingException e) {
 			logger.error(e.toString());
@@ -1499,6 +1583,7 @@ public class LdapTool {
 	}
 	
 	public boolean disableUser(String userDN){
+		logger.debug("about to disable user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		int UF_PASSWD_NOTREQD = 0x0020;
 		int UF_DONT_EXPIRE_PASSWD = 0x10000;
@@ -1509,7 +1594,7 @@ public class LdapTool {
 				UF_ACCOUNTDISABLE + UF_PASSWD_NOTREQD + UF_DONT_EXPIRE_PASSWD));
 		try {
 			ctx.modifyAttributes(new LdapName(userDN), DirContext.REPLACE_ATTRIBUTE, attributes);
-			logger.info("Disabled user: "+userDN);
+			logger.debug("Disabled user: "+userDN);
 			return true;
 		} catch (NamingException e) {
 			logger.error(e.toString());
@@ -1518,6 +1603,7 @@ public class LdapTool {
 		return false;
 	}
 	public boolean enableUser(String userDN){
+		logger.debug("about to enable user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		int UF_PASSWD_NOTREQD = 0x0020;
 		int UF_DONT_EXPIRE_PASSWD = 0x10000;
@@ -1527,7 +1613,7 @@ public class LdapTool {
 				UF_PASSWD_NOTREQD + UF_DONT_EXPIRE_PASSWD));
 		try {
 			ctx.modifyAttributes(new LdapName(userDN), DirContext.REPLACE_ATTRIBUTE, attributes);
-			logger.info("Enabled user: "+userDN);
+			logger.debug("Enabled user: "+userDN);
 			return true;
 		} catch (NamingException e) {
 			logger.error(e.toString());
@@ -1556,10 +1642,12 @@ public class LdapTool {
 	 * @return the sAMAccountName of userDN in String if there is. Otherwise return an empty String.
 	 */
 	public String getUsername(String userDN){
+		logger.debug("about to search for the username of user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try {
 			Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 			String username = attrs.get("sAMAccountName") == null ? "" : attrs.get("sAMAccountName").get().toString();
+			logger.debug("finished searching for the username of user: " + userDN);
 			return username;
 		} catch (NamingException e) {
 			logger.error(e.toString());

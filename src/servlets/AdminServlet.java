@@ -34,6 +34,8 @@ public class AdminServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{	
+		logger.debug("AdminServlet about to process Get request: " + request.getQueryString());
+		
 		response.setHeader("Cache-Control", "no-cache");
 		response.setHeader("Pragma","no-cache");
 		response.setDateHeader ("Expires", 0);
@@ -41,12 +43,12 @@ public class AdminServlet extends HttpServlet {
 		// get the existing session or create a new one (if there's no existing) 
 		HttpSession session = request.getSession(true);
 		
-		logger.info("About to descrypt a request from session: " + session.toString());
+		logger.debug("About to descrypt a request from session: " + session.toString());
 		
 		// validate and decrypt the request
 		Hashtable<String, String> parameters = ValidatedRequestHandler.processRequest(request);
 		
-		logger.info("Request has been decrypted.");
+		logger.debug("Request has been decrypted.");
 		
 		
 		
@@ -98,7 +100,7 @@ public class AdminServlet extends HttpServlet {
 			redirectURL = response.encodeRedirectURL(parameters.get("target")+".jsp");
 		}
 		
-		logger.info("AdminHandler redirected the request to " + redirectURL);
+		logger.debug("AdminHandler redirected the request to " + redirectURL);
 		response.sendRedirect(redirectURL);
 	}
 	public void doPost(HttpServletRequest request, HttpServletResponse response)

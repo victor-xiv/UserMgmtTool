@@ -6,6 +6,8 @@ import java.util.SortedSet;
 
 import javax.naming.NamingException;
 
+import org.apache.log4j.Logger;
+
 import ldap.ErrorConstants;
 import ldap.LdapTool;
 
@@ -46,6 +48,9 @@ public class LdapUserGroups {
 	 * @throws ConnectException if there is an exception during the connection to LDAP server or accessing LDAP server data.
 	 */
 	public void refreshGetUserGroup() throws ConnectException{
+		Logger logger = Logger.getRootLogger();
+		logger.debug("Querying for all the organisations that are stored in Clients folder");
+		
 		LdapTool lt = null;
 		try {
 			lt = new LdapTool();
@@ -63,5 +68,7 @@ public class LdapUserGroups {
 		} else {
 			throw new ConnectException(ErrorConstants.UNKNOWN_ERR);
 		}
+		
+		logger.debug("Finished for all the organisations that are stored in Clients folder");
 	}
 }

@@ -34,6 +34,8 @@ public class UpdateUserDetailsServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
+		logger.debug("UpdateUserDetailsServlet about to process Post request: " + request.getQueryString());
+		
 		HttpSession session = request.getSession(true);
 		Map<String,String[]> paramMaps = (Map<String,String[]>)request.getParameterMap();
 		
@@ -55,10 +57,10 @@ public class UpdateUserDetailsServlet extends HttpServlet {
 			lt.close();
 			if( updateStatus[0].equals("true") ){
 				session.setAttribute("passed", "User has been updated successfully.");
-				logger.info("User has been updated successfully.");
+				logger.debug("User has been updated successfully.");
 			}else{
 				session.setAttribute("failed", updateStatus[1]);
-				logger.info(updateStatus[1]);
+				logger.debug(updateStatus[1]);
 			}
 			
 			String redirectURL = response.encodeRedirectURL("UserDetails.jsp?dn="+java.net.URLEncoder.encode(updateStatus[1]));

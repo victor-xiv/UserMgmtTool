@@ -17,6 +17,7 @@ public class CountryCode {
 	 */
 	public static TreeMap<String,String> getCountryNameMap(){
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		logger.debug("reading country code from pathToTomcatConfFolder/ContryCode.xml");
 		
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
@@ -35,6 +36,9 @@ public class CountryCode {
 			logger.error(ex.toString());
 			ex.printStackTrace();
 		}
+        
+        logger.debug("finished reading country code from pathToTomcatConfFolder/ContryCode.xml");
+        
 		return countries;
 	}
 	
@@ -46,6 +50,8 @@ public class CountryCode {
 	 */
 	public static TreeMap<String,String> getCountryCodeMap(){
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("getting country code in a Map object");
 		
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
@@ -64,6 +70,9 @@ public class CountryCode {
 			logger.error(ex.toString());
 			ex.printStackTrace();
 		}
+        
+        logger.debug("finished getting country code in a Map object");
+        
 		return countries;
 	}
 	

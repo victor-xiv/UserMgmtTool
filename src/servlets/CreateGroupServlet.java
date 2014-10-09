@@ -43,6 +43,8 @@ public class CreateGroupServlet extends HttpServlet {
 	 * Serve the Post request to add Organisation as a group into Ldap Server
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		logger.debug("CreateGroupServlet about to process Post request: " + request.getQueryString());
+		
 		HttpSession session = request.getSession(true);
 		//Get organisation name
 		String orgname = request.getParameter("name");
@@ -69,11 +71,11 @@ public class CreateGroupServlet extends HttpServlet {
 				//If adding as group successful, print success message
 				if( orgAdded ){
 					session.setAttribute("pass", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
-					logger.info("Organisation has been added successfully.");
+					logger.debug("Organisation has been added successfully.");
 				//Otherwise, print error message
 				}else{
 					session.setAttribute("error", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b></font>");
-					logger.info("Addition of organisation '"+orgname+"' has failed.");
+					logger.debug("Addition of organisation '"+orgname+"' has failed.");
 				}
 			} catch (NamingException e) {
 				// dt need to log, it has been logged in lt.addCompanyAsGroup();

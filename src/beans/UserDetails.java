@@ -3,6 +3,8 @@ package beans;
 import java.sql.SQLException;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 import tools.ConcertoJDBC;
 import tools.SupportTrackerJDBC;
 
@@ -12,6 +14,9 @@ public class UserDetails {
 	private String countryCode, phoneNumber, fax, mobile, email, clientId;
 	
 	public void processUsername(String username){
+		Logger logger = Logger.getRootLogger();
+		logger.debug("Querying the details of user " + username + " from Support Tracker DB and Portal DB");
+		
 		Map<String, String> userDetails = null;
 		try {
 			userDetails = SupportTrackerJDBC.getUserDetails(username);
@@ -48,6 +53,8 @@ public class UserDetails {
 		setMobile(userDetails.get("mobile")!=null?userDetails.get("mobile"):"");
 		setEmail(userDetails.get("mail")!=null?userDetails.get("mail"):"");
 		setClientId(userDetails.get("info")!=null?userDetails.get("info"):"");
+		
+		logger.debug("Finished querying the details of user " + username + " from Support Tracker DB and Portal DB");
 	}
 	public void setClientId(String clientId){
 		this.clientId = clientId;

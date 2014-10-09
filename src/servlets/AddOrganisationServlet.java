@@ -42,6 +42,8 @@ public class AddOrganisationServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		logger.debug("AddOrganisationServlet processing the post request.: " + request.getQueryString());
+		
 		HttpSession session = request.getSession(true);
 		//Get organisation
 		String orgname = request.getParameter("org");
@@ -72,16 +74,16 @@ public class AddOrganisationServlet extends HttpServlet {
 				//If successfully added as group, give success message
 				if (orgGroupAdded) {
 					session.setAttribute("message", "<font color=\"green\"><b>Organisation '"+orgname+"' has been added successfully.</b></font>");
-					logger.info("Organisation has been added successfully. This may take a few minutes to appear in the organisational lists");
+					logger.debug("Organisation has been added successfully. This may take a few minutes to appear in the organisational lists");
 				//If failed as group, message that group could not be created
 				} else {
 					session.setAttribute("message", "<font color=\"red\"><b>" +
 							"Organisation '"+orgname+"' was added as a client, but the organizational group could not be created.</b></font>");
-					logger.info("Organisation added as client, not as group.");
+					logger.debug("Organisation added as client, not as group.");
 				}
 			} else {
 				session.setAttribute("message", "<font color=\"red\"><b>Addition of organisation '"+orgname+"' has failed.</b></font>");
-				logger.info("Addition of organisation '"+orgname+"' has failed because of an unknown exception");
+				logger.debug("Addition of organisation '"+orgname+"' has failed because of an unknown exception");
 			}
 			
 			lt.close();

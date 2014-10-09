@@ -54,6 +54,8 @@ public class CheckTypeServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		logger.debug("CheckTypeServlet about to process Post request: " + request.getQueryString());
+		
 		//Initialise constants
 		//String conserver = "supporttracker.orionhealth.com";
 		String conserver = LdapProperty.getProperty(UserMgmtConstants.CONCERTO_URL);//"jonathanf-vm";
@@ -71,7 +73,7 @@ public class CheckTypeServlet extends HttpServlet {
 		
 		//Search LDAP users
 		if (true) {
-			logger.info("Connecting to LDAP server.");
+			logger.debug("Connecting to LDAP server.");
 			
 			LdapTool lt = null;
 			try {

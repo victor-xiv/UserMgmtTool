@@ -12,6 +12,8 @@ public class LdapProperty {
 	private static Logger logger = Logger.getRootLogger();
 
 	public static String getProperty(String name){
+		logger.debug("getting property from ldap.properties: " + name);
+		
 		String value = null;
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
@@ -34,11 +36,14 @@ public class LdapProperty {
 			ex.printStackTrace();
 		}
         
+        logger.debug("finished getting property from ldap.properties: " + name);
 		return value;
 	}
 
 	
 	public static Enumeration<?> propertyNames(){
+		logger.debug("getting all properties from ldap.properties");
+		
 		Enumeration<?> pvalues = null;
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
@@ -60,6 +65,7 @@ public class LdapProperty {
 			ex.printStackTrace();
 		}
         
+        logger.debug("finished getting all properties from ldap.properties");
 		return pvalues;
 	}
 	

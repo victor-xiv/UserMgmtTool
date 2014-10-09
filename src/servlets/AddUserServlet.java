@@ -35,6 +35,8 @@ public class AddUserServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
+		logger.debug("AddUserServlet about to process Post request: " + request.getQueryString());
+		
 		HttpSession session = request.getSession(true);
 		Map<String,String[]> paramMaps = (Map<String,String[]>)request.getParameterMap();
 		Map<String,String[]> maps = new HashMap<String, String[]>();
@@ -54,7 +56,7 @@ public class AddUserServlet extends HttpServlet {
 		 */
 		
 		String sAMAccountName = request.getParameter("sAMAccountName").trim();
-		logger.info("Username: "+sAMAccountName);
+		logger.debug("Username: "+sAMAccountName);
 			if( sAMAccountName == null || sAMAccountName.trim().equals("")){
 				String msg = "User was not added with an empty or null .";
 				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
@@ -266,10 +268,10 @@ public class AddUserServlet extends HttpServlet {
 		lt.close();
 		if( userAdded ){
 			session.setAttribute("message", "<font color=\"green\"><b>User '"+username+"' has been added successfully.</b></font>");
-			logger.info("User has been added successfully.");
+			logger.debug("User has been added successfully.");
 		}else{
 			session.setAttribute("message", "<font color=\"red\"><b>Addition of user '"+username+"' has failed.</b></font>");
-			logger.info("Addition of user '"+username+"' has failed.");
+			logger.debug("Addition of user '"+username+"' has failed.");
 		}
 		String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
 		response.sendRedirect(redirectURL);*/

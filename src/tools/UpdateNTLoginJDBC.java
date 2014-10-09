@@ -3,7 +3,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Properties;
 
 import ldap.DBConstants;
 import ldap.ErrorConstants;
@@ -26,6 +25,8 @@ public class UpdateNTLoginJDBC {
 	 */
 	public static boolean enableNT(String username) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("about to enable user in Concerto DB: " + username);
 		
 		StringBuffer query = new StringBuffer();
 		query.append("UPDATE PasswordStatus ");
@@ -66,6 +67,9 @@ public class UpdateNTLoginJDBC {
 			}
 			
 		}
+		
+		logger.debug("Finished enableing the user in Concerto DB : " + username);
+		
 		if(updateResult == 1)
 			return true;
 		return false;
@@ -85,10 +89,16 @@ public class UpdateNTLoginJDBC {
 		jdbcUrl = LdapProperty.getProperty(DBConstants.CONCERTO_JDBC_URL);
 		jdbcUser = LdapProperty.getProperty(DBConstants.CONCERTO_JDBC_USER);
 		jdbcPassword = LdapProperty.getProperty(DBConstants.CONCERTO_JDBC_PASSWORD);
+		
+		logger.debug("start connecting Concerto DB at: " + jdbcUrl + " with user: " + jdbcUser + " password: " + jdbcPassword);
+		
 		try {
 			// connecting
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 			Connection con = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword);
+			
+			logger.debug("successfully connecting Concerto DB at: " + jdbcUrl + " with user: " + jdbcUser + " password: " + jdbcPassword);
+			
 			return con;
 		} catch (ClassNotFoundException e) {
 			logger.error(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND, e);

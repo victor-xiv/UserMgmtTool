@@ -7,6 +7,8 @@ import java.util.TreeMap;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 
+import org.apache.log4j.Logger;
+
 import ldap.LdapTool;
 
 public class LdapOrganisation{
@@ -15,7 +17,9 @@ public class LdapOrganisation{
 	private String distinguishedName;
 	
 	public void processOrganisationName(String name) throws ConnectException{
+		Logger logger = Logger.getRootLogger();
 		
+		logger.debug("about to query for the attribute of the organisation: " + name);
 		
 		LdapTool lt = null;
 		try {
@@ -42,6 +46,8 @@ public class LdapOrganisation{
 			
 			lt.close();
 		}
+		
+		logger.debug("Finished querying for the organisation's attributes.");
 	}
 
 	public void setDistinguishedName(String distinguishedName) {

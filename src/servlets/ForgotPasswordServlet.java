@@ -40,6 +40,8 @@ private static final long serialVersionUID = 1L;
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		logger.debug("ForgotPasswordServlet about to process Post request: "  + request.getQueryString());
+		
 		//Handler for writing output
 		PrintWriter out;
 		
@@ -58,7 +60,7 @@ private static final long serialVersionUID = 1L;
 		printHeader(out, conserver);
 		
 		
-		logger.info("Connecting to LDAP server.");
+		logger.debug("Connecting to LDAP server.");
 		
 		//Get LdapTool and change Password.
 		LdapTool lt = null;
@@ -84,15 +86,15 @@ private static final long serialVersionUID = 1L;
 				+ "What page you are looking at. A screenshot of this page and the previous page that link to this page."
 				+ "Thanks for your cooperation.");
 		
-		logger.info("about to change password for userDN: " + userDN + " to a new password: " + password);
+		logger.debug("about to change password for userDN: " + userDN + " to a new password: " + password);
 		
 		//If successful, print success
 		if (lt.changePassword(userDN, password)){
 			out.println("Password changed successfully.");
-			logger.info("Password changed successfully, for userDN: " + userDN + " to a new password: " + password);
+			logger.debug("Password changed successfully, for userDN: " + userDN + " to a new password: " + password);
 		//If fail, print output
 		} else {
-			logger.info("Password changed unsuccessfully, for userDN: " + userDN + " to a new password: " + password);
+			logger.debug("Password changed unsuccessfully, for userDN: " + userDN + " to a new password: " + password);
 			out.println("Unable to change password. The password you entered may be too simple or insecure.<br />"+
 					"Please contact the server administrator for assistance or email your "+
 					"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");

@@ -21,6 +21,8 @@ public class LdapUser {
 	Logger logger = Logger.getRootLogger();
 	
 	public void processUserDN(String userDN) throws ConnectException{
+		logger.debug("Query for the attributes of the user: " + userDN);
+		
 		
 		// because this userDN is passed from browser. so, it has not been escaped the reserved char.
 		// so, we need to escape those reserved chars
@@ -68,6 +70,8 @@ public class LdapUser {
 				throw new ConnectException(ErrorConstants.FAIL_QUERY_LDAP);
 			}
 		}
+		
+		logger.debug("finished querying the user's attributes");
 	}
 	
 	
@@ -358,6 +362,8 @@ public class LdapUser {
 	 * create and return a String contains the HTML to presents user detail
 	 */
 	public String returnHtml(){
+		logger.debug("about to create html string that contains attributes  of user: " + getUsername());
+		
 		StringBuffer output = new StringBuffer();
 		output.append("<tr><th align=\"left\">Username</th><td>"+getUsername()+"</td></tr>\n");
 		output.append("<tr><th align=\"left\">First Name</th><td>"+getFirstName()+"</td></tr>\n");
@@ -376,6 +382,9 @@ public class LdapUser {
 		for(int i = 0; i < memberOfGroups.length; i++ ){
 			output.append("<tr><th align=\"left\">Member of Group</th><td>"+memberOfGroups[i]+"</td></tr>\n");
 		}
+		
+		logger.debug("finished creating html string that contains attributes  of user: " + getUsername());
+		
 		return output.toString();
 	}
 }

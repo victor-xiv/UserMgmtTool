@@ -43,6 +43,8 @@ public class TestServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
 	{
+		logger.debug("TestServlet about to process Post request" + request.getQueryString());
+		
 		String rqst = request.getParameter("rqst");
 		String rslt = "";
 		
@@ -94,11 +96,13 @@ public class TestServlet extends HttpServlet {
 	
 	
 	public String testSendingEmailTo(String mailTo){
+		logger.debug("about to test sending email");
 		try{
 			EmailClient.sendEmailApproved(mailTo, "Test Reception Name", "Test User Name", "Test Password");
 		} catch (Exception e){
 			return "Failed to send an emai to " + mailTo + " because: " + e.getMessage();
 		}
+		logger.debug("finished testing sending email");
 		return "An email was sent, please check your email.";
 	}
 	
@@ -111,6 +115,8 @@ public class TestServlet extends HttpServlet {
 	 * @return the result as a string
 	 */
 	public String testSupportTrackerDBConnection() {
+		logger.debug("about to test Connection to Support Tracker DB");
+		
 		if(LdapProperty.getProperty("error") != null){
 			logger.error("ldap.properties file is not found.");
 			return "Config file cannot be found";
@@ -122,6 +128,9 @@ public class TestServlet extends HttpServlet {
 			// so, we don't care.
 			// we care only if it's throwing an except, which means that the connection is failed.
 			Map<String, String> userDetail = SupportTrackerJDBC.getUserDetails(userName);
+			
+			logger.debug("finished testing Connection to Support Tracker DB");
+			
 			return "Spt.DB has been done successfully.";
 		} catch (SQLException e) {
 			return "Spt.DB could not be connected because: " + e.getMessage();
@@ -135,7 +144,11 @@ public class TestServlet extends HttpServlet {
 	 * @return true if connection has been done successfully, false otherwise
 	 */
 	public boolean testSecurityProviderOnHostMachine(){
+		logger.debug("about to test Security Provider");
+		
 		if(Security.getProvider("BC") == null){
+			logger.debug("finished testing Security Provider");
+			
 			return false;
 		}
 		return true;
@@ -152,6 +165,8 @@ public class TestServlet extends HttpServlet {
 	 * has been failed.
 	 */
 	public String testLdapConnection(){
+		logger.debug("about to test Ldap Connection");
+		
 		if(LdapProperty.getProperty("error") != null){
 			logger.error("ldap.properties file is not found.");
 			return "Config file cannot be found";
@@ -272,6 +287,8 @@ public class TestServlet extends HttpServlet {
 	 * @return the result as a string
 	 */
 	public String testPortalConnection(){
+		logger.debug("about to test Portal Connection");
+		
 		if(LdapProperty.getProperty("error") != null){
 			logger.error("ldap.properties file is not found.");
 			return "Config file cannot be found";
@@ -296,6 +313,7 @@ public class TestServlet extends HttpServlet {
 	 * @return the version value of the attribute "UserMgmt-Version" from /META-INF/MANIFEST.MF file
 	 */
 	public String getUserMgmtVersion(){
+		logger.debug("about to read User Mgmt Version from MANIFEST file");
 		ServletContext application = getServletConfig().getServletContext();
 		InputStream inputStream = application.getResourceAsStream("/META-INF/MANIFEST.MF");
 		Manifest manifest;
@@ -303,6 +321,7 @@ public class TestServlet extends HttpServlet {
 			manifest = new Manifest(inputStream);
 			Attributes attributes = manifest.getMainAttributes();
 	        String version = attributes.getValue("UserMgmt-Version");
+	        logger.debug("finished reading User Mgmt Version from MANIFEST file");
 	        return version;
 		} catch (IOException e) {
 			return "Version is not found.";

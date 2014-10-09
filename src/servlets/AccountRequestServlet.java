@@ -45,6 +45,7 @@ public class AccountRequestServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
+		logger.debug("AccountRequestServlet about to process Get request: " + request.getQueryString());
 		
 		Hashtable<String, String> parameters = ValidatedRequestHandler.processRequest(request);
 		HttpSession session = request.getSession(true);
@@ -107,6 +108,7 @@ public class AccountRequestServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
 	{
+		logger.debug("AccountRequestServlet about to process Post request");
 		HttpSession session = request.getSession(true);
 		String username = request.getParameter("sAMAccountName");
 		//Email (ADDITIONAL VARIABLE)
@@ -150,7 +152,7 @@ public class AccountRequestServlet extends HttpServlet {
 				message += "<li>Raise a Ticket </li></ul>";
 				message += "</font>";
 				session.setAttribute("error", message);
-				logger.info("Username '"+username+"' already exists.");
+				logger.debug("Username '"+username+"' already exists.");
 			}
 			//Check if email already used in account
 			else if (lt.emailExists(email, request.getParameter("company"))) {
@@ -164,7 +166,7 @@ public class AccountRequestServlet extends HttpServlet {
 				message += "<li>Raise a Ticket </li></ul>";
 				message += "</font>";
 				session.setAttribute("error", message);
-				logger.info("Email '"+email+"' already in use.");
+				logger.debug("Email '"+email+"' already in use.");
 			}
 			
 			else{
@@ -209,6 +211,7 @@ public class AccountRequestServlet extends HttpServlet {
 	 * @throws IOException 
 	 */
 	private boolean outputRequest(HashMap<String, String[]> paramMaps) throws IOException{
+		logger.debug("about to write out the request to the file");
 		// the request that need to be written out must contains "userDN"
 		if(!paramMaps.containsKey("userDN")){
 			logger.error("userDN not found");
@@ -249,7 +252,7 @@ public class AccountRequestServlet extends HttpServlet {
 				bw.write("<field name=\""+StringEscapeUtils.escapeXml(map.getKey())+"\">"+val+"</field>");
 				//MODIFIED CODE
 				bw.newLine();
-				logger.info(map.getKey()+"="+map.getValue()[0]);
+				logger.debug(map.getKey()+"="+map.getValue()[0]);
 			}
 			bw.write("</request>");
 			bw.close();

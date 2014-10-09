@@ -49,7 +49,8 @@ public class EmailClient {
 		init();
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("Start reading email's subject and body content.");
+		logger.debug("preparing approved email.");
+		
 		String mailSubject = LdapProperty.getProperty(APPROVED_SUBJECT);
 		
 		
@@ -127,7 +128,7 @@ public class EmailClient {
 			logger.error("Could not send out an email", e);
 			throw e;
 		}
-		logger.debug("finished reading mail body content and sending mail.");
+		logger.debug("finished preparing approved email.");
 	}
 	
 	
@@ -135,6 +136,7 @@ public class EmailClient {
 	public static void sendEmailRejected(String mailTo, String recipientName) throws Exception{
 		init();
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		logger.debug("preparing rejected email.");
 		
 		String mailSubject = LdapProperty.getProperty(REJECTED_SUBJECT);
 		
@@ -177,7 +179,7 @@ public class EmailClient {
 			logger.error("Could not send out an email", e);
 			throw e;
 		}
-		logger.debug("finished reading mail body content and sending mail.");
+		logger.debug("finished preparing rejected email.");
 	}
 	
 	private static void init(){

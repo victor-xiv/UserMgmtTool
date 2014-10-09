@@ -33,13 +33,14 @@ public class ValidatedRequestHandler {
 	public static Hashtable<String, String> processRequest(HttpServletRequest request){
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
+		logger.debug("about to encrypt the request");
 		
 		Hashtable<String, String> parameters = new Hashtable<String, String>();	
 		HttpRequest req = null;
 		
 		try{ // validate and decrypt the encrypted request
 			
-			logger.info("Attempt to validate and decrypt the encrypted request");
+			logger.debug("Attempt to validate and decrypt the encrypted request");
 			
 			String sharedKeyStr = LdapProperty.getProperty(LdapConstants.CONCERTO_VALIDATOR);
 			
@@ -56,7 +57,7 @@ public class ValidatedRequestHandler {
 				// if validity time is zero, means expiry would not be checked.
 				final long VALIDITY_TIME = 60000;
 				req = Concerto4xSecurityHttpServletRequestMarshaller.unmarshal(request, key, VALIDITY_TIME);
-				logger.info("Request validation and decryption has been done successfully.");
+				logger.debug("Request validation and decryption has been done successfully.");
 			}
 		
 		} catch (IllegalArgumentException | SecurityException e) {
@@ -103,10 +104,12 @@ public class ValidatedRequestHandler {
 					// we put any other keys (paraName) regardless of its value (paraValue)
 					parameters.put(paraName, paraValue);
 				}
-				logger.info("Put name-value pair into parameter list: " + paraName+"-"+paraValue);
+				logger.debug("Put name-value pair into parameter list: " + paraName+"-"+paraValue);
 			}
 		}
 		
+		logger.debug("about to encrypt the request");
+
 		return parameters;
 	}
 }

@@ -32,6 +32,8 @@ public class RegisterUserServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {	
+		logger.debug("RegisterUserServlet about to process Get request: " + request.getQueryString());
+
 		String username = "";
 		HttpSession session = request.getSession(true);
 			
@@ -64,7 +66,7 @@ public class RegisterUserServlet extends HttpServlet {
 			logger.error("username is an empty String");
 		}
 		
-		logger.info("Redirect request to: " + "RegisterUser.jsp");
+		logger.debug("Redirect request to: " + "RegisterUser.jsp");
 		
 		session.setAttribute("username", username);
 		String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
@@ -75,6 +77,8 @@ public class RegisterUserServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {	
+		logger.debug("RegisterUserServlet about to process Post request");
+
 		HttpSession session = request.getSession(true);
 		String username = (String)session.getAttribute("username");
 		session.removeAttribute("username");
@@ -155,7 +159,7 @@ public class RegisterUserServlet extends HttpServlet {
 			message += "<li>Raise a Ticket </li></ul>";
 			message += "</font>";
 			session.setAttribute("error", message);
-			logger.info("UserDN for user '" + username + "' already exists.");
+			logger.debug("UserDN for user '" + username + "' already exists.");
 			// Flag error
 			good = false;
 		}
@@ -172,7 +176,7 @@ public class RegisterUserServlet extends HttpServlet {
 			message += "<li>Raise a Ticket </li></ul>";
 			message += "</font>";
 			session.setAttribute("error", message);
-			logger.info("Email '" + email + "' already in use.");
+			logger.debug("Email '" + email + "' already in use.");
 			// Flag error
 			good = false;
 		}
@@ -188,7 +192,7 @@ public class RegisterUserServlet extends HttpServlet {
 			message += "<li>Raise a Ticket </li></ul>";
 			message += "</font>";
 			session.setAttribute("error", message);
-			logger.info("Username '" + username + "' already exists.");
+			logger.debug("Username '" + username + "' already exists.");
 			// Flag error
 			good = false;
 		}

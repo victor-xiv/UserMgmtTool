@@ -42,6 +42,8 @@ public class ChangePasswordServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
+		logger.debug("ChangePasswordServlet about to process GET request: " + request.getQueryString());
+		
 		String userDN = "";
 		HttpSession session = request.getSession(true);
 		if(session.getAttribute("dn") != null){
@@ -79,7 +81,7 @@ public class ChangePasswordServlet extends HttpServlet {
 			logger.error("userDN is an empty String");
 		}
 		
-		logger.info("Redirect request to: " + "ChangeUserPassword.jsp");
+		logger.debug("Redirect request to: " + "ChangeUserPassword.jsp");
 		
 		session.setAttribute("userDN", userDN);
 		String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
@@ -92,6 +94,7 @@ public class ChangePasswordServlet extends HttpServlet {
 	 */
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException{
+		logger.debug("ChangePasswordServlet about to process Post request: " + request.getQueryString());
 		
 		HttpSession session = request.getSession(true);
 		String userDN = (String)session.getAttribute("userDN");
@@ -119,10 +122,10 @@ public class ChangePasswordServlet extends HttpServlet {
 		if( lt != null){
 			if(lt.changePassword(userDN, password01)){
 				session.setAttribute("passed", "The password was changed successfully.");
-				logger.info("\" " + userDN + " \"" +  "password was successfully updated.");
+				logger.debug("\" " + userDN + " \"" +  "password was successfully updated.");
 			}else{
 				session.setAttribute("failed", "The password change has failed.");
-				logger.info("\" " + userDN + " \"" +  "password was unsuccessfully updated.");
+				logger.debug("\" " + userDN + " \"" +  "password was unsuccessfully updated.");
 			}
 			lt.close();
 		}

@@ -40,6 +40,8 @@ public class RemoveAGroupFromGroupServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		logger.debug("RemvoeAGroupFromGroupServlet about to process Post request: " + request.getQueryString());
+		
 		//Get groupDN that need to be removed
 		String thisGroupDN = request.getParameter("removedGroupDN").trim(); 
 		//Get groupDN that need to remove from
@@ -99,7 +101,7 @@ public class RemoveAGroupFromGroupServlet extends HttpServlet {
 			String value = String.format("<passed></passed>");
 		    sfXml.append(value);
 		    
-			logger.info(String.format("A Group '%s' has been removed from this group '%s' successfully.", 
+			logger.debug(String.format("A Group '%s' has been removed from this group '%s' successfully.", 
 					StringEscapeUtils.escapeXml(fromGroupDN), StringEscapeUtils.escapeXml(thisGroupDN)));
 			
 		} catch (Exception e){
@@ -107,7 +109,7 @@ public class RemoveAGroupFromGroupServlet extends HttpServlet {
 			String value = String.format("<failed>Reason of the failure: %s.</failed>", StringEscapeUtils.escapeXml(e.getMessage()));
 			sfXml.append(value);
 			
-			logger.info("Removal of a Group: '" + fromGroupDN + "' from this group " + thisGroupDN + " has failed.", e);
+			logger.debug("Removal of a Group: '" + fromGroupDN + "' from this group " + thisGroupDN + " has failed.", e);
 		}
 
 		sfXml.append("</response>");

@@ -75,6 +75,7 @@ public class AccountRequestsBean {
 	 *         or failed to read the account requests from the account requests storage folder
 	 */
 	private void extractRequests() throws IOException{
+		logger.debug("About to read the request *.xml file from the file system: " + LdapProperty.getProperty(LdapConstants.OUTPUT_FOLDER));
 		requests = new ArrayList<HashMap<String, String>>();
 		try {
 			// building DocumentBuilder
@@ -104,13 +105,13 @@ public class AccountRequestsBean {
 					// parse docBuilder contents into a DOM object (doc)
 					Document doc = docBuilder.parse(file);
 					NodeList fields = doc.getElementsByTagName("field");
-					logger.info("Filename: "+file.getName());
+					logger.debug("Reading a file called: "+file.getName());
 
 					// get the data from DOM and store into HashMap
 					HashMap<String, String> maps = new HashMap<String, String>();  
 					for( int j = 0; j < fields.getLength(); j++ ){
 						maps.put(fields.item(j).getAttributes().item(0).getTextContent(), fields.item(j).getTextContent());
-						logger.info(fields.item(j).getAttributes().item(0).getTextContent()+"|"+fields.item(j).getTextContent());
+						logger.debug(fields.item(j).getAttributes().item(0).getTextContent()+"|"+fields.item(j).getTextContent());
 					}
 					maps.put("filename", file.getName());
 					String countryCode = maps.get("c");
@@ -121,6 +122,8 @@ public class AccountRequestsBean {
 					requests.add(maps);
 				}
 			}
+			
+			logger.debug("Finished reading the request *.xml.");
 		} catch (ParserConfigurationException e) {
 			String foldername = LdapProperty.getProperty(LdapConstants.OUTPUT_FOLDER);
 			logger.error("Failed to create DocumentBuilder", e);

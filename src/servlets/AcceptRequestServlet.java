@@ -46,6 +46,7 @@ public class AcceptRequestServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
+		logger.debug("AcceptRequestServlet processing Get request: " + request.getQueryString());
 		
 		// reading the account request file
 		String filename = request.getParameter("filename");
@@ -131,7 +132,7 @@ public class AcceptRequestServlet extends HttpServlet {
 				response.getWriter().write("false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
 				return;
 			}
-			logger.info("Username: "+sAMAccountName);
+			logger.debug("Username: "+sAMAccountName);
 			
 			maps.put("sAMAccountName", new String[]{sAMAccountName});
 			
@@ -316,6 +317,8 @@ public class AcceptRequestServlet extends HttpServlet {
 	 *         or the given file doesn't exist or a null object
 	 */
 	private Map<String, String[]> processFile(File file) throws IOException{
+		logger.debug("about to process the file: " + file.getName());
+		
 		if(file==null || !file.exists()){
 			logger.error(ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
 			throw new IOException(ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
@@ -327,7 +330,7 @@ public class AcceptRequestServlet extends HttpServlet {
 			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 			Document doc = docBuilder.parse(file);
 			NodeList fields = doc.getElementsByTagName("field");
-			logger.info("Filename: "+file.getName());
+			logger.debug("Filename: "+file.getName());
 			
 			// read DOM attributes and put into a HashMap
 			HashMap<String, String[]> maps = new HashMap<String, String[]>();  
@@ -338,6 +341,8 @@ public class AcceptRequestServlet extends HttpServlet {
 			//maps.put("sAMAccountName", new String[]{maps.get("givenName")[0].toLowerCase()+String.valueOf(maps.get("sn")[0].charAt(0)).toLowerCase()});
 			maps.put("filename", new String[]{file.getName()});
 			maps.put("isLdapClient", new String[]{"true"});
+			
+			logger.debug("Finished processing the file: " + file.getName());
 			return maps;
 			
 		} catch (ParserConfigurationException e) {

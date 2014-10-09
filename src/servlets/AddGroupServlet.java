@@ -50,6 +50,8 @@ public class AddGroupServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+			logger.debug("AddGroupServlet about to process Post request: " + request.getQueryString());
+					
 			// Get new group name (this is not a dn-name of this group. its just a name)
 			String newGroupName = request.getParameter("newGroupName").trim();
 			// Get thisGroupDN (dn-name of this group)
@@ -92,7 +94,7 @@ public class AddGroupServlet extends HttpServlet {
 								StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName), StringEscapeUtils.escapeXml(e.getMessage()));
 				sfXml.append(value);
 
-				logger.info("Addition of organisation '" + thisGroupDN
+				logger.debug("Addition of organisation '" + thisGroupDN
 						+ "' to group " + newGroupName + " has failed.");
 
 				sfXml.append("</response>");
@@ -140,7 +142,7 @@ public class AddGroupServlet extends HttpServlet {
 								StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName));
 				sfXml.append(value);
 
-				logger.info(String.format("Group %s has been added to group %s.",
+				logger.debug(String.format("Group %s has been added to group %s.",
 						StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName)));
 
 				// Otherwise, log the error and preapre a failed response to client
@@ -150,7 +152,7 @@ public class AddGroupServlet extends HttpServlet {
 								StringEscapeUtils.escapeXml(thisGroupDN), StringEscapeUtils.escapeXml(newGroupName));
 				sfXml.append(value);
 
-				logger.info("Addition of group '" + thisGroupDN + "' to group "
+				logger.debug("Addition of group '" + thisGroupDN + "' to group "
 						+ newGroupName + " has failed.");
 			}
 

@@ -87,7 +87,7 @@ public class ConcertoAPI {
 		 */
 		
 		
-		logger.info("Connecting to concerto portal.");
+		logger.debug("Connecting to concerto portal.");
 		
 		final QName SERVICE_NAME = new QName(
 				"http://www.orionhealth.com/com.orchestral.portal.webservice.api_7_2.user/",
@@ -96,11 +96,13 @@ public class ConcertoAPI {
 		// get the content of wsdl from web url
 		URL wsdlURL = new URL(LdapProperty.getProperty(UserMgmtConstants.CONCERTO_WSDL_URL));
 		
-		logger.info("Trying to connect to web service with wsdl at: " + wsdlURL);
+		logger.debug("Trying to connect to web service with wsdl at: " + wsdlURL);
 		UserManagementService ss = new UserManagementService(wsdlURL,
 				SERVICE_NAME);
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = ss
 				.getComOrchestralPortalWebserviceApi72UserUserManagementServicePort();
+		
+		logger.debug("connection to concerto portal established");
 		
 		return port;
 	}
@@ -125,7 +127,7 @@ public class ConcertoAPI {
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
-		logger.info("About to get endpoint object from portal's webservice");
+		logger.debug("About to get endpoint object from portal's webservice");
 		
 		try {
 			port = getConcertoServicePort();
@@ -134,7 +136,7 @@ public class ConcertoAPI {
 			throw new MalformedURLException("Given wsdl url is not correct.");
 		}
 		
-		logger.info("Endpoint object is successfully retrieved from webservice");
+		logger.debug("Endpoint object is successfully retrieved from webservice");
 		
 		User user = null;
 		try{
@@ -149,7 +151,7 @@ public class ConcertoAPI {
 			throw new Exception("Failed to retrieve a user from webserivce server.");
 		}
 		
-		logger.info("Working with user: " + username);
+		logger.debug("Working with user: " + username);
 		
 		return true;
 	}
@@ -187,7 +189,7 @@ public class ConcertoAPI {
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
-		logger.info("About to get endpoint object from portal's webservice");
+		logger.debug("About to get endpoint object from portal's webservice");
 		
 		try {
 			port = getConcertoServicePort();
@@ -196,7 +198,7 @@ public class ConcertoAPI {
 			throw new MalformedURLException("Given wsdl url is not correct.");
 		}
 		
-		logger.info("Endpoint object is successfully retrieved from webservice");
+		logger.debug("Endpoint object is successfully retrieved from webservice");
 		
 		User user = null;
 		try{
@@ -206,7 +208,7 @@ public class ConcertoAPI {
 			throw new Exception("Failed to retrieve a user from webserivce server.");
 		}
 		
-		logger.info("Working with user: " + username);
+		logger.debug("Working with user: " + username);
 		
 		user.setAccountType("LDAP");
 		port.updateUser(user);
@@ -240,7 +242,7 @@ public class ConcertoAPI {
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
-		logger.info("About to get endpoint object from portal's webservice");
+		logger.debug("About to get endpoint object from portal's webservice");
 		
 		try {
 			port = getConcertoServicePort();
@@ -249,7 +251,7 @@ public class ConcertoAPI {
 			throw new MalformedURLException("Given wsdl url is not correct.");
 		}
 		
-		logger.info("Endpoint object is successfully retrieved from webservice");
+		logger.debug("Endpoint object is successfully retrieved from webservice");
 		
 		User user = new User();
 		user.setUserId(userName);
@@ -287,7 +289,7 @@ public class ConcertoAPI {
 		user.setUserAttributes(new UserAttributesExt(usrAttrList));
 		user.setAccountType("LDAP");
 		
-		logger.info("About to create a user " + userName + " on webservice server.");
+		logger.debug("About to create a user " + userName + " on webservice server.");
 		try {
 			port.createUser(user);
 		} catch (Exception e) {
@@ -295,7 +297,7 @@ public class ConcertoAPI {
 			throw new Exception("User " + userName + " cannot be added to Concerto Portal. An exception is thrown from webservice server."); 
 		}
 		
-		logger.info("Creating user: " + userName + " on webservice server is done successfully.");
+		logger.debug("Creating user: " + userName + " on webservice server has been done.");
 	}
 }
 
