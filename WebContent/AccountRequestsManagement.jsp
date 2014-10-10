@@ -15,7 +15,6 @@
     <jsp:useBean id="accounts" class="beans.AccountRequestsBean" scope="session" />
     
     
-    <%@ page import="java.util.ArrayList" %>
     <%@ page import="java.util.HashMap" %>
 	<%@ page import="java.util.List" %>
 	<%@ page import="java.util.Map" %>
@@ -192,7 +191,7 @@ function handleHttpResponse(){
     <table align="center" border="0" style="border-color: #ef7224" cellspacing="1">
       <tr>
         <td bgcolor="#ef7224">
-          <table bgcolor="#ffffff" width="600px">
+          <table bgcolor="#ffffff" width="700px">
             <tr align="center">
               <td align="center">
                 <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="#" /></div>
@@ -220,7 +219,7 @@ function handleHttpResponse(){
                 
                 
                 
-                <div style="width: 500px; padding: 5px; margin: 5px auto ";>
+                <div style="width: 600px; padding: 5px; margin: 5px auto ";>
 
 	<%TreeMap<String, List<Map<String, String>>> reqListMap = accounts.getRequests();%>
 		<%if( reqListMap.size() == 0 ){%>
@@ -257,13 +256,28 @@ function handleHttpResponse(){
 					String requestID = "request"+id;	%>
 	                 <div class="row">
 	                    <div id="<%=nodeID %>" class="CollapseRegionLink" style="text-align: left;" onclick="applyClick('<%=id %>'); ">
-	                      <input type="hidden" id="<%=filenameID %>" value="<%=singleRequest.get("filename") %>" />
-	                      <img id="<%=imageID %>" class="node_c" src="./css/images/clear.gif" style="border-width:0px;vertical-align:middle;" alt="#" />&nbsp;<%=singleRequest.get("displayName") %> (<%=singleRequest.get("company") %>)
+	                      
+	                      <table style="width:480px">
+	                      	<tr>
+	                      		<td style="width:8em">
+	                      			<input type="hidden" id="<%=filenameID %>" value="<%=singleRequest.get("filename") %>" />
+	                      			<img id="<%=imageID %>" class="node_c" src="./css/images/clear.gif" style="border-width:0px;vertical-align:middle;" alt="#" />&nbsp;
+	                      
+	                      			<font color="#404040"> <%=singleRequest.get("createdDate") %> </font>
+	                      		</td>
+	                      		<td> 
+	                      			<%= singleRequest.get("displayName") %> 
+	                      			(<%=singleRequest.get("company") %>)
+	                      		</td>
+	                      	</tr>
+	                      </table>
 	                    </div>
 	                    <div class="Buttons" style="float:right; text-align: center; clear: none;">
 	                      <a class="Button" id="<%=acceptID %>" href="#" onclick="javascript: AcceptRequest('<%=id %>');">Accept</a>
 	                      <a class="Button" id="<%=declineID %>" href="#" onclick="javascript: DeclineRequest('<%=id %>');">Decline</a>
 	                    </div>
+	                    
+	                    
 	                    <div id="<%=requestID %>" class="CollapsibleSection" style="display:none;">
 	                    
 	                      <div class="row">

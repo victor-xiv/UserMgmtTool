@@ -2,12 +2,19 @@ package beans;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -21,6 +28,8 @@ import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
+import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Collections;
 
 import tools.CountryCode;
 import tools.SupportTrackerJDBC;
@@ -109,16 +118,19 @@ public class AccountRequestsBean {
 				throw new IOException(ErrorConstants.FAIL_READING_ACCT_REQUEST + foldername);
 			}
 			
-			File[] xmlFiles = outFolder.listFiles();
+			// we need to order the request based on the date it created.
+			// thats why, we convert the array of files to TreeSet object.
+			TreeSet<File> xmlFiles = new TreeSet<File>(Arrays.asList(outFolder.listFiles()));
+			
 			//ADDITIONAL CODE - SPT-446
 			//Handle null case by creating empty array
 			if (xmlFiles == null) {
-				xmlFiles = new File[0];
+				xmlFiles = new TreeSet<File>();
 			}
 
-			for(int i = 0; i < xmlFiles.length; i++){
+			for(File file : xmlFiles){
 				// read xml file, put the content into DocumentBuilder object
-				File file = xmlFiles[i];
+				//File file = xmlFiles[i];
 				if(file.getName().endsWith(".xml")){
 					// parse docBuilder contents into a DOM object (doc)
 					Document doc = docBuilder.parse(file);
@@ -144,6 +156,22 @@ public class AccountRequestsBean {
 						}
 						logger.debug(fields.item(j).getAttributes().item(0).getTextContent()+"|"+fields.item(j).getTextContent());
 					}
+					
+					
+					String createdDate = null;
+					try {
+						createdDate = file.getName().replace(".xml", "");
+						SimpleDateFormat sdf = new SimpleDateFormat ("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+						Date date = sdf.parse(createdDate);
+						
+						sdf = new SimpleDateFormat ("yyyy-MM-dd");
+						createdDate = sdf.format(date);
+					} catch (Exception e) {
+						BasicFileAttributes attrs = Files.readAttributes(Paths.get(file.getPath()), BasicFileAttributes.class);
+						createdDate = attrs.creationTime().toString();
+						createdDate = createdDate.substring(0, createdDate.indexOf('T'));
+					}
+					maps.put("createdDate", createdDate);
 					maps.put("filename", file.getName());
 					String countryCode = maps.get("c");
 					if( !countryCode.equals("") && countryCode != null){
