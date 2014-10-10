@@ -17,6 +17,10 @@
     
     <%@ page import="java.util.ArrayList" %>
     <%@ page import="java.util.HashMap" %>
+	<%@ page import="java.util.List" %>
+	<%@ page import="java.util.Map" %>
+	<%@ page import="java.util.TreeMap" %>
+
     <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
     <link rel="stylesheet" href="./css/general.css" type="text/css" />
     <link rel="shortcut icon" href="./css/images/oStar.ico" />
@@ -198,114 +202,173 @@ function handleHttpResponse(){
 <%if(session.getAttribute("error") != null){ %>
                 <span class="error" style="float: center; width=100%; text-align: center">
 	<%=session.getAttribute("error") %>
-                </span>
 	<%session.removeAttribute("error");%>
-
+                </span>
 <%}else if(session.getAttribute("isAdmin") == null){ %>
                 <span class="error" style="float: center; width=100%; text-align: center">Only support administrators can access this page.</span>
 
 <%}else{ %>
                 <span id="validation_msg" style="float:left; width: 500px; text-align: left"></span>
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 <div style="width: 500px; padding: 5px; margin: 5px auto ";>
 
-	<%ArrayList<HashMap<String, String>> reqList = accounts.getRequests();%>
-		<%if( reqList.size() == 0 ){%>
+	<%TreeMap<String, List<Map<String, String>>> reqListMap = accounts.getRequests();%>
+		<%if( reqListMap.size() == 0 ){%>
                   <span style="float: center; text-align: center; font-size: 16px">There are no pending account requests.</span>
 		<%}else{
-			for( int i = 0; i < reqList.size(); i++ ){
-				HashMap<String, String> singleRequest = reqList.get(i);
-				String id = (i < 10 ? "0"+i : ""+i);
-				String nodeID = "node"+id;
-				String imageID = "image"+id;
-				String filenameID = "filename"+id;
-				String acceptID = "accept"+id;
-				String declineID = "decline"+id;
-				String requestID = "request"+id;	%>
-                  <div class="row">
-                    <div id="<%=nodeID %>" class="CollapseRegionLink" style="text-align: left;" onclick="applyClick('<%=id %>'); ">
-                      <input type="hidden" id="<%=filenameID %>" value="<%=singleRequest.get("filename") %>" />
-                      <img id="<%=imageID %>" class="node_c" src="./css/images/clear.gif" style="border-width:0px;vertical-align:middle;" alt="#" />&nbsp;<%=singleRequest.get("displayName") %> (<%=singleRequest.get("company") %>)
-                    </div>
-                    <div class="Buttons" style="float:right; text-align: center; clear: none;">
-                      <a class="Button" id="<%=acceptID %>" href="#" onclick="javascript: AcceptRequest('<%=id %>');">Accept</a>
-                      <a class="Button" id="<%=declineID %>" href="#" onclick="javascript: DeclineRequest('<%=id %>');">Decline</a>
-                    </div>
-                    <div id="<%=requestID %>" class="CollapsibleSection" style="display:none;">
-                      <div class="row">
-                        <span class="label3">Username:</span>
-                        <span class="value3">
-                          <form name="form" id="form">
-                            <input type="hidden" id="sAMAccountName" value="" />
-				<%String[] names = accounts.getAvailableNames(singleRequest.get("givenName"), singleRequest.get("sn"));
-				for( int j = 0; j < names.length; j++ ){  %>
-                            <input type="radio" name="username" value="<%=names[j] %>" /><%=names[j] %><br />
-				<%}%>
-							<input type="radio" name="username" value="other<%= i %>" />
-							<input type="text" id="customNameother<%= i %>"></input><br />
-                          </form>
-                        </span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">First Name:</span>
-                        <span class="value3"><%=singleRequest.get("givenName") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Lastname:</span>
-                        <span class="value3"><%=singleRequest.get("sn") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Phone:</span>
-                        <span class="value3"><%=singleRequest.get("telephoneNumber") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Fax:</span>
-                        <span class="value3"><%=singleRequest.get("facsimileTelephoneNumber") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Mobile:</span>
-                        <span class="value3"><%=singleRequest.get("mobile") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Email:</span>
-                        <span class="value3"><%=singleRequest.get("mail") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Position / Role:</span>
-                        <span class="value3"><%=singleRequest.get("description") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Department:</span>
-                        <span class="value3"><%=singleRequest.get("department") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Company:</span>
-                        <span class="value3"><%=singleRequest.get("company") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">No. / Street:</span>
-                        <span class="value3"><%=singleRequest.get("streetAddress") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">City:</span>
-                        <span class="value3"><%=singleRequest.get("l") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">State:</span>
-                        <span class="value3"><%=singleRequest.get("st") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Postal Code:</span>
-                        <span class="value3"><%=singleRequest.get("postalCode") %></span>
-                      </div>
-                      <div class="row">
-                        <span class="label3">Country:</span>
-                        <span class="value3"><%=singleRequest.get("co") %></span>
-                      </div>
-                    </div>
-                  </div>
-<%		}	
-	}	%>
+			int i = -1; // used to defined which request is clicked (on html page)
+			
+			for( Map.Entry<String, List<Map<String, String>>> rqls : reqListMap.entrySet() ){
+				
+				String responsibleStaff = rqls.getKey();
+				%>
+				
+				 
+				 <!-- print a list of request. this is the header of each group -->
+				 <div class="row"> <h3> Responsible Staff: <%=responsibleStaff%> </h3> </div>
+				 
+					
+					
+				<%
+				// start listing each request as a drop down row
+				
+				List<Map<String, String>> rqstList = rqls.getValue();
+				
+				for(Map<String, String> singleRequest : rqstList){
+					i++; // increament the id of the request ID (used to defined request that is clicked - on html page)
+				
+				//HashMap<String, String> singleRequest = reqList.get(i);
+					String id = (i < 10 ? "0"+i : ""+i);
+					String nodeID = "node"+id;
+					String imageID = "image"+id;
+					String filenameID = "filename"+id;
+					String acceptID = "accept"+id;
+					String declineID = "decline"+id;
+					String requestID = "request"+id;	%>
+	                 <div class="row">
+	                    <div id="<%=nodeID %>" class="CollapseRegionLink" style="text-align: left;" onclick="applyClick('<%=id %>'); ">
+	                      <input type="hidden" id="<%=filenameID %>" value="<%=singleRequest.get("filename") %>" />
+	                      <img id="<%=imageID %>" class="node_c" src="./css/images/clear.gif" style="border-width:0px;vertical-align:middle;" alt="#" />&nbsp;<%=singleRequest.get("displayName") %> (<%=singleRequest.get("company") %>)
+	                    </div>
+	                    <div class="Buttons" style="float:right; text-align: center; clear: none;">
+	                      <a class="Button" id="<%=acceptID %>" href="#" onclick="javascript: AcceptRequest('<%=id %>');">Accept</a>
+	                      <a class="Button" id="<%=declineID %>" href="#" onclick="javascript: DeclineRequest('<%=id %>');">Decline</a>
+	                    </div>
+	                    <div id="<%=requestID %>" class="CollapsibleSection" style="display:none;">
+	                    
+	                      <div class="row">
+	                        <span class="label3">Username:</span>
+	                        <span class="value3">
+	                          <form name="form" id="form">
+	                            <input type="hidden" id="sAMAccountName" value="" />
+					<%String[] names = accounts.getAvailableNames(singleRequest.get("givenName"), singleRequest.get("sn"));
+					for( int j = 0; j < names.length; j++ ){  %>
+	                            <input type="radio" name="username" value="<%=names[j] %>" /><%=names[j] %><br />
+					<%}%>
+								<input type="radio" name="username" value="other<%= i %>" />
+								<input type="text" id="customNameother<%= i %>"></input><br />
+	                          </form>
+	                        </span>
+	                      </div>
+	                      
+	                      
+	                      <div class="row">
+	                        <span class="label3">First Name:</span>
+	                        <span class="value3"><%=singleRequest.get("givenName") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Lastname:</span>
+	                        <span class="value3"><%=singleRequest.get("sn") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Phone:</span>
+	                        <span class="value3"><%=singleRequest.get("telephoneNumber") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Fax:</span>
+	                        <span class="value3"><%=singleRequest.get("facsimileTelephoneNumber") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Mobile:</span>
+	                        <span class="value3"><%=singleRequest.get("mobile") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Email:</span>
+	                        <span class="value3"><%=singleRequest.get("mail") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Position / Role:</span>
+	                        <span class="value3"><%=singleRequest.get("description") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Department:</span>
+	                        <span class="value3"><%=singleRequest.get("department") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Company:</span>
+	                        <span class="value3"><%=singleRequest.get("company") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">No. / Street:</span>
+	                        <span class="value3"><%=singleRequest.get("streetAddress") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">City:</span>
+	                        <span class="value3"><%=singleRequest.get("l") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">State:</span>
+	                        <span class="value3"><%=singleRequest.get("st") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Postal Code:</span>
+	                        <span class="value3"><%=singleRequest.get("postalCode") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Country:</span>
+	                        <span class="value3"><%=singleRequest.get("co") %></span>
+	                      </div>
+	                      
+	                    </div>
+	                  </div>
+<%				}
+			}	
+		}	%>
                 </div>
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 <div align="center"><img src="./css/images/swish.gif" alt="#" /></div>
                 <div align="center" class="disclaimer2">Having problems?<br />Email <a href="mailto:support@orionhealth.com">support@Orionhealth.com</a><br /><br /></div>
 <%	} %>

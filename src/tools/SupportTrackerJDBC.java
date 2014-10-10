@@ -27,6 +27,62 @@ public class SupportTrackerJDBC {
 	private static String jdbcPassword;
 	
 	
+	
+	/**
+	 * get the Orion Staff's name, who responsible to manage the company given
+	 * @param companyName used to find the Orion Staff's name who responsible for this company
+	 * @return Orion Staff's Name who responsbile to manage the given companyName
+	 * @throws SQLException
+	 */
+	public static String getResponsibleStaff(String companyName) throws SQLException {
+		if(companyName == null || companyName.trim().isEmpty()) return null;
+		
+		Logger logger = Logger.getRootLogger();
+		logger.debug("selecting resposible staff for company: " + companyName);
+		
+
+		String gnLabel = "givenname";
+		String fnLabel = "familyName";
+		String query = String.format( 
+				" SELECT [%s], [%s] "
+						+ "FROM [SupportTracker].[dbo].[Staff]"
+						+ "where [staffId] = ("
+								+ "SELECT TOP 1 [responsibleStaffId]"
+								+ "FROM [SupportTracker].[dbo].[ClientApplication]"
+								+ "where [clientId] = ("
+										+ "SELECT [clientId] "
+										+ "FROM [SupportTracker].[dbo].[Client] "
+										+ "where [Client].[companyName] = \'%s\'"
+								+ ")"
+								+ "group by [responsibleStaffId]"
+								+ "order by count([responsibleStaffId]) DESC"
+				+ ")"
+			,
+			gnLabel, fnLabel, companyName );
+		
+		Connection con = null;
+		try {
+			con = getConnection();
+		} catch (SQLException e) {
+			throw e;
+			// don't need to log here, it has been logged in getConnection()
+		}
+		
+		String result = null;
+		if(con != null){
+			// execute the delete query, return false if there's no recorded deleted
+			Statement st = con.createStatement();
+			ResultSet rs = st.executeQuery(query);
+			if(rs.next()){
+				result = rs.getString(gnLabel) + " " +rs.getString(fnLabel);
+			}
+			
+		}
+		
+		logger.debug("finished selecting resposible staff for company: " + companyName);
+		return result;
+	}
+	
 
 	/**
 	 * get the detail of the given user
