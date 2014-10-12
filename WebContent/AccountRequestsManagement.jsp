@@ -182,6 +182,23 @@ function handleHttpResponse(){
     }
   }
 }
+ 
+ 
+ 
+ 
+function firstCharUp(input){
+	  if(input.length > 1){
+	    var firstLetter = input.charAt(0).toUpperCase();
+	    var restOfWord = input.substring(1, input.length);
+	    return firstLetter + restOfWord;
+	  }else if(input.length == 1){
+	    return input.toUpperCase();
+	  }else{
+	    return input;
+	  }
+	}
+	
+	
     </script>
   </head>
   <body>
@@ -234,7 +251,7 @@ function handleHttpResponse(){
 				
 				 
 				 <!-- print a list of request. this is the header of each group -->
-				 <div class="row"> <h3> Responsible Staff: <%=responsibleStaff%> </h3> </div>
+				 <div class="row"> <h3> Responsible staff: <%=responsibleStaff%> </h3> </div>
 				 
 					
 					
@@ -289,8 +306,8 @@ function handleHttpResponse(){
 					for( int j = 0; j < names.length; j++ ){  %>
 	                            <input type="radio" name="username" value="<%=names[j] %>" /><%=names[j] %><br />
 					<%}%>
-								<input type="radio" name="username" value="other<%= i %>" />
-								<input type="text" id="customNameother<%= i %>"></input><br />
+								<input type="radio" name="username" value="other<%= i %>" id="customedUserName<%= i %>"/>
+								<input type="text" id="customNameother<%= i %>" onblur="document.getElementById('customedUserName<%= i %>').checked = true"></input><br />
 	                          </form>
 	                        </span>
 	                      </div>
