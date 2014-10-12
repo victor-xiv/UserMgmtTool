@@ -77,6 +77,10 @@ div.row span.value3{
 }
     </style>
 	<script type="text/javascript" language="javascript">
+	
+var displayNameSizeLimit = <%=accounts.getDisplayNameSizeLimit()%>;
+alert(displayNameSizeLimit);
+	
 var id = '';
 
 function cleanupResultMsg(){
@@ -105,18 +109,33 @@ function applyClick(idx) {
 /**
  * check whether the username in the "username" block is valid
  */
-function validateUsername() {
+function validateUsername(idx) {
   cleanupResultMsg();
-	
-  for( var i = 0; i < document./*form.username*/getElementsByName('username').length; i++ ){
-    if( document./*form.username*/getElementsByName('username')[i].checked ){
-      document./*form.sAMAccountName*/getElementById('sAMAccountName').value = document./*form.username*/getElementsByName('username')[i].value;
+  var usrname_elmName = 'username' + idx;
+  for( var i = 0; i < document./*form.username*/getElementsByName(usrname_elmName).length; i++ ){
+    if( document./*form.username*/getElementsByName(usrname_elmName)[i].checked ){
+      var username = "";
+      
   	  //ADDED BLOCK - Processing for non-standard name
-      if (document.getElementsByName('username')[i].value.indexOf("other")!= -1){
-    	  var sname = document.getElementsByName('username')[i].value;
-    	  var cn = document.getElementById('customName'+sname);
-    	  document.getElementById('sAMAccountName').value = cn.value;
+      if (document.getElementsByName(usrname_elmName)[i].value.indexOf("other" + idx)!= -1){
+    	  var sname = document.getElementsByName(usrname_elmName)[i].value;
+    	  username = document.getElementById('customName'+sname).value;
+    	  document.getElementById('sAMAccountName').value = username;
+      } else {
+    	  username = document./*form.username*/getElementsByName(usrname_elmName)[i].value;
+          document./*form.sAMAccountName*/getElementById('sAMAccountName').value = username;
       }
+  	  
+  	  var regex = new RegExp('[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]', 'g');
+  	  var temp = username.replace(regex, "");
+  	  alert(temp + "  " + document.getElementById('sAMAccountName').value);
+  	  if(temp.length < username.length){
+  		  alert('Username contains some forbid speical characters.\n' + 
+  				'The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^');
+  		  return false;
+  	  }
+  	
+  	  
       //BLOCK ENDS
       return true;
     }
@@ -132,7 +151,7 @@ function validateUsername() {
 function AcceptRequest(idx) {
   cleanupResultMsg();
   
-  if(validateUsername()){
+  if(validateUsername(idx)){
     document.getElementById('accept' + idx).className = 'ButtonDisabled';
     document.getElementById('decline' + idx).className = 'ButtonDisabled';
 
@@ -181,23 +200,7 @@ function handleHttpResponse(){
     	  "<font color=\"#FF0000\">* The system encountered an error while processing, please try again later.</font><br />";
     }
   }
-}
- 
- 
- 
- 
-function firstCharUp(input){
-	  if(input.length > 1){
-	    var firstLetter = input.charAt(0).toUpperCase();
-	    var restOfWord = input.substring(1, input.length);
-	    return firstLetter + restOfWord;
-	  }else if(input.length == 1){
-	    return input.toUpperCase();
-	  }else{
-	    return input;
-	  }
-	}
-	
+}	
 	
     </script>
   </head>
@@ -304,10 +307,10 @@ function firstCharUp(input){
 	                            <input type="hidden" id="sAMAccountName" value="" />
 					<%String[] names = accounts.getAvailableNames(singleRequest.get("givenName"), singleRequest.get("sn"));
 					for( int j = 0; j < names.length; j++ ){  %>
-	                            <input type="radio" name="username" value="<%=names[j] %>" /><%=names[j] %><br />
+	                            <input type="radio" name="username<%=id %>" value="<%=names[j] %>" /><%=names[j] %><br />
 					<%}%>
-								<input type="radio" name="username" value="other<%= i %>" id="customedUserName<%= i %>"/>
-								<input type="text" id="customNameother<%= i %>" onblur="document.getElementById('customedUserName<%= i %>').checked = true"></input><br />
+								<input type="radio" name="username<%=id %>" value="other<%= id %>" id="customNameotherRadio<%= id %>"/>
+								<input type="text" id="customNameother<%= id %>" onblur="document.getElementById('customNameotherRadio<%= id %>').checked = true"></input><br />
 	                          </form>
 	                        </span>
 	                      </div>
@@ -321,6 +324,11 @@ function firstCharUp(input){
 	                      <div class="row">
 	                        <span class="label3">Lastname:</span>
 	                        <span class="value3"><%=singleRequest.get("sn") %></span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                        <span class="label3">Display Name:</span>
+	                        <span class="value3"><%=singleRequest.get("displayName") %></span>
 	                      </div>
 	                      
 	                      <div class="row">
