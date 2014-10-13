@@ -45,6 +45,10 @@ public class LdapUser {
 			Attributes attrs = lt.getUserAttributes(userDN);
 			lt.close();
 			
+			if(attrs == null) {
+				throw new ConnectException("User: " + userDN + " cannot be found.");
+			}
+			
 			try{
 				setUsername(attrs.get("sAMAccountName")!=null?attrs.get("sAMAccountName").get().toString():"");
 				setFirstName(attrs.get("givenName")!=null?attrs.get("givenName").get().toString():"");

@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="css/general.css" type="text/css" />
     <jsp:useBean id="countries" class="beans.Countries" scope="session" />
     <jsp:useBean id="user" class="beans.UserDetails" scope="session" />
+    <jsp:useBean id="accounts" class="beans.AccountRequestsBean" scope="session" />
     <%@ page import="java.util.ArrayList" %>
     <%@ page import="java.util.TreeMap" %>
     <%@ page import="java.util.Map" %>
@@ -21,9 +22,27 @@
             return input;
         }
     }
+    
+    <%int dsplSizeLimit = accounts.getDisplayNameSizeLimit();%>
+    var displayNameSizeLimit = <%=dsplSizeLimit%>;
+
+    
     function validateEntries() {
         var validated = true;
         var theFocus = '';
+        
+        
+        //check the size of the displayName
+        // because SPT DB has a limit size for this column
+        // SPT-839
+        var displayName = document.getElementById('displayName').value;
+        if(displayName.length > displayNameSizeLimit){
+      	  alert('The display name: ' + displayName + ' is too long. The allowed size is: ' + displayNameSizeLimit);
+      	  document.getElementById('displayName').focus();
+      	  return false;
+        }
+        
+        
         document.getElementById('validation_msg').innerHTML = "";
         if (document.getElementById('sAMAccountName').value == "") {
             document.getElementById('validation_msg').innerHTML = "* Please enter the username<br/>";
@@ -186,7 +205,7 @@
                     <div class="row">
                       <span class="label2">Username:</span>
                       <span class="formw">
-                        <input readonly="readonly" type="text" id="sAMAccountName" name="sAMAccountName" size="20" maxlength="20" tabindex="1"
+                        <input readonly="readonly" type="text" id="sAMAccountName" name="sAMAccountName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="1"
                          value="<%=user.getUsername() %>" />
                         <input type="hidden" name="dn" value="<%=request.getParameter("dn") %>" />
                         <input type="hidden" name="info" value="<%=user.getClientId() %>" />
@@ -197,7 +216,7 @@
                     <div class="row">
                       <span class="label2">First Name:</span>
                       <span class="formw">
-                        <input type="text" id="givenName" name="givenName" size="20" maxlength="20" tabindex="2"
+                        <input type="text" id="givenName" name="givenName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="2"
                          value="<%=user.getFirstName() %>" onblur="this.value=firstCharUp(this.value); doDisplayName();" />
                       </span>
                       <span class="required">*</span>
@@ -205,7 +224,7 @@
                     <div class="row">
                       <span class="label2">Last Name:</span>
                       <span class="formw">
-                        <input type="text" id="sn" name="sn" size="20" maxlength="20" tabindex="3"
+                        <input type="text" id="sn" name="sn" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="3"
                          value="<%=user.getLastName() %>" onblur="this.value=firstCharUp(this.value); doDisplayName();" />
                       </span>
                       <span class="required">*</span>
@@ -213,7 +232,7 @@
                     <div class="row">
                       <span class="label2">Display Name:</span>
                       <span class="formw">
-                        <input readonly="readonly" type="text" id="displayName" name="displayName" size="20" maxlength="20"
+                        <input readonly="readonly" type="text" id="displayName" name="displayName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>"
                          <%if (user.getDisplayName() != "") {%>
                          	value="<%=user.getDisplayName() %>" />
                          <%}else { %>
@@ -224,7 +243,7 @@
                     <div class="row">
                       <span class="label2">Position / Role:</span>
                       <span class="formw">
-                        <input type="text" id="description" name="description" size="20" maxlength="20" tabindex="4"
+                        <input type="text" id="description" name="description" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="4"
                          value="<%=user.getDescription() %>" />
                       </span>
                       <span class="required">*</span>
@@ -232,9 +251,9 @@
                     <div class="row">
                       <span class="label2">Department:</span>
                       <span class="formw">
-                        <input type="text" id="department" name="department" size="20" maxlength="20" tabindex="5"
+                        <input type="text" id="department" name="department" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="5"
                          value="<%=user.getDepartment() %>" />
-                        <input type="hidden" id="company" name="company" size="20" maxlength="20" tabindex="5"
+                        <input type="hidden" id="company" name="company" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="5"
                          value="<%=user.getCompany() %>" />
                       </span>
                       <span class="required">*</span>
@@ -249,21 +268,21 @@
                     <div class="row">
                       <span class="label2">City:</span>
                       <span class="formw">
-                        <input type="text" id="l" name="l" size="20" maxlength="20" tabindex="8"
+                        <input type="text" id="l" name="l" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="8"
                          value="<%=user.getCity() %>" />
                       </span>
                     </div>
                     <div class="row">
                       <span class="label2">State:</span>
                       <span class="formw">
-                        <input type="text" id="st" name="st" size="20" maxlength="20" tabindex="9"
+                        <input type="text" id="st" name="st" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="9"
                          value="<%=user.getState() %>" />
                       </span>
                     </div>
                     <div class="row">
                       <span class="label2">Postal Code:</span>
                       <span class="formw">
-                        <input type="text" id="postalCode" name="postalCode" size="20" maxlength="20" tabindex="10"
+                        <input type="text" id="postalCode" name="postalCode" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="10"
                          value="<%=user.getPostalCode() %>" />
                       </span>
                     </div>
@@ -289,7 +308,7 @@
                     <div class="row">
                       <span class="label2">Phone:</span>
                       <span class="formw">
-                        <input type="text" id="telephoneNumber" name="telephoneNumber" size="20" maxlength="20" tabindex="12"
+                        <input type="text" id="telephoneNumber" name="telephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="12"
                          value="<%=user.getPhoneNumber() %>" />
                       </span>
                       <span class="required">*</span>
@@ -297,14 +316,14 @@
                     <div class="row">
                       <span class="label2">Fax:</span>
                       <span class="formw">
-                        <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="20" maxlength="20" tabindex="13"
+                        <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="13"
                          value="<%=user.getFax() %>" />
                       </span>
                     </div>
                     <div class="row">
                       <span class="label2">Mobile:</span>
                       <span class="formw">
-                        <input type="text" id="mobile" name="mobile" size="20" maxlength="20" tabindex="14"
+                        <input type="text" id="mobile" name="mobile" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="14"
                          value="<%=user.getMobile() %>" />
                       </span>
                     </div>
@@ -335,14 +354,14 @@
                     <div class="row">
                       <span class="label2">Password:</span>
                       <span class="formw">
-                        <input type="password" id="password01" name="password01" size="20" maxlength="12" onblur="javascript: validatePwd01();" />
+                        <input type="password" id="password01" name="password01" size="<%=dsplSizeLimit%>" maxlength="12" onblur="javascript: validatePwd01();" />
                       </span>
                       <span id="pwd_msg01" class="required">*</span>
                     </div>
                     <div class="row">
                       <span class="label2">Confirm Password:</span>
                       <span class="formw">
-                        <input type="password" id="password02" name="password02" size="20" maxlength="12" onblur="javascript: validatePwd02();" />
+                        <input type="password" id="password02" name="password02" size="<%=dsplSizeLimit%>" maxlength="12" onblur="javascript: validatePwd02();" />
                       </span>
                       <span id="pwd_msg02" class="required">*</span>
                     </div>

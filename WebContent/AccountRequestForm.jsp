@@ -10,6 +10,7 @@
       <link rel="stylesheet" href="css/general.css" type="text/css" />
       <link rel="shortcut icon" href="./css/images/oStar.ico" />
       <jsp:useBean id="countries" class="beans.Countries" scope="session" />
+      <jsp:useBean id="accounts" class="beans.AccountRequestsBean" scope="session" />
       <%@ page import="java.util.TreeMap" %>
       <%@ page import="java.util.Map" %>
       <script type="text/javascript" language="javascript">
@@ -30,12 +31,27 @@ function firstCharUp(input){
 }
 
 
+<%int dsplSizeLimit = accounts.getDisplayNameSizeLimit();%>
+var displayNameSizeLimit = <%=dsplSizeLimit%>;
+
 /*
  * Validate all the entries of the Account Request form
  */
 function validateEntries(){
   var validated = true;
   var theFocus = '';
+  
+  
+  //check the size of the displayName
+  // because SPT DB has a limit size for this column
+  // SPT-839
+  var displayName = document.getElementById('displayName').value;
+  if(displayName.length > displayNameSizeLimit){
+	  alert('The display name: ' + displayName + ' is too long. The allowed size is: ' + displayNameSizeLimit);
+	  document.getElementById('displayName').focus();
+	  return false;
+  }
+  
   document.getElementById('validation_msg').innerHTML = "";
   if(document.getElementById('givenName').value == ""){
     document.getElementById('validation_msg').innerHTML = "* Please enter the first name<br/>";
@@ -153,7 +169,7 @@ function SubmitForm(){
                      <div class="row">
                        <span class="label2">First Name:</span>
                        <span class="formw">
-                         <input type="text" id="givenName" name="givenName" size="20" maxlength="20" tabindex="1" onblur="this.value=firstCharUp(this.value); doDisplayName();"/>
+                         <input type="text" id="givenName" name="givenName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="1" onblur="this.value=firstCharUp(this.value); doDisplayName();"/>
                          <input type="hidden" id="userDN" name="userDN" value="<%=session.getAttribute("userDN") %>"></input>
                          <input type="hidden" id="company" name="company" value="<%=session.getAttribute("company") %>"></input>
                        </span>
@@ -162,27 +178,27 @@ function SubmitForm(){
                      <div class="row">
                        <span class="label2">Last Name:</span>
                        <span class="formw">
-                         <input type="text" id="sn" name="sn" size="20" maxlength="20" tabindex="2" onblur="this.value=firstCharUp(this.value); doDisplayName();"/>
+                         <input type="text" id="sn" name="sn" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="2" onblur="this.value=firstCharUp(this.value); doDisplayName();"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Display Name:</span>
                        <span class="formw">
-                         <input readonly="readonly" type="text" id="displayName" name="displayName" size="20" maxlength="20"/>
+                         <input readonly="readonly" type="text" id="displayName" name="displayName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">Position / Role:</span>
                        <span class="formw">
-                         <input type="text" id="description" name="description" size="20" maxlength="20" tabindex="3"/>
+                         <input type="text" id="description" name="description" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="3"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Department:</span>
                        <span class="formw">
-                         <input type="text" id="department" name="department" size="20" maxlength="20" tabindex="4"/>
+                         <input type="text" id="department" name="department" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="4"/>
                        </span>
                        <span class="required">*</span>
                      </div>
@@ -195,20 +211,20 @@ function SubmitForm(){
                      <div class="row">
                        <span class="label2">City:</span>
                        <span class="formw">
-                         <input type="text" id="l" name="l" size="20" maxlength="20" tabindex="6"/>
+                         <input type="text" id="l" name="l" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="6"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">State:</span>
                        <span class="formw">
-                         <input type="text" id="st" name="st" size="20" maxlength="20" tabindex="7"/>
+                         <input type="text" id="st" name="st" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="7"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Postal Code:</span>
                        <span class="formw">
-                         <input type="text" id="postalCode" name="postalCode" size="20" maxlength="20" tabindex="8"/>
+                         <input type="text" id="postalCode" name="postalCode" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="8"/>
                        </span>
                      </div>
                      <div class="row">
@@ -232,20 +248,20 @@ function SubmitForm(){
                      <div class="row">
                        <span class="label2">Phone:</span>
                        <span class="formw">
-                         <input type="text" id="telephoneNumber" name="telephoneNumber" size="20" maxlength="20" tabindex="10"/>
+                         <input type="text" id="telephoneNumber" name="telephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="10"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Fax:</span>
                        <span class="formw">
-                         <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="20" maxlength="20" tabindex="11"/>
+                         <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="11"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">Mobile:</span>
                        <span class="formw">
-                         <input type="text" id="mobile" name="mobile" size="20" maxlength="20" tabindex="12"/>
+                         <input type="text" id="mobile" name="mobile" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="12"/>
                        </span>
                      </div>
                      <div class="row">

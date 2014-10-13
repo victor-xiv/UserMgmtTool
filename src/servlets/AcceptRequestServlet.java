@@ -26,6 +26,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import beans.AccountRequestsBean;
 import tools.ConcertoAPI;
 import tools.EmailClient;
 import tools.SupportTrackerJDBC;
@@ -135,6 +136,19 @@ public class AcceptRequestServlet extends HttpServlet {
 			logger.debug("Username: "+sAMAccountName);
 			
 			maps.put("sAMAccountName", new String[]{sAMAccountName});
+			
+			
+			// check the displayName length
+			// support tracker database has a limit size (e.g. 20 chars) for this column
+			// so, if the displayName is greater than this limit size, we are not processing further
+			// SPT-839
+			String displayName = maps.get("displayName")[0];
+			int sizeLimit = AccountRequestsBean.getDisplayNameSizeLimit();
+			if(displayName.length() > sizeLimit){
+				response.getWriter().write("false|:The display name: " + displayName + " is too long. The allowed size is: " + sizeLimit + " chars. Please modify it in the request file.");
+				return;
+			}
+			
 			
 			
 			// connecting to LDAP server

@@ -16,6 +16,7 @@ import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 
+import beans.AccountRequestsBean;
 import tools.ConcertoAPI;
 import tools.EmailClient;
 import tools.SupportTrackerJDBC;
@@ -74,6 +75,22 @@ public class AddUserServlet extends HttpServlet {
 				response.sendRedirect(redirectURL);
 				return;
 			}
+			
+
+			// check the displayName length
+			// support tracker database has a limit size (e.g. 20 chars) for this column
+			// so, if the displayName is greater than this limit size, we are not processing further
+			// SPT-839
+			String displayName = maps.get("displayName")[0];
+			int sizeLimit = AccountRequestsBean.getDisplayNameSizeLimit();
+			if(displayName.length() > sizeLimit){
+				String msg = "The display name: " + displayName + " is too long. The allowed size is: " + sizeLimit + " chars. Please modify it in the request file.";
+				session.setAttribute("message", "<font color=\"red\"><b>" + msg + "</b></font>");
+				String redirectURL = response.encodeRedirectURL("AddNewUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}
+			
 			
 			LdapTool lt = null;	
 			try {

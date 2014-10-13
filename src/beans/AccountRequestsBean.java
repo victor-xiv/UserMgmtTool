@@ -39,13 +39,13 @@ public class AccountRequestsBean {
 	
 	TreeMap<String, List<Map<String, String>>> requests = new TreeMap<String, List<Map<String, String>>>();
 
-	public int getDisplayNameSizeLimit() {
+	public static int getDisplayNameSizeLimit() {
 		int size = 20;
 		String temp = LdapProperty.getProperty("supporttracker.displayname.sizelimit");
 		try {
 			size = Integer.parseInt(temp);
 		} catch (NumberFormatException | NullPointerException e) {
-			logger.debug("Cannot pareInt of displayName size limit. " + temp);
+			Logger.getRootLogger().debug("Cannot pareInt of displayName size limit. " + temp);
 		}
 		return size;
 	}

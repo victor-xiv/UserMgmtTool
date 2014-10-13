@@ -55,15 +55,17 @@ public class UpdateUserDetailsServlet extends HttpServlet {
 		if( lt != null){
 			String[] updateStatus = lt.updateUser(paramMaps);
 			lt.close();
+			String redirectURL = "";
 			if( updateStatus[0].equals("true") ){
 				session.setAttribute("passed", "User has been updated successfully.");
+				redirectURL = response.encodeRedirectURL("UserDetails.jsp?dn="+java.net.URLEncoder.encode(updateStatus[1]));
 				logger.debug("User has been updated successfully.");
 			}else{
 				session.setAttribute("failed", updateStatus[1]);
+				redirectURL = response.encodeRedirectURL("UserDetails.jsp?dn="+java.net.URLEncoder.encode( paramMaps.get("dn")[0]));
 				logger.debug(updateStatus[1]);
 			}
 			
-			String redirectURL = response.encodeRedirectURL("UserDetails.jsp?dn="+java.net.URLEncoder.encode(updateStatus[1]));
 			response.sendRedirect(redirectURL);
 		}
 	}

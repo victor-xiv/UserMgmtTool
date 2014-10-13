@@ -995,7 +995,7 @@ public class LdapTool {
 			LdapName ldapUserDN = new LdapName(userDN);
 			Attributes attrs = ctx.getAttributes(ldapUserDN);
 			
-			logger.debug("fnished searching for the attributes of the user: " + userDN);
+			logger.debug("finished searching for the attributes of the user: " + userDN);
 			return attrs;
 		}catch(NamingException ex){
 			logger.error("Exception while querying all attribtues of a user: " + userDN, ex);

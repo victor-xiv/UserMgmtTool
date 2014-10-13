@@ -79,7 +79,6 @@ div.row span.value3{
 	<script type="text/javascript" language="javascript">
 	
 var displayNameSizeLimit = <%=accounts.getDisplayNameSizeLimit()%>;
-alert(displayNameSizeLimit);
 	
 var id = '';
 
@@ -111,6 +110,18 @@ function applyClick(idx) {
  */
 function validateUsername(idx) {
   cleanupResultMsg();
+  
+  //check the size of the displayName
+  // because SPT DB has a limit size for this column
+  // SPT-839
+  var displayName = document.getElementById('displayName' + idx).innerHTML;
+  if(displayName.length > displayNameSizeLimit){
+	  alert('The display name: ' + displayName + ' is too long. The allowed size is: ' + displayNameSizeLimit + ' Please modify it in the request file.');
+	  return false;
+  }
+  
+  
+  
   var usrname_elmName = 'username' + idx;
   for( var i = 0; i < document./*form.username*/getElementsByName(usrname_elmName).length; i++ ){
     if( document./*form.username*/getElementsByName(usrname_elmName)[i].checked ){
@@ -126,12 +137,16 @@ function validateUsername(idx) {
           document./*form.sAMAccountName*/getElementById('sAMAccountName').value = username;
       }
   	  
+      // check if the username contains any special chars that ldap server doens't allow
   	  var regex = new RegExp('[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]', 'g');
   	  var temp = username.replace(regex, "");
-  	  alert(temp + "  " + document.getElementById('sAMAccountName').value);
   	  if(temp.length < username.length){
   		  alert('Username contains some forbid speical characters.\n' + 
   				'The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^');
+  		  return false;
+  	  }
+  	  if(username.trim().length == 0){
+  		  alert('Username cannot be empty');
   		  return false;
   	  }
   	
@@ -328,7 +343,7 @@ function handleHttpResponse(){
 	                      
 	                      <div class="row">
 	                        <span class="label3">Display Name:</span>
-	                        <span class="value3"><%=singleRequest.get("displayName") %></span>
+	                        <span class="value3" id="displayName<%=id%>"><%=singleRequest.get("displayName") %></span>
 	                      </div>
 	                      
 	                      <div class="row">
