@@ -109,14 +109,10 @@ public class ConcertoAPI {
 	
 	
 	
-	/**
-	 * test the connection to Concerto with the given username.
-	 * return true if username exist, false if it doesn't exist
-	 * @param username : username that need to be enabled (it should be the same as LDAP's sAMAccount)
-	 * @throws Exception if there is an exception during the connection or during the updating.
-	 * @throws MalformedURLException if wsdl url is not correct.
-	 */
-	public static boolean testGetClientUser(String username) throws Exception, MalformedURLException{
+	
+	
+	
+	public static User getUser(String username) throws Exception {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		/**
@@ -144,16 +140,38 @@ public class ConcertoAPI {
 		} catch (Exception e){
 			// if username doesn't exist, just return false (don't need to throw an exception)
 			if(e.getMessage().contains("No user")){
-				return false;
+				return null;
 			}
 			
 			logger.error("Failed to retrieve a user from webserivce server.", e);
 			throw new Exception("Failed to retrieve a user from webserivce server.");
 		}
 		
-		logger.debug("Working with user: " + username);
-		
-		return true;
+		return user;
+	}
+	
+	
+	
+	
+	
+	/**
+	 * test the connection to Concerto with the given username.
+	 * return true if username exist, false if it doesn't exist
+	 * @param username : username that need to be enabled (it should be the same as LDAP's sAMAccount)
+	 * @throws Exception if there is an exception during the connection or during the updating.
+	 * @throws MalformedURLException if wsdl url is not correct.
+	 */
+	public static boolean testGetClientUser(String username) throws Exception, MalformedURLException{
+		// not logging, because it logged in getUser() method
+		try{
+			User user = getUser(username);
+			
+			if(user == null) return false;
+			else return true;
+			
+		} catch (Exception e) {
+			throw new Exception("Failed to retrieve a user from webserivce server.");
+		}
 	}
 	
 	
@@ -174,6 +192,7 @@ public class ConcertoAPI {
 	/**
 	 * set the user's (that given by username) accountType (in concerto database) to LDAP
 	 * It will return true, if it does successfully. otherwise, it will throw some exception.
+	 * if the user has been set to LDAP (enableNT), then that user will be required to login to portal using password stored in LDAP server
 	 * @param username : username that need to be enabled (it should be the same as LDAP's sAMAccount)
 	 * @throws MalformedURLException if wsdl url is not correct. 
 	 * @throws Exception if there is an exception during the connection or during the updating.
@@ -211,6 +230,68 @@ public class ConcertoAPI {
 		logger.debug("Working with user: " + username);
 		
 		user.setAccountType("LDAP");
+		port.updateUser(user);
+		
+		return true;
+	}
+	
+	
+	/**
+	 * set the user's (that given by username) preference to use password stored in LDAP server
+	 * If the method run successfully, then that user will be required to login to portal using password stored in LDAP server
+	 * It will return true, if it does successfully. otherwise, it will throw some exception.
+	 * @param username : username that need to set his/her preference to login into portal using password stored in LDAP server
+	 * 					this username should be the same as LDAP's sAMAccount
+	 * @throws MalformedURLException if wsdl url is not correct. 
+	 * @throws Exception if there is an exception during the connection or during the updating.
+	 */
+	public static boolean setUserToUsePasswordStoredInLdap(String username) throws MalformedURLException, Exception{
+		return enableNT(username);
+	}
+	
+	
+	/**
+	 * set the user's (that given by username) preference to use password stored in Concerto DB
+	 * If the method run successfully, then that user will be required to login to portal using password stored in Concerto DB
+	 * It will return true, if it does successfully. otherwise, it will throw some exception.
+	 * @param username : username that need to set his/her preference to login into portal using password stored in Concerto DB
+	 * 					this username should be the same as LDAP's sAMAccount
+	 * @throws MalformedURLException if wsdl url is not correct. 
+	 * @throws Exception if there is an exception during the connection or during the updating.
+	 */
+	public static boolean setUserToUsePasswordStoredInConcerto(String username) throws MalformedURLException, Exception{
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		/**
+		 * if you receive SSLHandShakeException or any exception related to SSL connection.
+		 * please find the cxf configuration at /WET-INF/classes/cxf.xml
+		 */
+		
+		
+		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
+		
+		logger.debug("About to get endpoint object from portal's webservice");
+		
+		try {
+			port = getConcertoServicePort();
+		} catch (MalformedURLException e) {
+			logger.error("Failed ot retreive the endpoint object.",e);
+			throw new MalformedURLException("Given wsdl url is not correct.");
+		}
+		
+		logger.debug("Endpoint object is successfully retrieved from webservice");
+		
+		User user = null;
+		try{
+			user = port.getUser(username);
+		} catch (Exception e){
+			logger.error("Failed to retrieve a user from webserivce server.", e);
+			throw new Exception("Failed to retrieve a user from webserivce server.");
+		}
+		
+		logger.debug("Working with user: " + username);
+		
+		user.setAccountType("Concerto");
 		port.updateUser(user);
 		
 		return true;

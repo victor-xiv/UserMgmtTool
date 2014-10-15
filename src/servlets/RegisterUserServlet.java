@@ -20,6 +20,7 @@ import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 
+import beans.UserDetails;
 import tools.ConcertoAPI;
 import tools.SupportTrackerJDBC;
 import tools.ValidatedRequestHandler;
@@ -28,6 +29,9 @@ import tools.ValidatedRequestHandler;
 public class RegisterUserServlet extends HttpServlet {
 	//ADDITIONAL VARIABLE
 	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+	
+	public final static String REGISTER_IS_ORION_STAFF = "registerIsOrionStaff";
+	public final static String REGISTER_IS_CLIENT = "registerIsAClient";
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
@@ -40,9 +44,51 @@ public class RegisterUserServlet extends HttpServlet {
 		//ValidatedRequest req = new ValidatedRequest(request, LdapProperty.getProperty(LdapConstants.CONCERTO_VALIDATOR));
 		Hashtable<String, String> reqParams = ValidatedRequestHandler.processRequest(request);
 			
-			
+		
+		if(reqParams.get("isOrionStaff")==null || reqParams.get("isAClient")==null){
+			session.setAttribute("error", "This page is not configured correctly. Please contact Orion Health Support Team.");
+			logger.error("RegisterUserForKB page is not configured correctly. "
+					+ "The parameter: isOrionStaff is " + reqParams.get("isOrionStaff") +
+					"and isAClient is " + reqParams.get("isAClient")==null +
+					". These two parameters must be defined in Portal web page.");
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
+		}
+		
+		if(!reqParams.get("isOrionStaff").equals("true") && !reqParams.get("isAClient").equals("true")){
+			session.setAttribute("error", "This page can only be accessed by either an Orion Health's staff or client.");
+			logger.error("The user " + username + " accessing RegisterUserForKB. This user is neither an Orion Health's staff nor client.");
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
+		}
+		
+		
 		if( reqParams.containsKey("username") && reqParams.get("username") != null ){
 			username = reqParams.get("username");
+			
+			try {
+				UserDetails user = new UserDetails();
+				user.processUsername(username);
+				String company = user.getCompany();
+				LdapTool lt = new LdapTool();
+				boolean userExist = lt.usernameExists(username, company);
+				if(userExist){
+					session.setAttribute("error", "You already have an account in Ldap Server. For more detail, please contact Orion Health Support Team.");
+					logger.error("User: " + username + " already exist in company: " + company);
+					String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+					response.sendRedirect(redirectURL);
+					return;
+				}
+			} catch (NamingException e) {
+				session.setAttribute("error", "Could not connect to Ldap Server.");
+				logger.error("Could not connect to Ldap Server", e);
+				String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}
+			
 		
 		// if there is no "username" key and no "error" key in the request parameters
 		// It means that the request is valid but the request doesn't contains "username" => can't process further
@@ -69,6 +115,8 @@ public class RegisterUserServlet extends HttpServlet {
 		logger.debug("Redirect request to: " + "RegisterUser.jsp");
 		
 		session.setAttribute("username", username);
+		session.setAttribute(REGISTER_IS_ORION_STAFF,  reqParams.get("isOrionStaff"));
+		session.setAttribute(REGISTER_IS_CLIENT, reqParams.get("isAClient"));
 		String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
 		response.sendRedirect(redirectURL);
     }
@@ -82,6 +130,9 @@ public class RegisterUserServlet extends HttpServlet {
 		HttpSession session = request.getSession(true);
 		String username = (String)session.getAttribute("username");
 		session.removeAttribute("username");
+		
+		boolean isOrionStaff = session.getAttribute(REGISTER_IS_ORION_STAFF).equals("true");
+		boolean isClient = session.getAttribute(REGISTER_IS_CLIENT).equals("true");
 		
 		if( username == null || username.trim().isEmpty()){
 			session.setAttribute("error", "This page can only be accessed from within Concerto. The username is not specified.");
@@ -104,7 +155,8 @@ public class RegisterUserServlet extends HttpServlet {
 		userDetails.put("password",
 				new String[] { request.getParameter("password01") });
 		userDetails.put("sAMAccountName", new String[] { username });
-		userDetails.put("isLdapClient", new String[] { "true" });
+		
+		if(isClient) userDetails.put("isLdapClient", new String[] { "true" });
 
 		// connecting to LdapServer
 		LdapTool lt = null;
@@ -128,20 +180,23 @@ public class RegisterUserServlet extends HttpServlet {
 		String email = request.getParameter("mail");
 
 		// Get list of Orion Health email addresses from database - SPT-311
-		List<String> emails = null;
-		try {
-			emails = SupportTrackerJDBC.getEmails();
-		} catch (SQLException e) {
-			String errorMessage = String.format("Your registration has failed because of %s. Please contact the system administrator.", e.getMessage());
-			session.setAttribute("error", errorMessage);
-			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
-			response.sendRedirect(redirectURL);
-			return;
-		}
+//		List<String> emails = null;
+//		try {
+//			emails = SupportTrackerJDBC.getEmails();
+//		} catch (SQLException e) {
+//			String errorMessage = String.format("Your registration has failed because of %s. Please contact the system administrator.", e.getMessage());
+//			session.setAttribute("error", errorMessage);
+//			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+//			response.sendRedirect(redirectURL);
+//			return;
+//		}
 
 		// If an Orion User (no company and email registered as staff) - SPT-311
-		if ((request.getParameter("company").trim().equals(""))
-				&& (emails.contains(email.toLowerCase()))) {
+//		if ((request.getParameter("company").trim().equals(""))
+//				&& (emails.contains(email.toLowerCase()))) {
+
+
+		if (isOrionStaff) {  //SPT-1241
 			// Set company as Orion Health
 			userDetails.put("company", new String[] { "Orion Health" });
 			company = "Orion Health";
@@ -269,7 +324,7 @@ public class RegisterUserServlet extends HttpServlet {
 			if (addUserStatus) {
 				session.setAttribute("passed", "You have been registered into LDAP server successfully.");
 				try {
-					ConcertoAPI.enableNT(username);
+					ConcertoAPI.setUserToUsePasswordStoredInLdap(username);
 				} catch (Exception e) {
 					session.setAttribute("error", username + " has been added to LDAP server. But it couldn't be registered into Concerto. Because of: " +e.getMessage());
 					// we are not logging this error, because it has been logged
@@ -287,3 +342,11 @@ public class RegisterUserServlet extends HttpServlet {
 		response.sendRedirect(redirectURL);
 	}
 }
+
+
+
+
+
+
+
+
