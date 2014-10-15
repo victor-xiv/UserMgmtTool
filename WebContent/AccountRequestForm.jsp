@@ -127,6 +127,13 @@ function SubmitForm(){
   }
   return false;
 }
+
+
+function keyPressed(event){
+	// look for window.event in case event isn't passed in
+	if(typeof event == 'undefined' && window.event) event= window.event;
+	if(event.keyCode == 13) document.getElementById('submitBtn').click();
+}
   </script>
     <style type="text/css">
       #sAMAccountName             {width: 200px;}
@@ -169,7 +176,7 @@ function SubmitForm(){
                      <div class="row">
                        <span class="label2">First Name:</span>
                        <span class="formw">
-                         <input type="text" id="givenName" name="givenName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="1" onblur="this.value=firstCharUp(this.value); doDisplayName();"/>
+                         <input type="text" id="givenName" name="givenName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="1" onblur="this.value=firstCharUp(this.value); doDisplayName();" onkeypress="keyPressed(event);"/>
                          <input type="hidden" id="userDN" name="userDN" value="<%=session.getAttribute("userDN") %>"></input>
                          <input type="hidden" id="company" name="company" value="<%=session.getAttribute("company") %>"></input>
                        </span>
@@ -178,59 +185,59 @@ function SubmitForm(){
                      <div class="row">
                        <span class="label2">Last Name:</span>
                        <span class="formw">
-                         <input type="text" id="sn" name="sn" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="2" onblur="this.value=firstCharUp(this.value); doDisplayName();"/>
+                         <input type="text" id="sn" name="sn" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="2" onblur="this.value=firstCharUp(this.value); doDisplayName();" onkeypress="keyPressed(event);"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Display Name:</span>
                        <span class="formw">
-                         <input readonly="readonly" type="text" id="displayName" name="displayName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>"/>
+                         <input readonly="readonly" type="text" id="displayName" name="displayName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" onkeypress="keyPressed(event);"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">Position / Role:</span>
                        <span class="formw">
-                         <input type="text" id="description" name="description" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="3"/>
+                         <input type="text" id="description" name="description" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="3" onkeypress="keyPressed(event);"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Department:</span>
                        <span class="formw">
-                         <input type="text" id="department" name="department" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="4"/>
+                         <input type="text" id="department" name="department" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="4" onkeypress="keyPressed(event);"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">No. / Street:</span>
                        <span class="formw">
-                         <input type="text" id="streetAddress" name="streetAddress" size="50" maxlength="50" tabindex="5"/>
+                         <input type="text" id="streetAddress" name="streetAddress" size="50" maxlength="50" tabindex="5" onkeypress="keyPressed(event);"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">City:</span>
                        <span class="formw">
-                         <input type="text" id="l" name="l" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="6"/>
+                         <input type="text" id="l" name="l" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="6" onkeypress="keyPressed(event);"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">State:</span>
                        <span class="formw">
-                         <input type="text" id="st" name="st" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="7"/>
+                         <input type="text" id="st" name="st" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="7" onkeypress="keyPressed(event);"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Postal Code:</span>
                        <span class="formw">
-                         <input type="text" id="postalCode" name="postalCode" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="8"/>
+                         <input type="text" id="postalCode" name="postalCode" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="8" onkeypress="keyPressed(event);"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">Country:</span>
                        <span class="formw">
-                         <select id="c" name="c" tabindex="9">
+                         <select id="c" name="c" tabindex="9" onkeypress="keyPressed(event);">
                            <option value="">Please select one from the list</option>
 	<%TreeMap<String,String> countriesMap = countries.getCountries();
 	for(Map.Entry<String, String>entry:countriesMap.entrySet()){
@@ -248,32 +255,32 @@ function SubmitForm(){
                      <div class="row">
                        <span class="label2">Phone:</span>
                        <span class="formw">
-                         <input type="text" id="telephoneNumber" name="telephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="10"/>
+                         <input type="text" id="telephoneNumber" name="telephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="10" onkeypress="keyPressed(event);"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Fax:</span>
                        <span class="formw">
-                         <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="11"/>
+                         <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="11" onkeypress="keyPressed(event);" />
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">Mobile:</span>
                        <span class="formw">
-                         <input type="text" id="mobile" name="mobile" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="12"/>
+                         <input type="text" id="mobile" name="mobile" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="12" onkeypress="keyPressed(event);"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">Email:</span>
                        <span class="formw">
-                         <input type="text" id="mail" name="mail" size="50" maxlength="50" tabindex="13"/>
+                         <input type="text" id="mail" name="mail" size="50" maxlength="50" tabindex="13" onkeypress="keyPressed(event);"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row"></div>
                      <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 180px; height: 20px;">
-                       <a class="Button" href="#" onclick="javascript: SubmitForm()">Submit</a>
+                       <a class="Button" href="#" id="submitBtn" onclick="javascript: SubmitForm()">Submit</a>
                        <a class="Button" href="#" onclick="javascript: ResetForm()">Reset</a>
                      </div>
                    </form>
