@@ -29,6 +29,7 @@ import javax.naming.directory.BasicAttributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.ModificationItem;
+import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -799,6 +800,99 @@ public class LdapTool {
 		}
 	}
 	
+	
+	
+	
+	/**
+	 * it searches the given clientDN for all the users who are memebers of this clientDN
+	 * then it check all the users for an email address, and return those users who donot have an email address
+	 * or those who have an empty or just white space string for their email address field
+	 * All the returned names are usernames (sAMAccountName)
+	 * @param clientDN must be a DN name of the client (client who stored in Clients directory of LDAP server)
+	 * clientDN must have already been escaped the special chars.
+	 * e.g. clientDN = "OU=AMICAS\, Inc (Now Merge)s,OU=Clients,DC=orion,DC=dmz"
+	 *  not clientDN = "OU=AMICAS, Inc (Now Merge)s,OU=Clients,DC=orion,DC=dmz"
+	 *  not ClientDN = "AMICAS\, Inc (Now Merge)s" 
+	 * @return
+	 * @throws InvalidNameException
+	 */
+	public List<String> getAllUsersDonotHaveEmailForClient(String clientDN) throws InvalidNameException{
+		logger.debug("about to search for all users who are memberOf " + clientDN);
+		List<String> usersNoEmail = new ArrayList<String>();
+		LdapName basedDN = new LdapName(clientDN);
+		String filter = "(CN=*)";
+		
+		try {
+//			SearchControls control = new SearchControls();
+//			control.setReturningAttributes(new String[]{"mail", "sAMAccountName"});
+			NamingEnumeration<SearchResult> e = ctx.search(basedDN, filter, null);
+			while (e.hasMore()) {
+				logger.debug("search strated");
+				SearchResult results = (SearchResult) e.next();
+				Attributes attributes = results.getAttributes();
+				
+				if (attributes.get("grouptype") != null) { // skip those groups 
+					continue;
+				}
+				
+				try{
+					String email = (String) attributes.get("mail").get();
+					
+					// if user has an empty (or white space) as their email address
+					if(email.trim().isEmpty()){
+						usersNoEmail.add((String)attributes.get("sAMAccountName").get());
+					}
+				
+					// if user has no email address
+					// attributes.get("mail") will be null
+					// then attributes.get("mail").get() will throw NullPointerException 
+				}catch (NullPointerException ne){
+					usersNoEmail.add((String)attributes.get("sAMAccountName").get());
+				}
+
+			}
+			logger.debug("search finished");
+		} catch (NamingException e1) {
+			logger.debug("search for users in client: " + clientDN + " encountered a problem.", e1);
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		return usersNoEmail;
+	}
+	
+	
+	
+	/**
+	 * return a sorted set of all organisations that are stored in Ldap's Clients.
+	 * All the names that stored in the return set are DN names (those names have already been escaped the special characters)
+	 * e.g. output = {"OU=AMICAS\, Inc (Now Merge)s,OU=Clients,DC=orion,DC=dmz", "OU=Adirondack Medical Center,OU=Clients,DC=orion,DC=dmz", ...}
+	 * This method is different from getUserGroups() where all the names returned by this method are DNs. and the names returned by getUserGroups() are just names
+	 * @return
+	 */
+	public Set<String> getUserGroupDNs(){
+		logger.debug("about to search for DNs of all the organisations that are stored in Clients folder");
+		
+		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
+		String filter = "("+groupAttr+"=*)";
+		SortedSet<String> output = new TreeSet<String>();
+		try{
+			logger.debug("LdapTool is about searching for groups of: " + baseDN);
+			NamingEnumeration<SearchResult> e = ctx.search(baseDN, filter, null);
+			while(e.hasMore()){
+				SearchResult results = (SearchResult)e.next();
+				output.add(results.getNameInNamespace());
+			}
+			logger.debug("searching is completed successfully.");
+		}catch(NamingException ex){
+			logger.error(ex.toString());
+			ex.printStackTrace();
+		}catch(NullPointerException ex){
+			logger.error(ex.toString());
+			ex.printStackTrace();
+		}
+		return output; 
+	}
 	
 	
 	

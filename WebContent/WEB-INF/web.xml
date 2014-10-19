@@ -69,6 +69,20 @@
     <servlet-name>RemoveAGroupFromGroup</servlet-name>
     <servlet-class>servlets.RemoveAGroupFromGroupServlet</servlet-class>
   </servlet>
+  <servlet>
+  	<servlet-name>AdditionalFunctions</servlet-name>
+  	<servlet-class>servlets.AdditionalFunctionsServlet</servlet-class>
+  </servlet>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   <servlet-mapping>
     <servlet-name>ChangePassword</servlet-name>
     <url-pattern>/ChangePassword</url-pattern>
@@ -137,4 +151,9 @@
     <servlet-name>RemoveAGroupFromGroup</servlet-name>
     <url-pattern>/RemoveAGroupFromGroup</url-pattern>
   </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>AdditionalFunctions</servlet-name>
+    <url-pattern>/AdditionalFunctions</url-pattern>
+  </servlet-mapping>
+  
 </web-app>

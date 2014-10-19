@@ -42,11 +42,11 @@ public class TestServlet extends HttpServlet {
 	
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
-	{
-		logger.debug("TestServlet about to process Post request" + request.getQueryString());
-		
+	{	
 		String rqst = request.getParameter("rqst");
 		String rslt = "";
+		
+		logger.debug("TestServlet about to process Post request: rqst=" + rqst);
 		
 		logger.debug("Session: " + request.getSession(true) + " is about to test: " + rqst);
 		
@@ -90,7 +90,6 @@ public class TestServlet extends HttpServlet {
 				break;
 			default:
 				response.getWriter().write("Your requested test cannot be understood.");
-				throw new IllegalArgumentException("hell oworld");
 		}
 	}
 	

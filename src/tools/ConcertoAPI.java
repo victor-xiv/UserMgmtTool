@@ -143,7 +143,7 @@ public class ConcertoAPI {
 				return null;
 			}
 			
-			logger.error("Failed to retrieve a user from webserivce server.", e);
+			logger.error("Failed to retrieve a user" + username + " from webserivce server.", e);
 			throw new Exception("Failed to retrieve a user from webserivce server.");
 		}
 		
@@ -224,7 +224,7 @@ public class ConcertoAPI {
 			user = port.getUser(username);
 		} catch (Exception e){
 			logger.error("Failed to retrieve a user from webserivce server.", e);
-			throw new Exception("Failed to retrieve a user from webserivce server.");
+			throw new Exception("Failed to retrieve a user"+username+" from webserivce server.");
 		}
 		
 		logger.debug("Working with user: " + username);
@@ -286,7 +286,7 @@ public class ConcertoAPI {
 			user = port.getUser(username);
 		} catch (Exception e){
 			logger.error("Failed to retrieve a user from webserivce server.", e);
-			throw new Exception("Failed to retrieve a user from webserivce server.");
+			throw new Exception("Failed to retrieve a user"+username+" from webserivce server.");
 		}
 		
 		logger.debug("Working with user: " + username);
