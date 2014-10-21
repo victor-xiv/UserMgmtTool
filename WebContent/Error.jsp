@@ -16,7 +16,7 @@
 		  <table bgcolor="#ffffff">
             <tr align="center">
               <td align="center">
-                <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="#"/></div>
+                <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo"/></div>
                 <img src="css/images/swish.gif" alt="#" />           
                 <div class="error" style="float: center; width=100%; text-align: center">
                 

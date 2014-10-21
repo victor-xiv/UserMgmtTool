@@ -160,7 +160,7 @@ function keyPressed(event){
            <table bgcolor="#ffffff" width="600px">
              <tr align="center">
                <td align="center">
-                 <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="#" /></div>
+                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
                  <h1>Account Request Form</h1>
                  <img src="./css/images/swish.gif" alt="#" />
                  <br />

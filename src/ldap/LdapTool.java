@@ -1237,7 +1237,6 @@ public class LdapTool {
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
 			logger.error(ex.getMessage());
-			ex.printStackTrace();
 		}
 		//Otherwise return false
 		return false;

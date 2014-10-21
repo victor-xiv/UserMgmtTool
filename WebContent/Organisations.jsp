@@ -45,7 +45,7 @@
 		  <table bgcolor="#ffffff">
             <tr align="center">
               <td align="center">
-                <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="#"/></div>
+                <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo"/></div>
                 <h1>Organisation Management</h1>
                 <img src="css/images/swish.gif" alt="#" />
 <%  if(session.getAttribute("error") != null){ %>

@@ -28,7 +28,7 @@ function Logout(){
               <td align="center">
 <%	if(session.getAttribute("passed") != null){
 		session.removeAttribute("passed");	%>
-		        <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="" /></div>
+		        <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
 		        <img src="css/images/swish.gif" alt="There should be an image here...." />
                 <br />
                 <div class="passed" style="width: 500px">
@@ -38,7 +38,7 @@ function Logout(){
                   <span style="font-size:medium; color: black">Please logout then login again for changes to take effect.</span>
                 </div>
 <%	}else{	%>
-                <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="" /></div>
+                <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
                 <h1>Registration for Access to<br/>Orion Product Knowledge Base </h1>
                 <img src="css/images/swish.gif" alt="There should be an image here...." />
                 <br />

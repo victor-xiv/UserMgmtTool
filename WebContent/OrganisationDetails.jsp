@@ -219,7 +219,7 @@
           <table bgcolor="#ffffff">
             <tr align="center">
               <td align="center">
-                <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="#"/></div>
+                <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo"/></div>
                 <h1><%=request.getParameter("name") %></h1>
 				<input id="thisGroupDN" type="hidden" value="<%=lt.getDNFromGroup(request.getParameter("name"))%>"/> <!-- this hidden input used to get complete groupDN for other processes -->
                 <img src="css/images/swish.gif" alt="#" />

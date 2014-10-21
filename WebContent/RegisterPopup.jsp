@@ -11,7 +11,7 @@
           <table bgcolor="#ffffff">
             <tr align="center">
               <td align="center">
-                <div align="center"><img src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif" alt="" /></div>
+                <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
                 <img src="css/images/swish.gif" alt="There should be an image here...." />
                 <br />
                 <div class="passed" style="width: 500px">

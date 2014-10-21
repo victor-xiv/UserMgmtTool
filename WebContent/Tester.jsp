@@ -216,8 +216,7 @@ gettingVersion();
 					<tr align="center">
 						<td align="center">
 							<div align="center">
-								<img
-									src="http://supporttracker.orionhealth.com/concerto/images/logos/supporttracker.gif">
+								<img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" />
 							</div>
 
 							<h1>Tester Console</h1> <img src="css/images/swish.gif" alt="#" />
