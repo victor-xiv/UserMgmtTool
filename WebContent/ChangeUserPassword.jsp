@@ -3,6 +3,18 @@
 		<title>Password Management Console</title>
 		<link rel="stylesheet" href="css/concerto.css" type="text/css" />
 		<link rel="stylesheet" href="css/general.css" type="text/css" />
+		<jsp:useBean id="user" class="beans.LdapUser" scope="page" />
+		
+<%
+try{
+	String userDN = (String)session.getAttribute("userDN"); 
+	user.processUserDN(userDN);	
+} catch (Exception e) {
+	session.setAttribute("error", e.getMessage());
+}		
+%>
+		
+		
 		<script type="text/javascript" language="javascript">
 
 /**
@@ -196,6 +208,7 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 			                <td align="center">
                                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
 					            <h1>Password Management</h1>
+					            <h2> Update a password for: <%=user.getDisplayName() %> </h2>
 					            <img src="css/images/swish.gif" alt="#" />
 					            <br />
 <%	if( session.getAttribute("error") != null){ %>

@@ -20,6 +20,11 @@ public class LdapUser {
 	private boolean accountDisabled;
 	Logger logger = Logger.getRootLogger();
 	
+	/**
+	 * 
+	 * @param userDN: of the Ldap user (userDN must not has been escaped the reserved chars) (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz")
+	 * @throws ConnectException
+	 */
 	public void processUserDN(String userDN) throws ConnectException{
 		logger.debug("Query for the attributes of the user: " + userDN);
 		
