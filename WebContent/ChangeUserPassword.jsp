@@ -57,13 +57,133 @@ function ResetForm(){
 }
 
 /**
- * submit the form
+ * submit the manullay typed in passwords to ChangePasswordServlet
  */
 function SubmitForm(){
-	if(validatePwd01()){
-    	document.form.submit();
-    	return true;
+	if(!validatePwd01()){
+    	return false;
     }
+	
+	// if both passwords (typed in by user) are the same and valdiated => process further
+	var ajax3;
+	if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+		ajax3 = new XMLHttpRequest();
+	} else {// code for IE6, IE5
+		ajax3 = new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	
+
+	ajax3.open("POST", "ChangePassword", true);
+	ajax3.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	ajax3.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
+	var params = "rqst=" + "ChangePassword" + "&NewPsw=" + document.getElementById('password01').value;
+	ajax3.send(params);
+
+	// handling ajax state
+	ajax3.onreadystatechange = function() {
+		// handling once request responded
+		if (ajax3.readyState == 4) {
+			// if response "OK"
+			if (ajax3.status == 200) {
+				var rsp = ajax3.responseText;
+				rsp = rsp.split("|");
+				if(rsp[0] === "failed"){
+					document.getElementById("failed").innerHTML = rsp[1];
+				} else {
+					document.getElementById("passed").innerHTML = ajax3.responseText;
+				}
+			} else {
+				document.getElementById("failed").innerHTML = "Server failed to response. Response code is: "
+						+ ajax3.status;
+			}
+		}
+	}
+}
+
+
+/**
+ * call to ChangePasswordServlet to Generate a new random password and SMS to the user
+ * with request parameter: rqst=GeneratePassword
+ */
+function generateRandomPassword(){
+	var ajax1;
+	if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+		ajax1 = new XMLHttpRequest();
+	} else {// code for IE6, IE5
+		ajax1 = new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	
+
+	ajax1.open("POST", "ChangePassword", true);
+	ajax1.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	ajax1.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
+	var params = "rqst=" + "GeneratePassword";
+	ajax1.send(params);
+
+	// handling ajax state
+	ajax1.onreadystatechange = function() {
+		// handling once request responded
+		if (ajax1.readyState == 4) {
+			// if response "OK"
+			if (ajax1.status == 200) {
+				var rsp = ajax1.responseText;
+				rsp = rsp.split("|");
+				if(rsp[0] === "failed"){
+					document.getElementById("failed").innerHTML = rsp[1];
+				} else {
+					document.getElementById("passed").innerHTML = ajax1.responseText;
+				}
+			} else {
+				document.getElementById("failed").innerHTML = "Server failed to response. Response code is: "
+						+ ajax1.status;
+			}
+		}
+	}
+}
+
+/**
+ * this method called everytime this page is loaded
+ * it check if this user has a validate mobile number or not
+ * if this user has a validate number (responseText = 'true') => create a "Generate" button for user generating a new random password
+ * otherwise (responseText = 'false') => do nothing
+ */
+shouldProvideGeneratingNewPasswordForThisUser();
+function shouldProvideGeneratingNewPasswordForThisUser(){
+	var ajax2;
+	if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+		ajax2 = new XMLHttpRequest();
+	} else {// code for IE6, IE5
+		ajax2 = new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	
+
+	ajax2.open("POST", "ChangePassword", true);
+	ajax2.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	ajax2.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
+	var params = "rqst=" + "ShouldAllowGeneratingPsw";
+	ajax2.send(params);
+
+	// handling ajax state
+	ajax2.onreadystatechange = function() {
+		// handling once request responded
+		if (ajax2.readyState == 4) {
+			// if response "OK"
+			if (ajax2.status == 200) {
+				if(ajax2.responseText === "true"){
+					document.getElementById("generateButton").innerHTML = '<div style="padding-top:20px"> <img src="css/images/swish.gif" alt="#" /></div>' + 
+						'<div class="row" style="padding-top:20px; font-family:Arial, Helvetica, sans-serif;"><b> Generate a random password and send it to this user\'s email </b></div>' +
+			            '<div class="Buttons" style="text-align: center; clear: none;  width: 180px; height: 20px;">' +
+							'<a class="Button" href="#" onclick="javascript: generateRandomPassword()">Generate</a>' +
+						'</div>';
+					return;
+				}
+				
+				if(ajax2.responseText !== "false"){
+					document.getElementById("generateButton").innerHTML = ajax2.responseText;
+				}
+			} 
+		}
+	}
 }
 		</script>
 	</head>
@@ -105,21 +225,34 @@ function SubmitForm(){
 					                        <a class="Button" href="#" onclick="javascript: ResetForm()">Reset</a>
 					                    </div>
 					                </form>
+					                
+					                <!-- this div used to decide whether the page should shows the "Generate" button, where user can use to generate a new
+					                password for the user on this page. If the user on this page doesn't have a mobile phone number or has an invalid one
+					                stored in Support Tracker DB, then this button would not show. it shows only otherwise.
+					                The decision made in ChangePasswordServlet -->
+					                <div id="generateButton"> </div>
 					            </div>
 <%	} %>
+
+								<div align="center" class="passed" id="passed">
+								
 <%	if( session.getAttribute("passed") != null){ %>
-								<div align="center" class="passed">
-<%=session.getAttribute("passed")%>
-								</div>
-<%session.removeAttribute("passed");
-	}
-	if( session.getAttribute("failed") != null){ 
-	%>
-								<div align="center" class="failed">
-<%=session.getAttribute("failed")%>
-								</div>
-<%		session.removeAttribute("failed");
+ 		<%=session.getAttribute("passed")%>
+		<%session.removeAttribute("passed");
 	}%>
+								</div>
+
+	 
+	
+								<div align="center" class="failed" id="failed">
+<% if( session.getAttribute("failed") != null){ %>
+		<%=session.getAttribute("failed") %>
+
+<%		session.removeAttribute("failed");
+	}
+%>
+								</div>
+
 								<div align="center" class="error"><span class="msg" id="global_msg"></span></div>
 					            <img src="css/images/swish.gif" alt="#" />
 					            <div align="center" class="disclaimer2">Having problems?<br/>Email <a href="mailto:support@orionhealth.com">Support@Orionhealth.com</a><br /></div>

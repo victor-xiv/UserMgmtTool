@@ -14,6 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import ldap.DBConstants;
 import ldap.ErrorConstants;
@@ -25,6 +27,136 @@ public class SupportTrackerJDBC {
 	private static String jdbcUrl;
 	private static String jdbcUser;
 	private static String jdbcPassword;
+	
+	
+	/**
+	 * retrieving the mobile phone number of the give username from Support Tracker DB 
+	 * @param username is the value of the column loginName of ClientAccount table. it is the same as sAMAccountName of Ldap server
+	 * @return the mobile phone number of the given username, if there is one. otherwise, null is returned.
+	 * the return mobile phone number is the value that is stored in contactPersonMobile column of ClientAccount table. 
+	 * the return value has not been modified or validate.
+	 * @throws SQLException
+	 */
+	public static String getRawMobilePhoneOfUser(String username) throws SQLException {
+		if(username==null || username.trim().isEmpty()) return null;
+		
+		Logger logger = Logger.getRootLogger();
+		logger.debug("Started querying for a mobile number of a user: " + username);
+		
+		String query = "SELECT contactPersonMobile FROM ClientAccount WHERE loginName = '"+username+"'";
+		
+		ResultSet rs = runGivenQueryOnSupportTrackerDB(query);
+		
+		String result = null;
+		if(rs!=null && rs.next()){
+			result = rs.getString("contactPersonMobile");
+		}
+		
+		logger.debug("mobile number of " + username + " is: " + result);
+		return result;
+	}
+	
+	
+	/**
+	 * retrieving the mobile phone number of the give username from Support Tracker DB.
+	 *  Upon the retrieval, the number is validated. If it is an invalid number, the method will return null.
+	 * @param username is the value of the column loginName of ClientAccount table. it is the same as sAMAccountName of Ldap server
+	 * @return the phone number of the given username, if that phone number is validate and can be used to send SMS programatically.
+	 * Otherwise, null is returned.
+	 */
+	public static String validateAndGetMobilePhoneOfUser(String username) {
+		Logger logger = Logger.getRootLogger();
+		logger.debug("Start retrieving and validating the mobile phone of user: " + username);
+		
+		String mobile = null;
+		try{
+			mobile = getRawMobilePhoneOfUser(username);
+			if(mobile == null || mobile.trim().isEmpty()) 
+				throw new SQLException("This user: " + username + " deson't exist in Suppor Tracker DB");
+		} catch (SQLException e){
+			logger.error("could not get mobile phone for " + username + " from Support Tracker DB.", e);
+			return null;
+		}
+	
+	// clean and validate the retrieved mobile number
+		// 1). removing (0) empty_space ( ) and -
+		mobile = mobile.replaceAll("(\\(0\\))|[\\s-()]", "");
+		
+		// 2). after replacing those unused chars, 
+		// the valid mobile number should be at least 8 digits and it should not be more than 18 digits
+		if(mobile.length() < 8 || mobile.length() > 18){
+			logger.error("This user: "+ username + " has an invalid mobile phone (its length either < 8 digits or > 18 digits): " + mobile);
+			return null;
+		}
+		
+		// 3). if there is only one "+" at the beginning => keep checking
+		// 		if there is a "+" that is not at the beginning the  mobile.indexOf("+", 1) will return >= 1. then it means mobile is not valid
+		if(mobile.indexOf("+", 1) == -1){
+			Pattern pt = Pattern.compile("[^0-9+]");
+			Matcher matcher = pt.matcher(mobile);
+			
+			// 4). if there is at least a character that is not a number (0-9)
+			if(matcher.find()){
+				logger.error("This user: "+ username + " has an invalid mobile phone: " + mobile);
+				return null;
+			} else {
+				logger.debug("This user: " + username + " has a valid mobile phone: " + mobile);
+				return mobile;
+			}
+		} else {
+			logger.error("This user: "+ username + " has an invalid mobile phone: " + mobile);
+			return null;
+		}
+	}
+	
+	
+	/**
+	 * return a list of all of the mobile phone numbers stored in Support Tracker DB (ClientAccount table)
+	 * @return a list of all of the mobile phone numbers. or an empty list if there's no row in the table 
+	 * @throws SQLException if DB connection failed during the process.
+	 */
+	public static List<String> getAllMobilePhones() throws SQLException {
+
+		List<String> results = new ArrayList<String>();
+		String query = "SELECT contactPersonMobile FROM ClientAccount";
+
+		ResultSet rs = runGivenQueryOnSupportTrackerDB(query);
+
+		while (rs.next()) {
+
+			String result = rs.getString("contactPersonMobile");
+			if (result != null && !result.trim().isEmpty()) {
+				results.add(result);
+			}
+		}
+
+		return results;
+	}
+	
+	
+	/**
+	 * a helper method to create a connection with Support Tracker DB and run any given query
+	 * @param query SQL query
+	 * @return ResultSet object which is the result of the execution of the given query
+	 * @throws SQLException if DB connection failed during the process.
+	 */
+	public static ResultSet runGivenQueryOnSupportTrackerDB(String query) throws SQLException{
+		Logger.getRootLogger().debug("started querying for: " + query);
+		Connection con = null;
+		con = getConnection();
+		
+		ResultSet rs = null;
+		if(con != null){
+			// execute the delete query, return false if there's no recorded deleted
+			Statement st = con.createStatement();
+			 rs = st.executeQuery(query);
+		}
+		
+		Logger.getRootLogger().debug("finished querying for: " + query);
+		return rs;
+	}
+	
+	
 	
 	
 	
@@ -61,25 +193,13 @@ public class SupportTrackerJDBC {
 			,
 			gnLabel, fnLabel, companyName );
 		
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e) {
-			throw e;
-			// don't need to log here, it has been logged in getConnection()
-		}
-		
 		String result = null;
-		if(con != null){
-			// execute the delete query, return false if there's no recorded deleted
-			Statement st = con.createStatement();
-			ResultSet rs = st.executeQuery(query);
-			if(rs.next()){
-				result = rs.getString(gnLabel) + " " +rs.getString(fnLabel);
-			}
-			
-		}
 		
+		ResultSet rs = runGivenQueryOnSupportTrackerDB(query);
+		if(rs!=null && rs.next()){
+			result = rs.getString(gnLabel) + " " +rs.getString(fnLabel);
+		}
+
 		logger.debug("finished selecting resposible staff for company: " + companyName);
 		return result;
 	}
@@ -389,6 +509,16 @@ public class SupportTrackerJDBC {
 	}
 	
 	
+	/**
+	 * use the given maps object to add a row into Staff table of Support Tracker DB
+	 * @param maps must have * keys, and its value is an element array, where the element at index 0 is the value
+	 * e.g. maps.put("givenName", new String[]{"test given name"});
+	 * The maps have * keys: Surname = maps.get("sn")[0], GivenName = maps.get("givenName")[0], 
+	 * Email Address = maps.get("mail")[0], Phone = maps.get("telephoneNumber")[0], 
+	 * Mobile Phone = maps.get("mobile")[0], Login Name = maps.get("sAMAccountName")[0]
+	 * @return the unique staffId, if the process was successful, otherwise -1 is returned.
+	 * @throws SQLException
+	 */
 	public static int addStaffAccount(Map<String, String[]> maps) throws SQLException {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		

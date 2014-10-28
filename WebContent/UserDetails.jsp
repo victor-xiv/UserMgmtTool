@@ -427,7 +427,7 @@
               <td align="center">
                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
                 <h1><%=user.getDisplayName() %></h1>
-                <span><a href="ChangePassword">Change Password</a></span>
+                <span><a href="ChangePassword?rqstFrom=userDetail">Change Password</a></span>
                 <img src="./css/images/swish.gif" alt="There should be an image here...." />
 <%  if(session.getAttribute("error") != null){ %>
                 <div class="row">

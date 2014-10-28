@@ -18,7 +18,7 @@ import ldap.UserMgmtConstants;
  * 
  */
 @WebServiceClient(name = "UserManagementService", 
-                  wsdlLocation = "https://192.168.21.69/portal/ws/com.orchestral.portal.webservice.api_7_2.user.UserManagementService?wsdl",
+                  wsdlLocation = "https://192.168.21.69:19143/portal/ws/com.orchestral.portal.webservice.api_7_2.user.UserManagementService?wsdl",
                   targetNamespace = "http://www.orionhealth.com/com.orchestral.portal.webservice.api_7_2.user/") 
 public class UserManagementService extends Service {
 	

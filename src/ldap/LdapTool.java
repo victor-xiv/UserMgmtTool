@@ -29,7 +29,6 @@ import javax.naming.directory.BasicAttributes;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.ModificationItem;
-import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -1097,6 +1096,7 @@ public class LdapTool {
 		return null;
 	}
 	
+
 	
 	
 	// had escaped reserved chars
@@ -1726,7 +1726,7 @@ public class LdapTool {
 	
 	/**
 	 * return the sAMAccountName from userDN in String
-	 * @param userDN - user's LDAP distinguish name
+	 * @param userDN  of the Ldap user (userDN must not has been escaped the reserved chars) (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz")
 	 * @return the sAMAccountName of userDN in String if there is. Otherwise return an empty String.
 	 */
 	public String getUsername(String userDN){

@@ -97,14 +97,21 @@ public class ConcertoAPI {
 		URL wsdlURL = new URL(LdapProperty.getProperty(UserMgmtConstants.CONCERTO_WSDL_URL));
 		
 		logger.debug("Trying to connect to web service with wsdl at: " + wsdlURL);
-		UserManagementService ss = new UserManagementService(wsdlURL,
-				SERVICE_NAME);
-		ComOrchestralPortalWebserviceApi72UserUserManagementService port = ss
-				.getComOrchestralPortalWebserviceApi72UserUserManagementServicePort();
+		try{
+			UserManagementService ss = new UserManagementService(wsdlURL,
+					SERVICE_NAME);
+			ComOrchestralPortalWebserviceApi72UserUserManagementService port = ss
+					.getComOrchestralPortalWebserviceApi72UserUserManagementServicePort();
+			
+			logger.debug("connection to concerto portal established");
+			return port;
+		} catch (Exception e){
+			logger.error("Failed to created Portal Webservice", e);
+			e.printStackTrace();
+			return null;
+		}
 		
-		logger.debug("connection to concerto portal established");
 		
-		return port;
 	}
 	
 	
@@ -170,6 +177,7 @@ public class ConcertoAPI {
 			else return true;
 			
 		} catch (Exception e) {
+			Logger.getRootLogger().error("Failed to create services", e);
 			throw new Exception("Failed to retrieve a user from webserivce server.");
 		}
 	}

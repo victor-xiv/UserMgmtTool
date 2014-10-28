@@ -37,6 +37,41 @@ public class EmailClient {
 	public static final String REPLACEKEY_PASSWORD = "UsrMgmt_PASSWORD";
 	
 	
+	/**
+	 * send an SMS to the given mobile phone number, with the given smsBody
+	 * @param mobile phone number that will receive SMS. e.g. +64213456789. This phone number
+	 * must be a valid one. If it is an invalid, the method will try to send, but, it will go silent
+	 * without returning back a feedback.
+	 * @param recipientName the reciever name (it can be an empty string, but not null)
+	 * @param smsSubject the subject of the sms (it can be an empty string, but not null)
+	 * @param smsBody the body of the txt message
+	 */
+	public static void sendSMSto(String mobile, String recipientName, String smsSubject, String smsBody){
+		init();
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("Preparing to send an SMS to: " + recipientName + " who has: " + mobile + " with the content: " + smsBody);
+		
+		String mobileAsSMS4UmailAddress = mobile + LdapProperty.getProperty("txt.msg.server.domain");
+		
+		
+		Session session = Session.getDefaultInstance(mailServerConfig, null);
+		MimeMessage message = new MimeMessage(session);
+		try {
+			message.addRecipient(Message.RecipientType.TO, new InternetAddress(mobileAsSMS4UmailAddress));
+			message.setFrom(new InternetAddress(LdapProperty.getProperty("mail.from")));
+			message.setSubject(smsSubject);
+			message.setText(smsBody);
+			Transport.send(message);
+
+		} catch (AddressException e) {
+			logger.error("Could not send out an email",e);
+		} catch (MessagingException e) {
+			logger.error("Could not send out an email", e);
+		}
+		logger.debug("finished sending email");
+	}
+	
 	
 	// comment out the password part
 	// Recipient name
@@ -117,10 +152,10 @@ public class EmailClient {
 			Transport.send(message);
 			
 			// sending email contains password
-//			message.setSubject(mailSubject + " - attachement");
-//			message.setContent(passwordMail, "text/html");
-//			message.saveChanges();
-//			Transport.send(message);
+			message.setSubject(mailSubject + " - attachement");
+			message.setContent(passwordMail, "text/html");
+			message.saveChanges();
+			Transport.send(message);
 		} catch (AddressException e) {
 			logger.error("Could not send out an email",e);
 			throw e;
@@ -128,7 +163,7 @@ public class EmailClient {
 			logger.error("Could not send out an email", e);
 			throw e;
 		}
-		logger.debug("finished preparing approved email.");
+		logger.debug("finished sending approved email.");
 	}
 	
 	
@@ -179,7 +214,7 @@ public class EmailClient {
 			logger.error("Could not send out an email", e);
 			throw e;
 		}
-		logger.debug("finished preparing rejected email.");
+		logger.debug("finished sending rejected email.");
 	}
 	
 	private static void init(){

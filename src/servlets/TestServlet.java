@@ -301,6 +301,7 @@ public class TestServlet extends HttpServlet {
 			return "Portal has been connected successfully.";
 
 		} catch (Exception e) {
+			logger.error("Portal cannot be connected", e);
 			return "Portal could not be connected because: " + e.getMessage();
 		}
 	}
