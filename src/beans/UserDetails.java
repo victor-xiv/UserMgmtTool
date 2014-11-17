@@ -13,6 +13,14 @@ public class UserDetails {
 	private String company, description, street, city, state, postalCode;
 	private String countryCode, phoneNumber, fax, mobile, email, clientId;
 	
+	
+	/**
+	 * process and get the properties of the user (given username) from the Support Tracker DB 
+	 * The difference between this bean and the LdapUser bean is that :
+	 * * this bean is getting the user's properties from Support Tracker DB.
+	 * * LdapUser bean is getting the user's properties from Ldap Server
+	 * @param username : is the username used to login to support tracker or ldap server
+	 */
 	public void processUsername(String username){
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Querying the details of user " + username + " from Support Tracker DB and Portal DB");

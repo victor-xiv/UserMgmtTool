@@ -11,11 +11,13 @@
       <link rel="shortcut icon" href="./css/images/oStar.ico" />
       <jsp:useBean id="countries" class="beans.Countries" scope="session" />
       <jsp:useBean id="accounts" class="beans.AccountRequestsBean" scope="session" />
+      
       <%@ page import="java.util.TreeMap" %>
       <%@ page import="java.util.Map" %>
+      <script src="./js/validator.js"></script>
+      <script src="./js/jquery.js"></script>
       <script type="text/javascript" language="javascript">
-     
-      
+
 function firstCharUp(input){
   if(input.length > 1){
     var firstLetter = input.charAt(0).toUpperCase();
@@ -28,9 +30,14 @@ function firstCharUp(input){
   }
 }
 
+//used to limit the max number of chars for the fullname
 <%int dsplSizeLimit = accounts.getDisplayNameSizeLimit();%>
 var displayNameSizeLimit = <%=dsplSizeLimit%>;
 
+
+/*
+ * Validate all the entries of the new account that is about to be added
+ */
 function validateEntries(){
   var validated = true;
   var theFocus = '';
@@ -113,21 +120,177 @@ function validateEntries(){
     document.getElementById(theFocus).focus();
   return validated;
 }
+
+
+
+//generate displayname (fullname) = givenName + firstname
 function doDisplayName(){
   document.form.displayName.value = document.form.givenName.value+" "+document.form.sn.value;
 }
+
+
+/* reset the form into default*/
 function ResetForm(){
   document.getElementById('validation_msg').innerHTML = "";
+  document.getElementById("passed").innerHTML="";
+  document.getElementById("failed").innerHTML="";
   document.form.reset();
   return false;
 }
+
+
+
+/**
+ * submit the form to AddUserServlet 
+ */
 function SubmitForm(){
   if(validateEntries()){
-    document.form.submit();
-    return true;
+	  var psw = validatePassword();
+	  if(psw==="false"){
+		  return false;
+	  } else {
+		  // start processing. produce a message telling user that the request is being processed
+		  document.getElementById('failed').innerHTML = "";
+		  document.getElementById('passed').innerHTML = "Processing request...";
+		  var url = prepareUrlParams();
+		  url += "&password01=" + psw; 
+		  
+		  var ajax;
+			if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+				ajax = new XMLHttpRequest();
+			} else {// code for IE6, IE5
+				ajax = new ActiveXObject("Microsoft.XMLHTTP");
+			}
+		    
+		    ajax.open("POST", url, true);
+		    ajax.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+			ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
+			ajax.send('');
+		    ajax.onreadystatechange = function(){
+		    	if(ajax.readyState == 4){
+		    		// remove "Processing request..." message from the page and update the result message
+		    		document.getElementById('passed').innerHTML = "";
+		    	    if(ajax.status == 200){
+		    	      results = ajax.responseText.split("|");
+		    	      if(results[0] == "true"){
+		    	      	 document.getElementById('passed').innerHTML = "<font color=\"#00FF00\">* "+results[1]+"</font><br />";
+		    	      }else{
+			    	     document.getElementById('failed').innerHTML = "<font color=\"red\">* "+results[1]+"</font><br />";		    	    	
+		    	      }
+		    	    }else{
+		    	    	document.getElementById('failed').innerHTML = "<font color=\"red\">* "+results[1]+"</font><br />";
+		    	    }
+		    	}
+		    }
+	  }
   }
   return false;
 }
+
+
+/**
+ * get the mobile number that is being typed by the user, and validate
+ */
+function validateMobile(){
+	//document.getElementById("GenPswChk").checked=false;
+	var mobile = document.getElementById("mobile").value;
+	if(mobile != undefined && mobile != null){
+		
+		if(mobileValidator(mobile)){
+			if(document.getElementById("GenPswChk").disabled){
+				document.getElementById("GenPswChkDv").innerHTML = '<input tabindex="14" id="GenPswChk" type="checkbox" name="pswradio" value="GenPsw" onclick="disOrEnablePswBoxes()"><span>Random password and sms</span></input>';
+			}
+		} else {
+			document.getElementById("GenPswChkDv").innerHTML = '<input tabindex="14" id="GenPswChk" type="checkbox" name="pswradio" value="GenPsw" disabled onclick="disOrEnablePswBoxes()"  ></input><span style="color:rgb(150,150,150)">Random password and sms</span>';
+			enablePswBoxes();
+		}
+	}
+//	alert('done');
+	
+}
+
+
+/*
+ * get password (psw1) and confirm password (psw2) and valdiate both of them
+ */
+function validatePassword(){
+	var psw1, psw2;
+	if(document.getElementById("GenPswChk").checked){
+		return "GenPsw";
+		
+	} else {
+		psw1 = document.getElementById("psw01").value;
+		psw2 = document.getElementById("psw02").value;
+		var validated = passwordValidator(psw1, psw2);
+		if(validated){
+			return psw1;
+		} else {
+			return "false";
+		}
+	}
+}
+
+/*
+ * this method will be called after click even applied on checkbox
+ * if checked for "randomly generated password" =>  disable the manual password
+ */
+function disOrEnablePswBoxes(){ 
+	if(document.getElementById("GenPswChk").checked == true){
+		disbalePswBoxes();
+	} else {
+		enablePswBoxes();
+	}
+}
+
+ /*
+ * enable manual password boxes (this method called when the user untick the Random Generate Password option)
+ */
+function enablePswBoxes(){
+	var psw01Lbl =document.getElementById("psw01Lbl");
+	psw01Lbl.innerHTML = "Password:";
+	psw01Lbl.setAttribute("style", "color:rgb(0,0,0)");
+	var psw02Lbl =document.getElementById("psw02Lbl");
+	psw02Lbl.innerHTML = "Confirm:";
+	psw02Lbl.setAttribute("style", "color:rgb(0,0,0)");
+	document.getElementById("psw01").removeAttribute("disabled");
+	document.getElementById("psw02").removeAttribute("disabled");
+	document.getElementById("psw01Rq").style.visibility = "visible";
+	document.getElementById("psw02Rq").style.visibility = "visible";
+}
+
+ 
+/*
+ * disable manual password boxes (this method called when the user tick the Random Generate Password option)
+ */
+function disbalePswBoxes(){
+	var psw01Lbl =document.getElementById("psw01Lbl");
+	psw01Lbl.innerHTML = "Password:";
+	psw01Lbl.setAttribute("style", "color:rgb(150,150,150)");
+	var psw02Lbl =document.getElementById("psw02Lbl");
+	psw02Lbl.innerHTML = "Confirm:";
+	psw02Lbl.setAttribute("style", "color:rgb(150,150,150)");
+	document.getElementById("psw01").setAttribute("disabled", true);
+	document.getElementById("psw02").setAttribute("disabled", true);
+	document.getElementById("psw01Rq").style.visibility = "hidden";
+	document.getElementById("psw02Rq").style.visibility = "hidden";
+}
+
+
+/**
+ * a helper method that takes all the values from the input boxes
+ * and prepare them as the url to POST to server
+ */
+function prepareUrlParams(){
+	var params = ["sAMAccountName","givenName","sn","displayName","description","department",
+	              "streetAddress", "l", "st", "c", "postalCode", "mail", "telephoneNumber", "facsimileTelephoneNumber",
+	              "mobile", "userDN", "company"];
+	var url = "AddUser?a=a";
+	for(var i=0; i < params.length; i++){
+		url += "&" + params[i] + "=" + encodeURIComponent(document.getElementById(params[i]).value);
+	}
+	return url;
+}
+
   </script>
     <style type="text/css">
       #sAMAccountName             {width: 200px;}
@@ -145,6 +308,8 @@ function SubmitForm(){
       #mail                       {width: 200px;}
       #facsimileTelephoneNumber   {width: 200px;}
       #mobile                     {width: 200px;}
+      #psw01                     {width: 200px;}
+      #psw02                     {width: 200px;}
     </style>
   </head>
   <body>
@@ -251,46 +416,82 @@ function SubmitForm(){
                        <span class="required">*</span>
                      </div>
                      <div class="row">
+                       <span class="label2">Email:</span>
+                       <span class="formw">
+                         <input type="text" id="mail" name="mail" size="50" maxlength="50" tabindex="10"/>
+                       </span>
+                       <span class="required">*</span>
+                     </div>
+                     <div class="row">
                        <span class="label2">Phone:</span>
                        <span class="formw">
-                         <input type="text" id="telephoneNumber" name="telephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="10"/>
+                         <input type="text" id="telephoneNumber" name="telephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="11" placeholder="+64-21-3627893 ext 32"/>
                        </span>
                        <span class="required">*</span>
                      </div>
                      <div class="row">
                        <span class="label2">Fax:</span>
                        <span class="formw">
-                         <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="11"/>
+                         <input type="text" id="facsimileTelephoneNumber" name="facsimileTelephoneNumber" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="12"/>
                        </span>
                      </div>
                      <div class="row">
                        <span class="label2">Mobile:</span>
                        <span class="formw">
-                         <input type="text" id="mobile" name="mobile" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="12"/>
+                         <input type="text" id="mobile" name="mobile" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" 
+                         tabindex="13" onkeyup="validateMobile()" placeholder="+64-21-3627893"/>
                        </span>
                      </div>
+                     
+                     
+                     
+                     <br/><br/>
+                     
+                     <div class="row" id="GenPswChkDv">
+                     	<input tabindex="14" id="GenPswChk" type="checkbox" name="pswradio" value="GenPsw" disabled onclick="disOrEnablePswBoxes()"  ></input>
+                     	<span style="color:rgb(150,150,150)">Random password and sms</span>
+                     </div>
+                     
+                     <br/>
+                     
                      <div class="row">
-                       <span class="label2">Email:</span>
+                       <span class="label2" id="psw01Lbl">Password:</span>
                        <span class="formw">
-                         <input type="text" id="mail" name="mail" size="50" maxlength="50" tabindex="13"/>
-                       </span>
-                       <span class="required">*</span>
+                       		<input type="password" id="psw01" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>"
+                      		 tabindex="15" onkeypress="document.getElementById('GenPswChk').checked=false"/></span>
+                       <span class="required" id="psw01Rq">*</span>
                      </div>
+                     
+                     <div class="row">
+                       <span class="label2" id="psw02Lbl">Confirm:</span>
+                       <span class="formw">
+                       		<input type="password" id="psw02" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>"
+                      		 tabindex="16" onkeypress='document.getElementById("GenPswChk").checked=false'/></span>
+                       <span class="required" id="psw02Rq">*</span>
+                     </div>
+                     
+                     
+                     
                      <div class="row"></div>
                      <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 180px; height: 20px;">
-                       <a class="Button" href="#" onclick="javascript: SubmitForm()">Submit</a>
-                       <a class="Button" href="#" onclick="javascript: ResetForm()">Reset</a>
+                       <a class="Button" tabindex="17" href="#" onclick="javascript: SubmitForm()">Submit</a>
+                       <a class="Button" tabindex="18" href="#" onclick="javascript: ResetForm()">Reset</a>
                      </div>
                    </form>
                  </div>
+                 <div align="center" id="passed" class="passed">
 <%	if( session.getAttribute("passed") != null){ %>
-                 <div align="center" class="passed"><%=session.getAttribute("passed")%></div>
+                 <%=session.getAttribute("passed")%>
 <%		session.removeAttribute("passed");
-	}
-	if( session.getAttribute("failed") != null){ %>
-                 <div align="center" class="failed"><%=session.getAttribute("failed")%></div>
+	} %>
+				</div>
+	 			
+	 			<div align="center" id="failed" class="failed">
+<%  if( session.getAttribute("failed") != null){ %>
+                <%=session.getAttribute("failed")%>
 <%		session.removeAttribute("failed");
-	}	%>
+	}	%>	    	      	
+				</div>
                  <div align="center"><img src="./css/images/swish.gif" alt="#" /></div>
                  <div align="center" class="disclaimer2">Having problems?<br />Email <a href="mailto:support@orionhealth.com">support@Orionhealth.com</a><br /><br /></div>
 <%	} %>

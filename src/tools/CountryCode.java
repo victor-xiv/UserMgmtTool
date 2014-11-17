@@ -13,7 +13,7 @@ public class CountryCode {
 	
 	/**
 	 * read CountryCode.xml (pathToTomcatConfFolder/CountryCode.xml) assign the key,value pair into countries TreeMap
-	 * @return a TreeMap that contains key,value pair of all countries. i.e. {(Afghanistan, Afghanistan), ...}
+	 * @return a TreeMap that contains key,value pair of all countries. i.e. {(AF, Afghanistan), ...}
 	 */
 	public static TreeMap<String,String> getCountryNameMap(){
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger

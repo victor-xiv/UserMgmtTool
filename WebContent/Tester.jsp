@@ -9,8 +9,10 @@
 <script type="text/javascript" language="javascript">
 
 
+/**
+ * getting and displaying the version number at the bottom of the page
+ */
 gettingVersion();
-
 	function gettingVersion() {
 		var ajax1;
 		if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -42,6 +44,9 @@ gettingVersion();
 		}
 	}
 
+/*
+ * Test Security Provider (Test Bouncy Castle Security)
+ */
 	function securityProvider() {
 		var ajax2;
 		if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -74,6 +79,9 @@ gettingVersion();
 
 	}
 
+/**
+ * test ldap connection
+ */
 	function ldapConnection() {
 		var ajax3;
 		if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -105,6 +113,10 @@ gettingVersion();
 		}
 	}
 
+
+/**
+ * test portal connection
+ */
 	function portalConnection() {
 		var ajax4;
 		if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -137,6 +149,10 @@ gettingVersion();
 		}
 	}
 
+
+/**
+ * test support tracker DB connection
+ */
 	function supportTrackerDBConnection() {
 		var ajax5;
 		if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -170,6 +186,10 @@ gettingVersion();
 		}
 	}
 
+
+/**
+ * test sending an email to the client
+ */
 	function sendingAnEmail(email) {
 		var ajax6;
 		if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
@@ -199,6 +219,44 @@ gettingVersion();
 				} else {
 					document.getElementById("emilRslt").innerHTML = "UsrMgmt Server failed to response. Response code is: "
 							+ ajax6.status;
+				}
+			}
+		}
+	}
+
+
+/**
+ * test sending an sms
+ */
+	function sendingAnSms(){
+		var ajax7;
+		if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+			ajax7 = new XMLHttpRequest();
+		} else {// code for IE6, IE5
+			ajax7 = new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		
+		document.getElementById("smsRslt").innerHTML = "<font color='red'>Sending an sms test started.</font>";
+
+		ajax7.open("POST", "Test", true);
+		ajax7.setRequestHeader("Content-Type",
+				"application/x-www-form-urlencoded");
+		ajax7.setRequestHeader("Accept",
+						"text/xml, application/xml, text/plain");
+		var params = "rqst=" + "smsSending" + "&mobile="
+				+ document.getElementById("mobile").value;
+		ajax7.send(params);
+
+		// handling ajax state
+		ajax7.onreadystatechange = function() {
+			// handling once request responded
+			if (ajax7.readyState == 4) {
+				// if response "OK"
+				if (ajax7.status == 200) {
+					document.getElementById("smsRslt").innerHTML = ajax7.responseText;
+				} else {
+					document.getElementById("smsRslt").innerHTML = "UsrMgmt Server failed to response. Response code is: "
+							+ ajax7.status;
 				}
 			}
 		}
@@ -260,6 +318,12 @@ gettingVersion();
 									<td><a class="Button" href="#" onclick="javascript: sendingAnEmail()">Test</a></td>
 								</tr>
 							
+								<tr>
+									<td class="label2">Sending an sms</td> 
+									<td> <form> </form><input type="text" id="mobile" placeholder="Receiver mobile number"> </form></td>
+									<td class="passed" id="smsRslt"></td>  
+									<td><a class="Button" href="#" onclick="javascript: sendingAnSms()">Test</a></td>
+								</tr>
 							
 							</table>
 							

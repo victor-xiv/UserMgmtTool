@@ -25,6 +25,7 @@
     <link rel="shortcut icon" href="./css/images/oStar.ico" />
     <script src="./js/ajaxgen.js"></script>
     <script src="./js/jquery.js"></script>
+    <script src="./js/validator.js"></script>
     <style type="text/css">
 .CollapseRegionLink,.CollapseRegionLink:link,.CollapseRegionLink:hover,.CollapseRegionLink:visited
 {
@@ -77,11 +78,15 @@ div.row span.value3{
 }
     </style>
 	<script type="text/javascript" language="javascript">
-	
+
+// used to limit the max number of chars for the fullname 
 var displayNameSizeLimit = <%=accounts.getDisplayNameSizeLimit()%>;
 	
 var id = '';
 
+/**
+ * clear the text in "validate_msg" element
+ */
 function cleanupResultMsg(){
 	document.getElementById('validation_msg').innerHTML = "";
 }
@@ -131,10 +136,10 @@ function validateUsername(idx) {
       if (document.getElementsByName(usrname_elmName)[i].value.indexOf("other" + idx)!= -1){
     	  var sname = document.getElementsByName(usrname_elmName)[i].value;
     	  username = document.getElementById('customName'+sname).value;
-    	  document.getElementById('sAMAccountName').value = username;
+    	  document.getElementById('sAMAccountName'+idx).value = username;
       } else {
     	  username = document./*form.username*/getElementsByName(usrname_elmName)[i].value;
-          document./*form.sAMAccountName*/getElementById('sAMAccountName').value = username;
+          document./*form.sAMAccountName*/getElementById('sAMAccountName'+idx).value = username;
       }
   	  
       // check if the username contains any special chars that ldap server doens't allow
@@ -160,21 +165,83 @@ function validateUsername(idx) {
   return false;
 }
 
+
+/**
+ * get the password (psw1) and the confirm password (psw2)
+ * validate this password
+ */
+function validatePassword(idx){
+	var elmName = 'pswradio' + idx;
+	for(var i=0; i<document.getElementsByName(elmName).length; i++){
+		if(document.getElementsByName(elmName)[i].checked){
+			if(document.getElementsByName(elmName)[i].value === "GenPsw"){
+				document.getElementById("password"+idx).value = "GenPsw";
+				return true;
+			} else if(document.getElementsByName(elmName)[i].value === "CustPsw"){
+				var psw1 = document.getElementById("customPswA" + idx);
+				var psw2 = document.getElementById("customPswB" + idx);
+				
+				if (psw1 != null && psw2 != null) {
+					var validate = passwordValidator(psw1.value, psw2.value);
+					if(validate==true){
+						document.getElementById("password" + idx).value = psw1;
+					}
+					return validate;
+				}
+				
+			}
+		}
+	}
+	alert("Please choose a password for this user. A valid password must have 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet, one number and one of these four symbols: @ _ $ -");
+	return false;
+}
+
 /**
  * accept the account request, POST the filename to AccepRequest servlet to do the accepting request
  */
 function AcceptRequest(idx) {
   cleanupResultMsg();
   
-  if(validateUsername(idx)){
+  if(validateUsername(idx) && validatePassword(idx)){
     document.getElementById('accept' + idx).className = 'ButtonDisabled';
     document.getElementById('decline' + idx).className = 'ButtonDisabled';
 
-    var url = "AcceptRequest?filename=" + encodeURIComponent(document.getElementById('filename'+idx).value)+"&action=accept&username="
-    		+encodeURIComponent(document./*form.sAMAccountName*/getElementById('sAMAccountName').value);
+    var url = "AcceptRequest?filename=" + encodeURIComponent(document.getElementById('filename'+idx).value)
+    		 +"&action=accept&username="+ encodeURIComponent(document.getElementById('sAMAccountName'+idx).value)
+    		 +"&psw=" + encodeURIComponent(document.getElementById("password" + idx).value);
+    var ajax;
+	if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+		ajax = new XMLHttpRequest();
+	} else {// code for IE6, IE5
+		ajax = new ActiveXObject("Microsoft.XMLHTTP");
+	}
+    
     ajax.open("POST", url, true);
-    ajax.onreadystatechange = handleHttpResponse;
-    ajax.send('');
+    ajax.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+	ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
+	ajax.send('');
+    ajax.onreadystatechange = function(){
+    	if(ajax.readyState == 4){
+    	    if(ajax.status == 200){
+    	      results = ajax.responseText.split("|");
+    	      if(results[0] == "true"){
+    	      	document.getElementById('validation_msg').innerHTML =
+    	          "<font color=\"#00FF00\">* "+results[1]+"</font><br />";
+    	      }else{
+    	    	document.getElementById('validation_msg').innerHTML =
+    	          "<font color=\"#FF0000\">* "+results[1]+"</font><br />";
+    	    	document.getElementById('accept' + idx).className = 'Button';
+		    	document.getElementById('decline' + idx).className = 'Button';
+    	      }
+    	    }else{
+    	      document.getElementById('validation_msg').innerHTML =
+    	    	  "<font color=\"#FF0000\">* The system encountered an error while processing, please try again later.</font><br />";
+    	      document.getElementById('accept' + idx).className = 'Button';
+		      document.getElementById('decline' + idx).className = 'Button';
+    	    }
+    	}
+    }
+    
   }
 }
  
@@ -187,17 +254,53 @@ function DeclineRequest(idx) {
   document.getElementById('accept' + idx).className = 'ButtonDisabled';
   document.getElementById('decline' + idx).className = 'ButtonDisabled';
 
-  var url = "AcceptRequest?filename=" + encodeURIComponent(document.getElementById('filename'+idx).value)+"&action=decline";
+  var url = "AcceptRequest?filename=" + encodeURIComponent(document.getElementById('filename'+idx).value)
+		  +"&action=decline";
+  
+  var ajax;
+  if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+	ajax = new XMLHttpRequest();
+  } else {// code for IE6, IE5
+	ajax = new ActiveXObject("Microsoft.XMLHTTP");
+  }
   ajax.open("POST", url, true);
-  ajax.onreadystatechange = handleHttpResponse;
+  ajax.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
+  ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
   ajax.send('');
+  
+  ajax.onreadystatechange = function(){
+	  if(ajax.readyState == 4){
+		    if(ajax.status == 200){
+		      results = ajax.responseText.split("|");
+		      if(results[0] == "true"){
+		      	document.getElementById('validation_msg').innerHTML =
+		          "<font color=\"#00FF00\">* "+results[1]+"</font><br />";
+		      }else{
+		    	document.getElementById('validation_msg').innerHTML =
+		          "<font color=\"#FF0000\">* "+results[1]+"</font><br />";
+		    	document.getElementById('accept' + idx).className = 'Button';
+		    	document.getElementById('decline' + idx).className = 'Button';
+		      }
+		    }else{
+		      document.getElementById('validation_msg').innerHTML =
+		    	  "<font color=\"#FF0000\">* The system encountered an error while processing, please try again later.</font><br />";
+		      document.getElementById('accept' + idx).className = 'Button';
+		      document.getElementById('decline' + idx).className = 'Button';
+		    }
+	  }
+  }
 }
  
 
  /**
  * Handle the response (result) from the AcceptRequestServlet
  */
-function handleHttpResponse(){
+/* 
+  
+no longer needed
+  
+ 
+ function handleHttpResponse(){
   cleanupResultMsg();
   
   if(ajax.readyState == 4){
@@ -215,7 +318,24 @@ function handleHttpResponse(){
     	  "<font color=\"#FF0000\">* The system encountered an error while processing, please try again later.</font><br />";
     }
   }
-}	
+}	*/
+ 
+/**
+ * If admin user choose to generate a random password. then disable the custom (manual) password boxes 
+ */
+ function GenPswTick(idx){
+	 document.getElementById("customPswA" + idx).setAttribute("disabled", true);
+	 document.getElementById("customPswB" + idx).setAttribute("disabled", true);
+ }
+ 
+/**
+ * If admin user choose to type in the password manually then remove the disable attribute from the password boxes
+ */
+ function CustPswTick(idx){
+	 document.getElementById("customPswA" + idx).removeAttribute("disabled");
+	 document.getElementById("customPswB" + idx).removeAttribute("disabled");
+	 
+ }
 	
     </script>
   </head>
@@ -319,15 +439,44 @@ function handleHttpResponse(){
 	                        <span class="label3">Username:</span>
 	                        <span class="value3">
 	                          <form name="form" id="form">
-	                            <input type="hidden" id="sAMAccountName" value="" />
+	                          	<input type="radio" name="username<%=id %>" value="other<%= id %>" id="customNameotherRadio<%= id %>"/>
+								<input type="text" id="customNameother<%= id %>" onkeyup="document.getElementById('customNameotherRadio<%= id %>').checked = true"></input><br />
+								
+	                            <input type="hidden" id="sAMAccountName<%=id%>" value="" />
 					<%String[] names = accounts.getAvailableNames(singleRequest.get("givenName"), singleRequest.get("sn"));
 					for( int j = 0; j < names.length; j++ ){  %>
 	                            <input type="radio" name="username<%=id %>" value="<%=names[j] %>" /><%=names[j] %><br />
 					<%}%>
-								<input type="radio" name="username<%=id %>" value="other<%= id %>" id="customNameotherRadio<%= id %>"/>
-								<input type="text" id="customNameother<%= id %>" onblur="document.getElementById('customNameotherRadio<%= id %>').checked = true"></input><br />
 	                          </form>
 	                        </span>
+	                      </div>
+	                      
+	                      <div class="row">
+	                      	<span class="label3">User's Password</span>
+	                      	<span class="value3">
+	                      		<form name="form2" id="form2">
+	                      			<input type="hidden" id="password<%=id%>" value="" />
+						<% String mobile = singleRequest.get("mobile");
+	                       if(accounts.isThisMobileNumberValid(mobile)){ %>
+	                      			<input type="radio" name="pswradio<%=id%>" value="GenPsw" onclick="GenPswTick('<%=id%>')">Random password and sms</input><br />
+	                      <%}%>
+	                      
+	                      			<input type="radio" name="pswradio<%=id%>" value="CustPsw" onclick="CustPswTick('<%=id%>')" id="pswB<%=id%>">Assign a password</input>
+	                      			
+	                      			<table>
+	                      			<tr>
+	                      				<td width="15em"></td>
+	                      				<td>Password:</td>
+	                      				<td><input type="password" id="customPswA<%=id%>" onkeyup="document.getElementById('pswB<%=id%>').checked=true"></input><td/>
+	                      			</tr>
+	                      			<tr>
+	                      				<td width="15em"></td>
+	                      				<td>Confirm:</td>
+	                      				<td><input type="password" id="customPswB<%=id%>" onkeyup="document.getElementById('pswB<%=id%>').checked=true"></input> </td>
+	                      			</tr>
+	                      			</table>
+	                      		</form>
+	                      	</span>
 	                      </div>
 	                      
 	                      

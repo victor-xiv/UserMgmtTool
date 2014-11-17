@@ -77,36 +77,68 @@ public class SupportTrackerJDBC {
 			logger.error("could not get mobile phone for " + username + " from Support Tracker DB.", e);
 			return null;
 		}
+		
+		return cleanUpAndValidateMobilePhone(mobile);
+	}
 	
-	// clean and validate the retrieved mobile number
-		// 1). removing (0) empty_space ( ) and -
-		mobile = mobile.replaceAll("(\\(0\\))|[\\s-()]", "");
+	
+	/**
+	 * clean up (the missused of "-" and "0") and validating the given mobile phone
+	 * @param mobile : mobile phone number that need to be cleaned up and validated
+
+The valid mobile phone should look like one of the below forms:
+0225254566			NZ phone (without country code)
+ 64225254566		With country code, without "+" sign
++64225254566		without "0" infront of the carrier 
++640225254566		with "0" infront of the carrier
++064225254566		with "0" infornt of the country code
++0640225254566		with "0" infront of country code and infront of the carrier
++64-0225254566		"-" seperates country code and other parts 
++64-022-525-4566	"-" seperates parts
+00640225254566		with "dial out" code
+(64)0225254566		brackets wrapping country code
+(064)0225254566		brackets wrapping country code and with "0" infornt of the country code
+(+64)0225254566		brackets wrapping country code
+
+	 * @return a string of cleanedUpAndValidatedNumber : if the given mobile phone is valid. null, otherwise 
+	 */
+	public static String cleanUpAndValidateMobilePhone(String mobile){
+		Logger logger = Logger.getRootLogger();
+		logger.debug("validating mobile number: " + mobile);
 		
-		// 2). after replacing those unused chars, 
-		// the valid mobile number should be at least 8 digits and it should not be more than 18 digits
-		if(mobile.length() < 8 || mobile.length() > 18){
-			logger.error("This user: "+ username + " has an invalid mobile phone (its length either < 8 digits or > 18 digits): " + mobile);
+		if(mobile==null || mobile.trim().isEmpty()){
+			logger.debug("This mobile number is invalid because it is: " + (mobile==null ? "null" : "empty string"));
 			return null;
 		}
-		
-		// 3). if there is only one "+" at the beginning => keep checking
-		// 		if there is a "+" that is not at the beginning the  mobile.indexOf("+", 1) will return >= 1. then it means mobile is not valid
-		if(mobile.indexOf("+", 1) == -1){
-			Pattern pt = Pattern.compile("[^0-9+]");
-			Matcher matcher = pt.matcher(mobile);
+		// clean and validate the retrieved mobile number
+			// 1). removing (0) empty_space ( ) and -
+			mobile = mobile.replaceAll("(\\(0\\))|[\\s-()]", "");
 			
-			// 4). if there is at least a character that is not a number (0-9)
-			if(matcher.find()){
-				logger.error("This user: "+ username + " has an invalid mobile phone: " + mobile);
+			// 2). after replacing those unused chars, 
+			// the valid mobile number should be at least 8 digits and it should not be more than 18 digits
+			if(mobile.length() < 8 || mobile.length() > 18){
+				logger.error("This is an invalid mobile phone (its length either < 8 digits or > 18 digits): " + mobile);
 				return null;
-			} else {
-				logger.debug("This user: " + username + " has a valid mobile phone: " + mobile);
-				return mobile;
 			}
-		} else {
-			logger.error("This user: "+ username + " has an invalid mobile phone: " + mobile);
-			return null;
-		}
+			
+			// 3). if there is only one "+" at the beginning => keep checking
+			// 		if there is a "+" that is not at the beginning the  mobile.indexOf("+", 1) will return >= 1. then it means mobile is not valid
+			if(mobile.indexOf("+", 1) == -1){
+				Pattern pt = Pattern.compile("[^0-9+]");
+				Matcher matcher = pt.matcher(mobile);
+				
+				// 4). if there is at least a character that is not a number (0-9)
+				if(matcher.find()){
+					logger.error("This is an invalid mobile phone: " + mobile);
+					return null;
+				} else {
+					logger.debug("This is a valid mobile phone: " + mobile);
+					return mobile;
+				}
+			} else {
+				logger.error("This is an invalid mobile phone: " + mobile);
+				return null;
+			}
 	}
 	
 	
@@ -207,7 +239,7 @@ public class SupportTrackerJDBC {
 
 	/**
 	 * get the detail of the given user
-	 * @param username that his/her detail needed to be returned
+	 * @param username (login or sAMAccountName name for both support tracker and ldap server) that his/her detail needed to be returned
 	 * @return a Map object that stored the detail of the given username
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
@@ -411,8 +443,7 @@ public class SupportTrackerJDBC {
 		
 		
 		// e.g. example of a final query      SELECT clientId FROM Client WHERE companyName = 'Aamal Medical Co'
-		query.append("SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = '"
-				+ companyName + "'");
+		query.append("SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = '" + companyName + "'");
 		int clientId = -1;
 		
 		// connecting to Database server
@@ -521,11 +552,7 @@ public class SupportTrackerJDBC {
 	 */
 	public static int addStaffAccount(Map<String, String[]> maps) throws SQLException {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
-		
 		logger.debug("about to add staff to Support Tracker DB: ");
-		for(Map.Entry<String, String[]> es : maps.entrySet()){
-			logger.debug(es.getKey() + " : " + es.getValue()[0]);
-		}
 		
 		// connecting to Database server
 		Connection con = null;
@@ -562,9 +589,7 @@ public class SupportTrackerJDBC {
 					// execute the query
 					status = pst.executeUpdate();
 					
-					logger.debug(String
-							.format("Added user with name: %s successfully",
-									maps.get("displayName")[0]));
+					logger.debug(String.format("Added user with name: %s successfully", maps.get("displayName")[0]));
 				} catch (SQLException e) {
 					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);

@@ -88,16 +88,52 @@ public class TestServlet extends HttpServlet {
 				String mailTo = request.getParameter("mailTo");
 				response.getWriter().write(testSendingEmailTo(mailTo));
 				break;
+				
+			case "smsSending" :
+				String mobile = request.getParameter("mobile");
+				mobile = SupportTrackerJDBC.cleanUpAndValidateMobilePhone(mobile);
+				if(mobile == null){
+					response.getWriter().write("Failed to send an sms because mobile number is not valid.");
+				} else {
+					response.getWriter().write(testSendingSMS(mobile));
+				}
+				break;
+				
 			default:
 				response.getWriter().write("Your requested test cannot be understood.");
 		}
 	}
 	
+	/**
+	 * test sending a txt sms to the given "mobile"
+	 * @param mobile : mobile number that this method will send to as a test
+	 * @return "Passed message" if the sending is successfull, "Failed message" otherwis or if the given mobile number is invalid
+	 */
+	public String testSendingSMS(String mobile) {
+		logger.debug("about to test sending an sms to: " + mobile);
 	
+		mobile = SupportTrackerJDBC.cleanUpAndValidateMobilePhone(mobile);
+		if(mobile == null)
+			return "Failed to send an sms to " + mobile + " because the given mobile number is invalid"; 
+		
+		try{
+			EmailClient.sendSMSto(mobile, "test receipient", "test sms text.");
+		} catch (Exception e){
+			return "Failed to send an sms to " + mobile + " because: " + e.getMessage();
+		}
+		return "An sms was sent, please check your mobile phone.";
+	}
+
+
+	/**
+	 * test sending an email to the given "mailTo"
+	 * @param mailTo : email address that this method will send to as a test
+	 * @return "Passed message" if the sending is successfull, "Failed message" otherwise
+	 */
 	public String testSendingEmailTo(String mailTo){
 		logger.debug("about to test sending email");
 		try{
-			EmailClient.sendEmailApproved(mailTo, "Test Reception Name", "Test User Name", "Test Password");
+			EmailClient.sendEmailForApprovedRequestWithManualPsw(mailTo, "Test Reception Name", "Test User Name");
 		} catch (Exception e){
 			return "Failed to send an emai to " + mailTo + " because: " + e.getMessage();
 		}

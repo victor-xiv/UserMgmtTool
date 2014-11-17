@@ -21,6 +21,11 @@ public class LdapUser {
 	Logger logger = Logger.getRootLogger();
 	
 	/**
+	 * process and getting the properties of the given userDN from Ldap server
+	 * 
+	 * The difference between this bean and the UserDetails bean is that :
+	 * * this bean is getting the user's properties from Ldap Server
+	 * * UserDetails bean is getting the user's properties from Support Tracker DB.
 	 * 
 	 * @param userDN: of the Ldap user (userDN must not has been escaped the reserved chars) (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz")
 	 * @throws ConnectException

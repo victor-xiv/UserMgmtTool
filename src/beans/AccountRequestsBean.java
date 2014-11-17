@@ -29,8 +29,6 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils.Collections;
-
 import tools.CountryCode;
 import tools.SupportTrackerJDBC;
 
@@ -39,6 +37,11 @@ public class AccountRequestsBean {
 	
 	TreeMap<String, List<Map<String, String>>> requests = new TreeMap<String, List<Map<String, String>>>();
 
+	/**
+	 * return the size limit of the display name input form.
+	 * the size limit is defined in ldap.properties configuration file
+	 * @return
+	 */
 	public static int getDisplayNameSizeLimit() {
 		int size = 20;
 		String temp = LdapProperty.getProperty("supporttracker.displayname.sizelimit");
@@ -48,6 +51,30 @@ public class AccountRequestsBean {
 			Logger.getRootLogger().debug("Cannot pareInt of displayName size limit. " + temp);
 		}
 		return size;
+	}
+	
+	
+	/**
+	 * check whether the given mobile number is a valid mobile number
+	 * the valid mobile should look like one of these:
+0225254566			NZ phone (without country code)
+ 64225254566		With country code, without "+" sign
++64225254566		without "0" infront of the carrier 
++640225254566		with "0" infront of the carrier
++064225254566		with "0" infornt of the country code
++0640225254566		with "0" infront of country code and infront of the carrier
++64-0225254566		"-" seperates country code and other parts 
++64-022-525-4566	"-" seperates parts
+00640225254566		with "dial out" code
+(64)0225254566		brackets wrapping country code
+(064)0225254566		brackets wrapping country code and with "0" infornt of the country code
+(+64)0225254566		brackets wrapping country code
+	 * @param mobile : a String of mobile number
+	 * @return true, if the given mobile is valid. False, otherwise
+	 */
+	public static boolean isThisMobileNumberValid(String mobile){
+		String cleanedUpMobile = SupportTrackerJDBC.cleanUpAndValidateMobilePhone(mobile);
+		return cleanedUpMobile==null ? false : true;
 	}
 	
 	

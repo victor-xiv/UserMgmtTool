@@ -13,7 +13,7 @@ try{
 	session.setAttribute("error", e.getMessage());
 }		
 %>
-		
+		<script src="./js/validator.js"></script>
 		
 		<script type="text/javascript" language="javascript">
 
@@ -72,9 +72,17 @@ function ResetForm(){
  * submit the manullay typed in passwords to ChangePasswordServlet
  */
 function SubmitForm(){
+	
 	if(!validatePwd01()){
     	return false;
     }
+	
+	var psw1 = document.getElementById('password01').value;
+	var psw2 = document.getElementById('password02').value;
+	if(!passwordValidator(psw1, psw2)){
+		return false;
+	}
+	
 	
 	// if both passwords (typed in by user) are the same and valdiated => process further
 	var ajax3;
@@ -183,7 +191,7 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 			if (ajax2.status == 200) {
 				if(ajax2.responseText === "true"){
 					document.getElementById("generateButton").innerHTML = '<div style="padding-top:20px"> <img src="css/images/swish.gif" alt="#" /></div>' + 
-						'<div class="row" style="padding-top:20px; font-family:Arial, Helvetica, sans-serif;"><b> Generate a random password and send it to this user\'s email </b></div>' +
+						'<div class="row" style="padding-top:20px; font-family:Arial, Helvetica, sans-serif;"><b> Generate a random password and send a text message to the user. </b></div>' +
 			            '<div class="Buttons" style="text-align: center; clear: none;  width: 180px; height: 20px;">' +
 							'<a class="Button" href="#" onclick="javascript: generateRandomPassword()">Generate</a>' +
 						'</div>';

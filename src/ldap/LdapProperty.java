@@ -8,9 +8,18 @@ import java.util.Properties;
 
 import org.apache.log4j.Logger;
 
+/**
+ * used to read the properties configured in ldap.properties
+ *
+ */
 public class LdapProperty {
 	private static Logger logger = Logger.getRootLogger();
 
+	/**
+	 * get the value of the given properties name
+	 * @param name : properties name
+	 * @return the value of the given properties name
+	 */
 	public static String getProperty(String name){
 		logger.debug("getting property from ldap.properties: " + name);
 		
@@ -41,6 +50,10 @@ public class LdapProperty {
 	}
 
 	
+	/**
+	 * get all the properties names that are available in the ldap.properties
+	 * @return an enum of all the properties names that are available in the ldap.properties
+	 */
 	public static Enumeration<?> propertyNames(){
 		logger.debug("getting all properties from ldap.properties");
 		

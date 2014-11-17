@@ -75,7 +75,7 @@ public class ConcertoAPI {
 	
 	/**
 	 * Connect to stpreprod with webservice 7.2 and return the port object
-	 * @return
+	 * @return the Port object that represent the connection with the web service server
 	 * @throws MalformedURLException
 	 */
 	public static ComOrchestralPortalWebserviceApi72UserUserManagementService getConcertoServicePort() throws MalformedURLException{
@@ -118,7 +118,12 @@ public class ConcertoAPI {
 	
 	
 	
-	
+	/**
+	 * get the User object that contains the Concerto user's properties of
+	 * @param username  (it should be the same as LDAP's sAMAccount)
+	 * @return a user object if there is a user that match to this username, null otherwise
+	 * @throws Exception if it failed to connect or retrieve a user
+	 */
 	public static User getUser(String username) throws Exception {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		

@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Hashtable;
 
+import javax.mail.MessagingException;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.servlet.ServletException;
@@ -242,12 +243,17 @@ public class ChangePasswordServlet extends HttpServlet {
 				return "A new password: " + newPsw + " has been updated on this user. But this user's mobile phone number could not be retrieved. Please contact Orion Health's support team.";
 			}
 			
-			EmailClient.sendSMSto(mobile, userDN, "Password Updated Successfully", 
-					"Your new password is\n\r" + newPsw + "\n\rPlease use this password to login to Support Tracker. For more information, please contact " + LdapProperty.getProperty("mail.from"));
+			try{
+				EmailClient.sendNewPasswordToSMS(mobile, userDN, newPsw);
+			} catch (MessagingException e){
+				return "The new password has been updated successfully. But the password couldnot be sent to the given mobile number: " + mobile + ". Because: " + e.getMessage();
+			}
+			
 			try {
 				ConcertoAPI.enableNT(username);
 			} catch (Exception e) {
 				// we are not logging there because it has been logged in enableNT() method
+				return "The new password has been updated successfully. But it could not be updated to log in with LDAP server.";
 			}
 			logger.debug("a new password " + newPsw + " updated successfully for this user: " + userDN + ". A SMS has been sent to this number: " + mobile);
 			return "The new password has been updated successfully. If this user is not receiving a text message at "+mobile+" within 24 hours, please contact Orion Health's support team.";

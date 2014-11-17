@@ -1,13 +1,10 @@
 package servlets;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -19,17 +16,15 @@ import javax.xml.parsers.ParserConfigurationException;
 import ldap.ErrorConstants;
 import ldap.LdapConstants;
 import ldap.LdapProperty;
-import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import beans.AccountRequestsBean;
-import tools.ConcertoAPI;
+import tools.AccountHelper;
 import tools.EmailClient;
-import tools.SupportTrackerJDBC;
+import tools.PasswordGenerator;
 
 @SuppressWarnings("serial")
 public class AcceptRequestServlet extends HttpServlet {
@@ -51,8 +46,10 @@ public class AcceptRequestServlet extends HttpServlet {
 		
 		// reading the account request file
 		String filename = request.getParameter("filename");
-		if( filename == null){ //if given filename is null 
+		
+		if( filename == null || filename.trim().isEmpty()){ //if given filename is null 
 			response.getWriter().write("false|This request no longer exists.");
+			return;
 		}
 		
 		String action = request.getParameter("action");
@@ -73,7 +70,7 @@ public class AcceptRequestServlet extends HttpServlet {
 			response.getWriter().write("false|"+ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
 			return;
 		}
-		if(maps == null){
+		if(maps == null || maps.size() < 16){
 			response.getWriter().write("false|"+ErrorConstants.FAIL_READING_ACCT_REQUEST + file.getName());
 			return;
 		}
@@ -98,225 +95,40 @@ public class AcceptRequestServlet extends HttpServlet {
 		// if account request is accepted
 		}else{
 				
-			
-			
-			/**
-			 * From here to the end of this method is duplicated with servlet.AddUserSevlet.doPost().
-			 * I can't refactor and make this part to a single method and let them use a single method.
-			 * because, they are too strong couple to their respective .jsp.
-			 * 
-			 * So, if you update this part, please double check servlet.AddUserSevlet.doPost(), you might
-			 * also need to update that part as well.
-			 */
-			
-			
-			// sAMAccountName used as LDAP logon (i.e username)
-			// it is allowed to have only these special chars:  ( ) . - _ ` ~ @ $ ^  and other normal chars [a-zA-Z0-9]
-			String sAMAccountName = request.getParameter("username");
-			
-			//MODIFIED CODE - SPT-447
-			//Handle code for null and blank usernames SEPARATELY
-			//Previously handled together risking Null Pointer Exception
-			// validate the sAMAccountName
-			if( sAMAccountName == null ){
-				response.getWriter().write("false|User was not added with invalid username.");
-				return;
-			}else if( sAMAccountName.trim().equals("") ){
-				response.getWriter().write("false|User was not added with invalid username.");
+			String sAMAccountName = AccountHelper.getLoginNameFromRequest(request);
+			if(sAMAccountName.contains("false|")){
+				// if sAMAccountName contains false => sAMAccountName is the reason of the failure in retreiving the sAMAccountName
+				response.getWriter().write(sAMAccountName);
 				return;
 			}
-			//MODIFIED CODE ENDS
-			
-			// check if sAMAccountName contains any prohibited chars
-			String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
-			if(temp.length() < sAMAccountName.length()){
-				response.getWriter().write("false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
-				return;
-			}
-			logger.debug("Username: "+sAMAccountName);
-			
 			maps.put("sAMAccountName", new String[]{sAMAccountName});
 			
-			
-			// check the displayName length
-			// support tracker database has a limit size (e.g. 20 chars) for this column
-			// so, if the displayName is greater than this limit size, we are not processing further
-			// SPT-839
-			String displayName = maps.get("displayName")[0];
-			int sizeLimit = AccountRequestsBean.getDisplayNameSizeLimit();
-			if(displayName.length() > sizeLimit){
-				response.getWriter().write("false|:The display name: " + displayName + " is too long. The allowed size is: " + sizeLimit + " chars. Please modify it in the request file.");
-				return;
+			boolean genRandPsw = false;
+			if(request.getParameter("psw")==null || request.getParameter("psw").trim().equals("GenPsw")){
+				String psw = PasswordGenerator.generatePswForLength(8);
+				maps.put("password01", new String[]{psw});
+				genRandPsw = true;
+			} else {
+				maps.put("password01", new String[]{request.getParameter("psw")});
 			}
 			
+			String result = AccountHelper.createAccount(maps);
 			
-			
-			// connecting to LDAP server
-			LdapTool lt = null;
-			try {
-				lt = new LdapTool();
-			} catch (FileNotFoundException fe){	
-				response.getWriter().write("false|Could not connect to LDAP server due to: "+fe.getMessage());
-				return;
-				//no need to log, the error has been logged in LdapTool()
-			} catch (NamingException e) {
-				response.getWriter().write("false|Could not connect to LDAP server due to: "+ e.getMessage());
-				return;
-				//no need to log, the error has been logged in LdapTool()
-			}
-			if( lt == null){
-				logger.error("Unknown Error while connecting to LDAP server");
-				response.getWriter().write("false|Unknown Error while connecting to LDAP server");
-				return;
+			if(result.contains("true")){
+				//the user account has been created successfully => delete the file from the disk
+				file.delete();
 			}
 			
-			// if company doesn't exist in LDAP's "Client" => add the company into "Client"
-			if(!lt.companyExists(maps.get("company")[0])){
-				try {
-					if(!lt.addCompany(maps.get("company")[0])){
-						// if companyName doesn't exist in "Client" and can't be added, just return false;
-						response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.");
-						return;
-					}
-				} catch (NamingException e) {
-					response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Clients.");
-					return;
-				}
-			}
-			// if company doesn't exist in LDAP's "Groups"
-			if(!lt.companyExistsAsGroup(maps.get("company")[0])){
-				try {
-					//  add the company into "Groups"
-					if(!lt.addCompanyAsGroup(maps.get("company")[0])){
-						// if adding company into group failed
-						response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.");
-						return;
-					}
-				} catch (NamingException e) {
-					response.getWriter().write("false|The organisation of requesting user doesn't exist and couldn't be added into LDAP's Groups.");
-					return;
-				}
-			}
-			
-			// fullname is used to check whether this name exist in LDAP and concerto.
-			// and used to add into concerto
-			String fullname = "";
-			if(maps.get("displayName")[0] != null) 	fullname = maps.get("displayName")[0];
-			else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
-			
-			// these variable used for adding a user into ConcertoAPI
-			String firstName = maps.get("givenName")[0];
-			String lastName = maps.get("sn")[0];
-			String userName = maps.get("sAMAccountName")[0];
-			String description = maps.get("description")[0];
-			String mail = maps.get("mail")[0];
-
-			// check if username exist in LDAP or Concerto
-			boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
-			boolean usrExistsInConcerto = false;
-			try {
-				usrExistsInConcerto = ConcertoAPI.doesUserExist(userName);
-			} catch (Exception e) {
-				response.getWriter().write("false|Cannot connect to Concerto server. Reason: " + e.getMessage());
-				return;
-			}
-			
-			if(usrExistsInLDAP){
-				response.getWriter().write("false|Requesting user already exists in LDAP server");
-				return;
-			} else if(usrExistsInConcerto){
-				response.getWriter().write("false|Requesting user already exists in Concerto server");
-				return;
-			}
-			
-			// ADDING USER ACCOUNT CODE STARTS FROM HERE \\
-			
-			int clientAccountId = -1;
-			try {
-				clientAccountId = SupportTrackerJDBC.addClient(maps);
-			} catch (SQLException e1) {
-				e1.printStackTrace();
-				response.getWriter().write("false|"+e1.getMessage());
-				return;
-				//no need to log, the error has been logged in SupportTrackerJDBC.addClient(maps)
-			}
-			
-			// if add a user into Supprt Tracker successfully
-			if( clientAccountId > 0 ){
-				maps.put("info", new String[]{Integer.toString(clientAccountId)});
-				
-				// add user into LDAP server
-				boolean addStatus = false;
-				
-				try{
-					addStatus = lt.addUser(maps);
-				} catch (Exception e){
-					response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added, due to: " + e.getMessage());
-				}
-				
-				if( addStatus ){ // add a user into Ldap successfully
-					// delete the file from the disk
-					file.delete();
-					
-					try {
-						ConcertoAPI.addClientUser(userName, firstName, lastName, fullname, description, mail, Integer.toString(clientAccountId));
-					} catch (Exception e) {
-						response.getWriter().write("false|User "+maps.get("displayName")[0]+" was added to LDAP and Support Tracker. But it couldn't be added to Concerto Portal.");
-					}
-					
-					try{
-						EmailClient.sendEmailApproved(maps.get("mail")[0], maps.get("displayName")[0], maps.get("sAMAccountName")[0], maps.get("password01")[0]);
-					} catch (Exception e){
-						
-						String rsp = "true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0] + ". " +
-								"But, it couldn't send out an approval email to: " + maps.get("mail")[0] +". Because: " + e.getMessage();
-						logger.error(rsp, e);
-						response.getWriter().write(rsp);
-					}
-					response.getWriter().write("true|User "+maps.get("displayName")[0]+" was added successfully with user id: "+maps.get("sAMAccountName")[0]);
-				
-				}else{ // add a user into Ldap is not successful
-					
-					// remove the previous added user from Support Tracker DB
-					deletePreviouslyAddedClientFromSupportTracker(clientAccountId);
-					
-					response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added, due to the failure in adding the user into LDAP server.");
-				}
-			}else{
-				response.getWriter().write("false|User "+maps.get("displayName")[0]+" was not added, due to the failure in adding the user into Support Tracker DB.");
-			}
-			
-			/**
-			 * duplicated codes end here
-			 */
-			
-			
+			response.getWriter().write(result);
 		}
 	}
+	
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 	throws ServletException, IOException
 	{
 		doGet(request, response);
 	}
-	
-	
-	
-	/**
-	 * a helper method to help doGet() to delete clientAccountId from the Support Tracker DB. (this method is used to avoid duplicate code only)
-	 * It was successful to add a user into support tracker (and the clientAccountId was returned from support tracker).
-	 * But, it was unsuccessful to add that user to LDAP. So, we need to delete this newly added clientAccountId from Support Tracker.
-	 * @param clientAccountId
-	 */
-	public static void deletePreviouslyAddedClientFromSupportTracker(int clientAccountId){
-		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
-		
-		// remove the previous added user from Support Tracker DB
-		try {
-			SupportTrackerJDBC.deleteClient(clientAccountId);
-		} catch (SQLException e) {
-			logger.error("An exception occured while deleting this clientAccountId: " + clientAccountId);
-		}
-	}
+
 	
 	
 	

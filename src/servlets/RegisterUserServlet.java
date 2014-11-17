@@ -111,6 +111,32 @@ public class RegisterUserServlet extends HttpServlet {
 			session.setAttribute("error", "There is no username found in the request parameters.");
 			logger.error("username is an empty String");
 		}
+
+		LdapTool lt = null;
+		try {
+			 lt = new LdapTool();
+		} catch (NamingException e) {
+			session.setAttribute("error", "Could not connect to Ldap Server.");
+			logger.error("Could not connect to Ldap Server.");
+			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+			response.sendRedirect(redirectURL);
+			return;
+		}
+		
+		UserDetails user = new UserDetails();
+		user.processUsername(username);
+		String fullname = user.getDisplayName();
+		String company = user.getCompany();
+		if(fullname != null && !fullname.trim().isEmpty() && company != null && !company.trim().isEmpty()){
+			boolean doesUserExist = lt.userDNExists(fullname, company);
+			if(doesUserExist){
+				session.setAttribute("error", "You have already been registered. Please contact Orion Health Support Team for more detail.");
+				logger.error("User: " + fullname + " from company: " + company + " have already been registered.");
+				String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+				response.sendRedirect(redirectURL);
+			}
+		}
+
 		
 		logger.debug("Redirect request to: " + "RegisterUser.jsp");
 		
@@ -133,6 +159,8 @@ public class RegisterUserServlet extends HttpServlet {
 		
 		boolean isOrionStaff = session.getAttribute(REGISTER_IS_ORION_STAFF).equals("true");
 		boolean isClient = session.getAttribute(REGISTER_IS_CLIENT).equals("true");
+		session.removeAttribute(REGISTER_IS_ORION_STAFF);
+		session.removeAttribute(REGISTER_IS_CLIENT);
 		
 		if( username == null || username.trim().isEmpty()){
 			session.setAttribute("error", "This page can only be accessed from within Concerto. The username is not specified.");
@@ -342,11 +370,3 @@ public class RegisterUserServlet extends HttpServlet {
 		response.sendRedirect(redirectURL);
 	}
 }
-
-
-
-
-
-
-
-
