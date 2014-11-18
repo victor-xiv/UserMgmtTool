@@ -46,17 +46,20 @@ public class AddUserServlet extends HttpServlet {
 		Map<String,String[]> maps = new HashMap<String, String[]>();
 		maps.putAll(paramMaps);
 		maps.put("isLdapClient", new String[] { "true" });
+		
+		boolean isPswGenerated = false;
 		if (!maps.containsKey("password01")
 				|| maps.get("password01") == null
 				|| ((String[]) maps.get("password01"))[0].trim().equals("GenPsw")
 				|| ((String[]) maps.get("password01"))[0].trim().isEmpty()) {
 			
 			maps.put("password01", new String[] { PasswordGenerator.generatePswForLength(8) });
+			isPswGenerated = true;
 		}
 		
 		
 		
-		String result = AccountHelper.createAccount(maps);
+		String result = AccountHelper.createAccount(maps, isPswGenerated);
 		
 		response.getWriter().write(result);
 	}

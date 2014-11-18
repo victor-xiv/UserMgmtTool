@@ -184,7 +184,7 @@ function validatePassword(idx){
 				if (psw1 != null && psw2 != null) {
 					var validate = passwordValidator(psw1.value, psw2.value);
 					if(validate==true){
-						document.getElementById("password" + idx).value = psw1;
+						document.getElementById("password" + idx).value = psw1.value;
 					}
 					return validate;
 				}

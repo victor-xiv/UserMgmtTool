@@ -112,7 +112,7 @@ public class AcceptRequestServlet extends HttpServlet {
 				maps.put("password01", new String[]{request.getParameter("psw")});
 			}
 			
-			String result = AccountHelper.createAccount(maps);
+			String result = AccountHelper.createAccount(maps, genRandPsw);
 			
 			if(result.contains("true")){
 				//the user account has been created successfully => delete the file from the disk

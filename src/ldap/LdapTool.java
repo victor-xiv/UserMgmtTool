@@ -523,6 +523,10 @@ public class LdapTool {
 			attributes.put("givenName", paramMaps.get("givenName")[0]);
 			attributes.put("sn", paramMaps.get("sn")[0]);
 			attributes.put("displayName", fullname);
+			String ldapDomain = LdapProperty.getProperty(LdapConstants.LDAP_DOMAIN);
+			if(ldapDomain == null){
+				throw new Exception("LDAP Domain Couldnot be found in the configuration file.");
+			}
 			attributes.put("userPrincipalName",paramMaps.get("sAMAccountName")[0] + "@" +
 							LdapProperty.getProperty(LdapConstants.LDAP_DOMAIN));
 			attributes.put("description", paramMaps.get("description")[0]);
@@ -611,7 +615,7 @@ public class LdapTool {
 		} catch(NamingException ex){
 			//ADDED LINE: print stack trace, not just error string
 			logger.error(ex);
-			return false;
+			throw ex;
 		}
 	}
 	
@@ -641,7 +645,7 @@ public class LdapTool {
 		}
 		catch (NamingException e) {
 			 logger.error("Problem adding user: "+userDN+" to group: " + groupDN, e);
-			 throw new NamingException("Adding user to a group: " + ErrorConstants.FAIL_UPDATE_LDAP);
+			 throw new NamingException("Adding user: " + userDN + " to a group: " + groupDN + ": " + ErrorConstants.FAIL_UPDATE_LDAP);
 		}
 	}
 	

@@ -35,15 +35,35 @@ public class AccountHelper {
 	 * 8). add the user into ldap server
 	 * 9). add the user into concerto portal
 	 * 10). enabltNT(), set the user to login to support tracker using LDAP server
-	 * 
+	 * 11). Send out an appropriate email to the user telling about the result of the account creation
+	 *    11a). if isPswGenerated==true and user's mobile phone is valid (when password was generated programmatically) then send the new password to user's mobile phone via sms 
+	 *    11b). otherwise, just send an email to the user telling user to contact support tracker
 	 * @param maps of the properties for the new account. there are at least 16 properties (key/value pairs) in this maps object
-	 * Those properties are:
-	 * 
+	 * Those keys of those properties are:
+sAMAccountName					: username (login name)
+givenName	
+sn								: Sure name
+displayName
+password01						: new password
+isLdapClient
+company
+description						: position
+c								: Country Code (e.g. NZ for New Zealand)
+department
+streetAddress
+l								: City
+st								: State
+postalCode
+mail							: email
+telephoneNumber					: office phone
+facsimileTelephoneNumber		: Fax
+mobile
+	 * @param isPswGenerated : true if the password (stored in maps param) was programmatically generated. false otherwise 
 	 * @return the result string, that start with:
 	 * * "false|message goes here" if the process fail
 	 * * "true|message goes here" if the process is successful
 	 */
-	public static String createAccount(Map<String, String[]> maps){
+	public static String createAccount(Map<String, String[]> maps, boolean isPswGenerated){
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Creating an account for username: "+maps.get("sAMAccountName")[0]);
 		
@@ -175,7 +195,7 @@ public class AccountHelper {
 					String mobile = (maps.get("mobile") != null) ? maps.get("mobile")[0] : null;
 					mobile = SupportTrackerJDBC.cleanUpAndValidateMobilePhone(mobile);
 
-					if (mobile != null) {
+					if (mobile != null && isPswGenerated) {
 						// if mobile phone is valid => send psw to to mobile phone number's sms
 						EmailClient.sendEmailForApprovedRequestWithGeneratedPsw(
 								maps.get("mail")[0], maps.get("displayName")[0],

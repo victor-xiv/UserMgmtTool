@@ -110,7 +110,7 @@ function SubmitForm(){
 				if(rsp[0] === "failed"){
 					document.getElementById("failed").innerHTML = rsp[1];
 				} else {
-					document.getElementById("passed").innerHTML = ajax3.responseText;
+					document.getElementById("passed").innerHTML = rsp[1];
 				}
 			} else {
 				document.getElementById("failed").innerHTML = "Server failed to response. Response code is: "
@@ -151,7 +151,7 @@ function generateRandomPassword(){
 				if(rsp[0] === "failed"){
 					document.getElementById("failed").innerHTML = rsp[1];
 				} else {
-					document.getElementById("passed").innerHTML = ajax1.responseText;
+					document.getElementById("passed").innerHTML = rsp[1];
 				}
 			} else {
 				document.getElementById("failed").innerHTML = "Server failed to response. Response code is: "

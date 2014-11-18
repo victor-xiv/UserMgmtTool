@@ -152,7 +152,8 @@ public class ChangePasswordServlet extends HttpServlet {
 			return;
 		}
 		String newPsw = request.getParameter("NewPsw");
-		String result = updatePassword(userDN, newPsw);
+		boolean isPswGenerated = false;
+		String result = updatePassword(userDN, newPsw, isPswGenerated);
 		response.getWriter().write(result);
 	}
 
@@ -170,7 +171,8 @@ public class ChangePasswordServlet extends HttpServlet {
 			return;
 		}
 		String newPsw = tools.PasswordGenerator.generatePswForLength(8);
-		String result = updatePassword(userDN, newPsw);
+		boolean isPswGenerated = true;
+		String result = updatePassword(userDN, newPsw, isPswGenerated);
 		response.getWriter().write(result);
 	}
 	
@@ -203,10 +205,11 @@ public class ChangePasswordServlet extends HttpServlet {
 	 * @param userDN Ldap userDN whose password need to be changed. userDN must hasnot been escaped any reserved chars
 	 * (e.g. userDN="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz")
 	 * @param newPsw used to update
+	 * @param isPswGenerated true if newPsw param was generated programatically, false otherwise
 	 * @return the result of the updating process as a String
 	 * @throws IOException
 	 */
-	public static String updatePassword(String userDN, String newPsw) throws IOException {
+	public static String updatePassword(String userDN, String newPsw, boolean isPswGenerated) throws IOException {
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Updating a new password for user: " + userDN + " with: " + newPsw);
 		
@@ -219,44 +222,55 @@ public class ChangePasswordServlet extends HttpServlet {
 		}
 		
 		if(!lt.changePassword(userDN, newPsw)){
+			lt.close();
 			return "failed|Could not change password for this user. Please contact Orion Health's support team.";
 			// we are not logging here, because it has been logged in changePassword() method
 		}
 		
+		Attributes atrs = lt.getUserAttributes(userDN);
+		if(atrs == null || atrs.get("sAMAccountName") == null){
+			logger.error("A new password for this user:" +userDN+  " has been updated. But, it could not get user's login name.");
+			lt.close();
+			return "failed|The new password has been updated successfully. But it could not be updated to log in with LDAP server because there is no username found.";
+		}
+		
+		String username = null;
+		try {
+			username = atrs.get("sAMAccountName").get().toString();
+		} catch (NamingException e1) {
+			logger.error("A new password for this user:" +userDN+  " has been updated. But, it could not get user's login name.");
+			lt.close();
+			return "failed|The new password has been updated successfully. But it could not be updated to log in with LDAP server because there is no username found.";
+		}
+		
+		try {
+			ConcertoAPI.enableNT(username);
+		} catch (Exception e) {
+			lt.close();
+			// we are not logging there because it has been logged in enableNT() method
+			return "failed|The new password has been updated successfully. But it could not be updated to log in with LDAP server.";
+		}
+		
+		
 		String mobile = getMobilePhoneForUser(userDN);
 		
-		if(mobile == null){
-			logger.error("A new password: " + newPsw + " has been updated on this user. " + userDN +". But, his/her mobile phone is invalid");
-			return "A new password: " + newPsw + " has been updated on this user. " + userDN +". But, his/her mobile phone is invalid";
+		if(mobile == null || !isPswGenerated){
+			logger.debug("A new password: " + newPsw + " has been updated on this user. " + userDN +". But, his/her mobile phone is invalid");
+			lt.close();
+			return "passed|A new password: " + newPsw + " has been updated for this user. ";
 		} else {
-			Attributes atrs = lt.getUserAttributes(userDN);
-			if(atrs == null || atrs.get("sAMAccountName") == null){
-				logger.error("A new password for this user:" +userDN+  " has been updated. But, it could not get user's login name.");
-				return "A new password: " + newPsw + " has been updated on this user. But this user's mobile phone number could not be retrieved. Please contact Orion Health's support team.";
-			}
-			
-			String username = null;
-			try {
-				username = atrs.get("sAMAccountName").get().toString();
-			} catch (NamingException e1) {
-				logger.error("A new password for this user:" +userDN+  " has been updated. But, it could not get user's login name.");
-				return "A new password: " + newPsw + " has been updated on this user. But this user's mobile phone number could not be retrieved. Please contact Orion Health's support team.";
-			}
 			
 			try{
 				EmailClient.sendNewPasswordToSMS(mobile, userDN, newPsw);
 			} catch (MessagingException e){
-				return "The new password has been updated successfully. But the password couldnot be sent to the given mobile number: " + mobile + ". Because: " + e.getMessage();
+				lt.close();
+				return "passed|The new password has been updated successfully. But the password couldnot be sent to the given mobile number: " + mobile + ". Because: " + e.getMessage();
 			}
 			
-			try {
-				ConcertoAPI.enableNT(username);
-			} catch (Exception e) {
-				// we are not logging there because it has been logged in enableNT() method
-				return "The new password has been updated successfully. But it could not be updated to log in with LDAP server.";
-			}
+			
 			logger.debug("a new password " + newPsw + " updated successfully for this user: " + userDN + ". A SMS has been sent to this number: " + mobile);
-			return "The new password has been updated successfully. If this user is not receiving a text message at "+mobile+" within 24 hours, please contact Orion Health's support team.";
+			lt.close();
+			return "passed|The new password has been updated successfully. If this user is not receiving a text message at "+mobile+" within 24 hours, please contact Orion Health's support team.";
 		}
 	}
 	
