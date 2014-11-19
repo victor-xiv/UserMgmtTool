@@ -67,7 +67,7 @@ mobile
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Creating an account for username: "+maps.get("sAMAccountName")[0]);
 		
-		try{
+		try{ // check whether login name/username is valid
 			String sAMAccountName = maps.get("sAMAccountName")[0];
 			if(validateLoginName(sAMAccountName).contains("false|"))
 				return "false|username (i.e.sAMAccountName) in the given properties is not valid";

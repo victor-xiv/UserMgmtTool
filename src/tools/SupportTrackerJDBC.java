@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import ldap.DBConstants;
 import ldap.ErrorConstants;
 import ldap.LdapProperty;
+import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 
@@ -434,7 +435,7 @@ The valid mobile phone should look like one of the below forms:
 		
 		// handle special case, which the companyName is Orion Health
 		// the account being created is for the internal staff
-		if(companyName.trim().equalsIgnoreCase("Orion Health")){
+		if(companyName.trim().equalsIgnoreCase(LdapTool.ORION_HEALTH_NAME)){
 			return addStaffAccount(maps);
 		}
 		
@@ -510,7 +511,7 @@ The valid mobile phone should look like one of the below forms:
 				// building a query to query for clientAccountId from ClientAccount table
 				// the clientAccountID which just created with the insertion query earlier
 				query = new StringBuffer();
-				query.append("SELECT clientAccountId FROM ClientAccount WHERE loginName = '"+maps.get("sAMAccountName")[0]+"'");
+				query.append("SELECT TOP 1 clientAccountId FROM ClientAccount WHERE loginName = '"+maps.get("sAMAccountName")[0]+"'");
 				try {
 					Statement st = con.createStatement();
 					ResultSet rs = st.executeQuery(query.toString());

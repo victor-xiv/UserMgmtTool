@@ -39,6 +39,8 @@ public class LdapTool {
 	private DirContext ctx;
 	private Hashtable<String, String> env;
 	
+	public static final String ORION_HEALTH_NAME = LdapProperty.getProperty(LdapConstants.ORION_HEALTH_ORG_NAME); 
+	
 	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	
@@ -63,7 +65,7 @@ public class LdapTool {
 	// this list stored, the groups that are stored in OU=Orion Health,OU=Clients,DC=orion,DC=dmz
 	// the list is sorted based on its permission level
 	// the group at index 0 is the highest power (can access to any other groups that have lower power)
-	// the group at the end of the list (i.e. index size()-1) is the lowest power (cann't access to any other groups.
+	// the group at the end of the list (i.e. index=size()-1) is the lowest power (cann't access to any other groups.
 	// the permission level is configured in ldap.properties file
 	private static ArrayList<String> orionHealthGroupsOrderedByPermissionLevel = null;
 	
@@ -481,7 +483,7 @@ public class LdapTool {
 			
 			String companyName = paramMaps.get("company")[0];
 			// if companyName doesn't exist in "Client" add the companyName into "Client"
-			if(!companyExists(companyName)){
+			if(!companyName.equals(ORION_HEALTH_NAME) && !companyExists(companyName)){
 				if(!addCompany(companyName)){
 					// if companyName doesn't exist in "Client" and can't be added, just return false;
 					// throw new exception because the caller of this method will use this message (of this exception) as the result to inform to the user.
@@ -489,7 +491,7 @@ public class LdapTool {
 				}
 			}
 			// if company doesn't exist in LDAP's "Groups" add the company into "Groups"
-			if (!companyExistsAsGroup(companyName)) {
+			if (!companyName.equals(ORION_HEALTH_NAME) && !companyExistsAsGroup(companyName)) {
 				if (!addCompanyAsGroup(companyName)) {
 					// if companyName doesn't exist in "Groups" and can't be added, just return false;
 					// throw new exception because the caller of this method will use this message (of this exception) as the result to inform to the user.
@@ -580,15 +582,51 @@ public class LdapTool {
 				baseDN = "OU=Groups,DN=orion,DN=dmz";
 			//Set DN for company organisational group
 			String orgGroupDN = "CN="+companyName+","+baseDN;
-			//Add user to company organistion group
-			addUserToGroup(unescapedValueUserDN, orgGroupDN);
-			//ADDITIONAL CODE ENDS
-			logger.debug("Successfully created User: " + escapedValueUserDN);
-			String password = paramMaps.get("password01")[0];
-			if(!changePassword(unescapedValueUserDN, password)){
-				deleteUser(unescapedValueUserDN);
-				return false;
+			
+			
+			
+			//a). Add user to company organistion group
+				// if companyName is "Orion Health" then we don't need to add this user as a member of "Orion Health" group
+				// but (instead) we add this user to the lowest power of Orion Health Role 
+				// the lowest power of Orion Health Role is the name of the group that stored at the last index of this array orionHealthGroupsOrderedByPermissionLevel  
+			if(companyName.equals(ORION_HEALTH_NAME)){
+				String orionLowestPwrGrp = orionHealthGroupsOrderedByPermissionLevel.get(orionHealthGroupsOrderedByPermissionLevel.size() - 1);
+				String orionHealthBasedDN = LdapProperty.getProperty("orionhealthOrganisationBasedDN");
+				if (orionHealthBasedDN == null) {
+					orionHealthBasedDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+				}
+	
+				String orionLowestPwrGrpDN = "CN="+orionLowestPwrGrp+","+orionHealthBasedDN;
+				if(!addUserToGroup(unescapedValueUserDN, orionLowestPwrGrpDN)){
+					deleteUser(unescapedValueUserDN);
+					return false;
+				}
+				
+			} else {
+				// if companyName is not Orion Health (then it is a client company name),
+				// then add this user to the Group of this company (organisation)
+				if(!addUserToGroup(unescapedValueUserDN, orgGroupDN)){
+					deleteUser(unescapedValueUserDN);
+					return false;
+				}
+				
+				// b). Add user to "LdapClient" group if this user is a client (not an Orion Health staff) 
+				// if this user is a client, then the value of paraMaps.get["isLdapClient"] is {"true"}
+				// if this user is a client, then this user must not be an Orion Health Staff
+				//
+				// The reason we need to check this condition, because we preparing for the case that this user is not an Orion Health staff
+				// but we don't want it to be LdapClient too. (but, at this stage (date: 20/11/2014) this case has not been determined).
+				// So, thats why we still keep this checking condition.
+				if(paramMaps.get("isLdapClient") != null && paramMaps.get("isLdapClient")[0].equals("true")){
+					String groupDN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_CLIENT);
+					if(!addUserToGroup(unescapedValueUserDN, groupDN)){
+						deleteUser(unescapedValueUserDN);
+						return false;
+					}
+				}
+
 			}
+			
 			
 			// add user into the default groups (default groups specified in ldap.properties config file)
 			String defaultGroupID = LdapConstants.GROUP_DEFAULT;
@@ -602,15 +640,16 @@ public class LdapTool {
 					}
 				}
 			}
-			
-			if(paramMaps.get("isLdapClient") != null){
-				String groupDN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_CLIENT);
-				if(!addUserToGroup(unescapedValueUserDN, groupDN)){
-					deleteUser(unescapedValueUserDN);
-					return false;
-				}
-			}
 		
+			
+			//update the password for this user
+			logger.debug("Successfully created User: " + escapedValueUserDN);
+			String password = paramMaps.get("password01")[0];
+			if(!changePassword(unescapedValueUserDN, password)){
+				deleteUser(unescapedValueUserDN);
+				return false;
+			}
+			
 			return true;
 		} catch(NamingException ex){
 			//ADDED LINE: print stack trace, not just error string
@@ -816,7 +855,7 @@ public class LdapTool {
 	 * e.g. clientDN = "OU=AMICAS\, Inc (Now Merge)s,OU=Clients,DC=orion,DC=dmz"
 	 *  not clientDN = "OU=AMICAS, Inc (Now Merge)s,OU=Clients,DC=orion,DC=dmz"
 	 *  not ClientDN = "AMICAS\, Inc (Now Merge)s" 
-	 * @return
+	 * @return a list of usernames who do not have an email address
 	 * @throws InvalidNameException
 	 */
 	public List<String> getAllUsersDonotHaveEmailForClient(String clientDN) throws InvalidNameException{

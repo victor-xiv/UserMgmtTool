@@ -23,4 +23,5 @@ public class LdapConstants {
 	public static String BASEGROUP_DN = "basegroup.baseDN";
 	//Attribute type for a security group
 	public static String BASEGROUP_ATTR = "basegroup.attribute";
+	public static String ORION_HEALTH_ORG_NAME = "orionhealthOrganisationName";
 }

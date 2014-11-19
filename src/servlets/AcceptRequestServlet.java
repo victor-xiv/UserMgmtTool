@@ -16,6 +16,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import ldap.ErrorConstants;
 import ldap.LdapConstants;
 import ldap.LdapProperty;
+import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 import org.w3c.dom.Document;
@@ -166,7 +167,10 @@ public class AcceptRequestServlet extends HttpServlet {
 			maps.put("password01", new String[]{"password"});
 			//maps.put("sAMAccountName", new String[]{maps.get("givenName")[0].toLowerCase()+String.valueOf(maps.get("sn")[0].charAt(0)).toLowerCase()});
 			maps.put("filename", new String[]{file.getName()});
-			maps.put("isLdapClient", new String[]{"true"});
+			
+			if(!maps.get("company")[0].equals(LdapTool.ORION_HEALTH_NAME)){
+				maps.put("isLdapClient", new String[]{"true"});
+			}
 			
 			logger.debug("Finished processing the file: " + file.getName());
 			return maps;

@@ -180,11 +180,9 @@ public class RegisterUserServlet extends HttpServlet {
 		
 		Map<String, String[]> userDetails = new HashMap<String, String[]>();
 		userDetails.putAll((Map<String, String[]>) request.getParameterMap());
-		userDetails.put("password",
+		userDetails.put("password01",
 				new String[] { request.getParameter("password01") });
 		userDetails.put("sAMAccountName", new String[] { username });
-		
-		if(isClient) userDetails.put("isLdapClient", new String[] { "true" });
 
 		// connecting to LdapServer
 		LdapTool lt = null;
@@ -224,11 +222,13 @@ public class RegisterUserServlet extends HttpServlet {
 //				&& (emails.contains(email.toLowerCase()))) {
 
 
+		if(isClient) userDetails.put("isLdapClient", new String[] { "true" });
 		if (isOrionStaff) {  //SPT-1241
 			// Set company as Orion Health
-			userDetails.put("company", new String[] { "Orion Health" });
-			company = "Orion Health";
+			userDetails.put("company", new String[] { LdapTool.ORION_HEALTH_NAME });
+			company = LdapTool.ORION_HEALTH_NAME;
 		}
+
 		
 		// Check if userDN already exists - SPT-320
 		if (lt.userDNExists(request.getParameter("displayName"), company)) {
@@ -283,6 +283,13 @@ public class RegisterUserServlet extends HttpServlet {
 		// SPT-316
 		boolean compExistsAsClient = lt.companyExists(company);
 		boolean compExistsAsGroup = lt.companyExistsAsGroup(company);
+
+		if(company.equals(LdapTool.ORION_HEALTH_NAME)){ 
+			// if this user is an orion health staff, 
+			// then we don't need to check whether the Orion Health exists in Clients and Groups 
+			compExistsAsClient = true;
+			compExistsAsGroup = true;
+		}
 		
 		// Get list of supported companies from database
 		List<String> orgs = null;
@@ -296,7 +303,7 @@ public class RegisterUserServlet extends HttpServlet {
 			return;
 		}
 		
-		if(!compExistsAsClient & good){
+		if(!compExistsAsClient && good){
 			// If this company is supported, set as OU
 			if (orgs.contains(company)) {
 				try {
@@ -322,7 +329,7 @@ public class RegisterUserServlet extends HttpServlet {
 			}
 		}
 		
-		if (!compExistsAsGroup && compExistsAsClient && good) {
+		if (!compExistsAsGroup && compExistsAsClient && good){
 			try {
 				compExistsAsGroup = lt.addCompanyAsGroup(company);
 			} catch (NamingException e) {
