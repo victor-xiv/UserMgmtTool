@@ -1037,7 +1037,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * Solution:  update the "Info" field of the Ldap account using this account's clientAccountId field (of Support Tracker)  
 	 */
 				} else if (clientAcctIds.size() == 1) {
-					if (attrs.get("info") == null || !attrs.get("info").get().equals(clientAcctIds.last())) {
+					if (attrs.get("info") == null || !attrs.get("info").get().toString().equals(clientAcctIds.last())) {
 						
 						proposingSolution.append("16-b: update info field in Ldap account using Support Tracker clientAccountId." + RETURN_CHAR);
 

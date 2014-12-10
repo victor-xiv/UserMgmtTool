@@ -68,10 +68,7 @@ public class ConcertoAPI {
 
 	        // Install the all-trusting host verifier
 	        HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
-	    } catch (NoSuchAlgorithmException e) {
-	        e.printStackTrace();
-	    } catch (KeyManagementException e) {
-	        e.printStackTrace();
+	    } catch (NoSuchAlgorithmException | KeyManagementException e) {
 	    }
 	}
 	
@@ -305,7 +302,7 @@ public class ConcertoAPI {
 			return user.isAccountEnabled().booleanValue() && !user.isDeleted().booleanValue();
 		} catch (NullPointerException e) {
 			// NullPointerException thrown when there's no username in the concerto
-			throw new NullPointerException("User doesn't exist.");
+			throw new NullPointerException("User doesn't exist in Concerto.");
 		}
 	}
 	
@@ -333,7 +330,7 @@ public class ConcertoAPI {
 			return user.getAccountType().equalsIgnoreCase("LDAP");
 		} catch (NullPointerException e) {
 			// NullPointerException thrown when there's no username in the concerto
-			throw new NullPointerException("User doesn't exist.");
+			throw new NullPointerException("User doesn't exist in Concerto.");
 		}
 	}
 	

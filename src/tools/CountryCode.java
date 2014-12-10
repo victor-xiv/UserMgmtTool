@@ -33,8 +33,7 @@ public class CountryCode {
     			countries.put(props.getProperty((String)key), key);
     		}
 		}catch(Exception ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error(ex);
 		}
         
         logger.debug("finished reading country code from pathToTomcatConfFolder/ContryCode.xml");
@@ -67,8 +66,7 @@ public class CountryCode {
     			countries.put(key, props.getProperty((String)key));
     		}
 		}catch(Exception ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error(ex);
 		}
         
         logger.debug("finished getting country code in a Map object");

@@ -37,12 +37,10 @@ public class LdapProperty {
 		}catch(FileNotFoundException fe){
 			props.setProperty("error", "LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
 			logger.error("LDAP" + ErrorConstants.CONFIG_FILE_NOTFOUND, fe);
-			fe.printStackTrace();
 			
 		}catch(Exception ex){
 			props.setProperty("error", "LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
 			logger.error("LDAP" + ErrorConstants.CONFIG_FILE_NOTFOUND, ex);
-			ex.printStackTrace();
 		}
         
         logger.debug("finished getting property from ldap.properties: " + name);
@@ -70,12 +68,10 @@ public class LdapProperty {
 		}catch(FileNotFoundException fe){
 			props.setProperty("error", "LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
 			logger.error("LDAP" + ErrorConstants.CONFIG_FILE_NOTFOUND, fe);
-			fe.printStackTrace();
 			
 		}catch(Exception ex){
 			props.setProperty("error", "LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
 			logger.error("LDAP" + ErrorConstants.CONFIG_FILE_NOTFOUND, ex);
-			ex.printStackTrace();
 		}
         
         logger.debug("finished getting all properties from ldap.properties");

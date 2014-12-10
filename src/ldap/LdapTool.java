@@ -293,7 +293,6 @@ public class LdapTool {
 			ctx = new InitialDirContext(env);
 			logger.debug("Connecting to Ldap server successfully");
 		}catch(ServiceUnavailableException se){
-//			se.printStackTrace();
 			logger.error("Connecting to LDAP server", se);
 			throw new ServiceUnavailableException(ErrorConstants.LDAP_PORT_CLOSED);
 			
@@ -310,12 +309,10 @@ public class LdapTool {
 				errorMessage = ErrorConstants.LDAP_SSL_HANDSHAKE_FAIL;
 			}
 			
-//			ce.printStackTrace();
 			throw new CommunicationException(errorMessage);
 			
 		}catch(NamingException ex){
 			logger.error("Connecting to LDAP server", ex);
-//			ex.printStackTrace();
 			throw new NamingException(ErrorConstants.FAIL_CONNECTING_LDAP);
 		}
 	}
@@ -1001,12 +998,8 @@ info							: is the unique ID that get from clientAccountID column of the client
 				output.add(results.getNameInNamespace());
 			}
 			logger.debug("searching is completed successfully.");
-		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
-		}catch(NullPointerException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+		}catch(NamingException | NullPointerException ex){
+			logger.error(ex);
 		}
 		return output; 
 	}
@@ -1036,13 +1029,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 				output.add((String)attributes.get(groupAttr).get());
 			}
 			logger.debug("searching is completed successfully.");
-		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
-		}catch(NullPointerException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+		}catch(NamingException | NullPointerException ex){
+			logger.error(ex);
 		}
+		
 		return output; 
 	}
 	
@@ -1108,12 +1098,8 @@ info							: is the unique ID that get from clientAccountID column of the client
 			output.addAll(generalGroups);
 			logger.debug("finished searching for all groups that are stored in Clients folder");
 
-		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
-		}catch(NullPointerException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+		}catch(NamingException |NullPointerException ex){
+			logger.error(ex);
 		}
 		return output; 
 	}
@@ -1183,8 +1169,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			
 			return attrs;
 		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error(ex);
 		}
 		return null;
 	}
@@ -1238,8 +1223,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			logger.debug("fnished searching for the attributes of the group: " + companyName);
 			return attrs;
 		}catch(NamingException ex){
-			logger.error(ex.toString());
-			ex.printStackTrace();
+			logger.error(ex);
 		}
 		return null;
 	}
@@ -1266,7 +1250,6 @@ info							: is the unique ID that get from clientAccountID column of the client
 				company = attrs.get("company").get().toString();
 			}catch(NamingException | NullPointerException ex){
 				logger.error("Exception while trying to get attribute " + userDN + "\t", ex);
-//				ex.printStackTrace();
 			}
 		}
 		return company;
@@ -1320,8 +1303,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex.getMessage());
-			ex.printStackTrace();
+			logger.error(ex);
 		}
 		//Otherwise return false
 		return false;
@@ -1354,7 +1336,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex.getMessage());
+			logger.error(ex);
 		}
 		//Otherwise return false
 		return false;
@@ -1423,7 +1405,6 @@ info							: is the unique ID that get from clientAccountID column of the client
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
 			logger.error("Exception while searching for " + baseDN, ex);
-//			ex.printStackTrace();
 		}
 		//Otherwise return false
 		return false;
@@ -1459,8 +1440,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex.getMessage());
-			ex.printStackTrace();
+			logger.error(ex);
 		}
 		//Otherwise return false
 		return null;
@@ -1495,8 +1475,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex.getMessage());
-			ex.printStackTrace();
+			logger.error(ex);
 		}
 		//Otherwise return false
 		return null;
@@ -1724,12 +1703,8 @@ info							: is the unique ID that get from clientAccountID column of the client
 				String dn = results.getNameInNamespace();
 				return dn; // return the dn we found
 			}
-		}catch(NamingException ex){
-			logger.error(ex.toString());
-//			ex.printStackTrace();
-		}catch(NullPointerException ex){
-			logger.error(ex.toString());
-//			ex.printStackTrace();
+		}catch(NamingException | NullPointerException ex){
+			logger.error(ex);
 		}
 		
 		// 2). if we can't find groupName in the OU=Orion Health,OU=Clients,DC=orion,DC=dmz
@@ -1792,8 +1767,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			logger.debug("finished searching whether this user is disabled or enabled: " + userDN);
 			return (userAccountControl & 2) > 0;
 		} catch (NamingException e) {
-			logger.error(e.toString());
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return false;
 	}
@@ -1817,8 +1791,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			logger.debug("Disabled user: "+userDN);
 			return true;
 		} catch (NamingException e) {
-			logger.error(e.toString());
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return false;
 	}
@@ -1841,8 +1814,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			logger.debug("Enabled user: "+userDN);
 			return true;
 		} catch (NamingException e) {
-			logger.error(e.toString());
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return false;
 	}
@@ -1876,8 +1848,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			logger.debug("finished searching for the username of user: " + userDN);
 			return username;
 		} catch (NamingException e) {
-			logger.error(e.toString());
-			e.printStackTrace();
+			logger.error(e);
 		}
 		return "";
 	}
