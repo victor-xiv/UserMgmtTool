@@ -274,7 +274,7 @@ function getIdIndex(encodedUserDN){
 	function getAllAccountsForThisOrganisation(orgSimpleName){
 		cleanUpThePage();
 		
-		var param = "rqst=getAllUsersOfOrganisation&orgSimpleName=" + orgSimpleName;
+		var param = "rqst=getAllUsersOfOrganisation&orgSimpleName=" + encodeURI(orgSimpleName);
 		
 		var jqxhr = $.post("OrganisationDetails", param, function(result){
 			try{
@@ -399,12 +399,12 @@ function getIdIndex(encodedUserDN){
 	
 	
 	//fix the a user account
-	function fixUserAccount(encodedUserDN){
-		//alert(encodedUserDN);
+	function fixUserAccount(uriEncodedUserDN){
+		//alert(uriEncodedUserDN);
 		cleanUpThePage();
 		$("#add-removePassed").html("Loading...");
 		
-		var params = "rqst=fixUser&userDN=" + encodedUserDN;
+		var params = "rqst=fixUser&userDN=" + uriEncodedUserDN;
 		
 		var jqxhr = $.post( "OrganisationDetails", params, function(result) {
 			

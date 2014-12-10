@@ -206,7 +206,7 @@ gettingVersion();
 		ajax6.setRequestHeader("Accept",
 						"text/xml, application/xml, text/plain");
 		var params = "rqst=" + "emailSending" + "&mailTo="
-				+ document.getElementById("emailAdd").value;
+				+ encodeURI(document.getElementById("emailAdd").value);
 		ajax6.send(params);
 
 		// handling ajax state
