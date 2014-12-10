@@ -286,7 +286,6 @@ public class LdapTool {
 			System.setProperty("javax.net.ssl.trustStore", LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
 			System.setProperty( "javax.net.ssl.trustStorePassword", LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
 			logger.debug("Connecting Ldap on SSL, using keystore: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
-			logger.debug("Connecting Ldap on SSL, keystore password: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
 		}
 		
 		try{
@@ -836,15 +835,22 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if the modification is successful. false otherwise.
 	 */
 	public boolean changePassword(String userDN, String password){
+		
 		logger.debug("about to update password for user: " + userDN + " with new psw: " + password);
 		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
 			String quotedPwd = "\""+password+"\"";
 			byte encodedPwd[] = quotedPwd.getBytes( "UTF-16LE" );
-			ModificationItem[] mods = new ModificationItem[2];
-			mods[0] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("pwdLastSet", "-1"));
-			mods[1] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("unicodePwd", encodedPwd));
+			ModificationItem[] mods = new ModificationItem[3];
+			
+			//remove lockout
+			mods[0] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("lockoutTime", "0"));
+			
+			// change password
+			mods[1] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("pwdLastSet", "-1"));
+			mods[2] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute("unicodePwd", encodedPwd));
+
 			// this method must be performed on SSL or TSL connection
 			ctx.modifyAttributes(new LdapName(userDN), mods);
 			logger.debug("Updated password for user: "+userDN);
@@ -1107,39 +1113,40 @@ info							: is the unique ID that get from clientAccountID column of the client
 	
 	// had escaped reserved chars
 	/**
-	 * return a map of Group Users from Ldap. The key of the map is the display name of that group (it is not Distinguished name).
-	 * The value is an array, the first element (at index 0) is the distinguished name of this group and second element (at index 1) is the word "enabled"
+	 * return a map of Users from Ldap that belong to the given client. The key of the map is the display name of that user (it is not Distinguished name).
+	 * The value is an array, the first element (at index 0) is the distinguished name of this user and second element (at index 1) is the word "enabled" (if the account status is enabled) or "disabled" (if the account status is disabled)
 	 * @param name: is just a simple name (it is not a Distinguished name). The method will build a DN name. Please don't provide a DN name and Please don't escape any character in the name (just leave it as it is). (e.g. correct argument is: "Health, Bot"  not "Health\, Bot"
-	 * @return: all the dn in the Map were unescaped the reserved ldap chars (because it is the original value returning from Ldap) (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz"
+	 * @return: all the dn in the Map were unescaped the reserved ldap chars (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz" not dn="CN=Mike\+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz")
 	 */
-	public TreeMap<String,String[]> getClientUsers(String name){
-		logger.debug("about to search for the DN of the group: " + name);
+	public TreeMap<String,String[]> getClientUsers(String clientName){
+		logger.debug("about to search for the DN of the group: " + clientName);
 		
 		// escape all the reserve key words.
-		name = Rdn.escapeValue(name);
+		clientName = Rdn.escapeValue(clientName);
 		TreeMap<String,String[]> users = new TreeMap<String,String[]>();
-		String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
+		String baseDN = "OU="+clientName+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String userAttr = LdapProperty.getProperty(LdapConstants.USER_ATTR);
 		String filter = "("+userAttr+"=*)";
 		String escapedDN = "";
+		String unescapedDN = "";
 		try{
 			NamingEnumeration<SearchResult> e = ctx.search(new LdapName(baseDN), filter, null);
 			while(e.hasMore()){
 				try{
 					SearchResult results = (SearchResult)e.next();
 					Attributes attributes = results.getAttributes();
-					String cn = attributes.get("cn").get().toString(); // displayName
+					String cn = attributes.get("cn").get().toString(); // displayName (unescaped special chars)
 					escapedDN = attributes.get("distinguishedName").get().toString();
-					String unescapedDN = (String) Rdn.unescapeValue(escapedDN);
+					unescapedDN = (String) Rdn.unescapeValue(escapedDN);
 					String disabled = "enabled";
 					if(isAccountDisabled(unescapedDN)){
 						disabled = "disabled";
 					}
-					users.put(cn, new String[]{escapedDN, disabled});
+					users.put(cn, new String[]{unescapedDN, disabled});
 					
-					logger.debug("search for the DN of the group " + name + " finished");
+					logger.debug("search for the DN of the group " + clientName + " finished");
 				} catch (NullPointerException ne){
-					logger.error("Exception while querying dn: "+ escapedDN + " from " + baseDN, ne);
+					logger.error("Exception while querying dn: "+ unescapedDN + " from " + baseDN, ne);
 				}
 			}
 		}catch(NamingException ex){
