@@ -867,7 +867,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 */
 			logger.debug("start checking/fixing condition 13 for account: " + username);
 			// if u memberof 'ldapclients' && no ST client account)
-			if (    (!isGivenAttrsStoredInOrionHealth(attrs) && !isAnySupportTrackerClientAccountMatchUsername(username))
+			if (    (!isGivenAttrsStoredInOrionHealth(attrs) && !SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username))
 			     && (isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN) || ConcertoAPI.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT))) {
 				
 				proposingSolution.append("13: add this user into clientAccount of Support Tracker DB  and update info field of this user's Ldap account based on returned clientAccountId."  + RETURN_CHAR);
@@ -930,8 +930,8 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * 15
 	 */
 			logger.debug("start checking/fixing condition 15-a, 15-b for account: " + username);
-			if (isAnyActiveSupportTrackerClientAccountMatchUsername(username)
-					&& isAnyActiveSupportTrackerStaffAccountMatchUsername(username)) {
+			if (SupportTrackerJDBC.isAnyActiveSupportTrackerClientAccountMatchUsername(username)
+					&& SupportTrackerJDBC.isAnyActiveSupportTrackerStaffAccountMatchUsername(username)) {
 
 	/**
 	 * 15-a - if at least there is an active Client account of Support Tracker that match this username
@@ -990,7 +990,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			logger.debug("start checking/fixing condition 16-a, 16-b, 16-c for account: " + username);
 			// Check for info=clientaccountid
 			if (!isGivenAttrsStoredInOrionHealth(attrs)
-					&& isAnySupportTrackerClientAccountMatchUsername(username)) {
+					&& SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)) {
 				
 				SortedSet<String> clientAcctIds = getAllActiveClientAccountIdRecordsFromSupportTrackerThatMatch(username, company);
 
@@ -1078,7 +1078,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 				try {
 					if (!isGivenAttrsStoredInOrionHealth(attrs)) {
 						try {
-							if (isAnySupportTrackerClientAccountMatchUsername(username)
+							if (SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)
 								&& SupportTrackerJDBC.isClientAccountDisabled(username, clientAccountId)) {
 	/**
 	 * 17-a - If this account is enabled (in Ldap server)
@@ -1118,7 +1118,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * 
 	 * Solution: activate this Staff account Support Tracker that match username 
 	 */
-						if (isAnySupportTrackerStaffAccountMatchUsername(username)
+						if (SupportTrackerJDBC.isAnySupportTrackerStaffAccountMatchUsername(username)
 								&& SupportTrackerJDBC.isStaffAccountDisabled(username)) {
 
 							proposingSolution.append("17-b: Activate this staff's Support Tracker account." + RETURN_CHAR);
@@ -1231,7 +1231,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			logger.debug("start checking/fixing condition 18-a,b for account: " + username);
 			if(!isGivenAttrsStoredInOrionHealth(attrs)
 					&& !isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN)
-					&& !isAnySupportTrackerClientAccountMatchUsername(username)
+					&& !SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)
 					){
 
 	/**
@@ -1466,60 +1466,6 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 */
 	private boolean disableAllAccountWithGivenUsernameInSupportTrackerDB(String username) throws SQLException{
 		return SupportTrackerJDBC.disableClientAccount(username) + SupportTrackerJDBC.disableStaffAccount(username) > 0;
-	}
-	
-	
-	/**
-	 * check if there is at least one client account in Support Tracker match the given username
-	 * 
-	 * @param username need to be checked
-	 * @return true if there is a client account in Support Tracker match the given username
-	 * @throws SQLException
-	 */
-	private boolean isAnySupportTrackerClientAccountMatchUsername(String username) throws SQLException{
-		String query = "SELECT * FROM ClientAccount WHERE loginName = ?";
-		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
-		return rs.next();
-	}
-	
-	/**
-	 * check if there is at least one active client account in Support Tracker match the given username
-	 * 
-	 * @param username need to be checked
-	 * @return true if there is a client account in Support Tracker match the given username
-	 * @throws SQLException
-	 */
-	private boolean isAnyActiveSupportTrackerClientAccountMatchUsername(String username) throws SQLException{
-		String query = "SELECT * FROM ClientAccount WHERE loginName = ? and active = 'Y'";
-		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
-		return rs.next();
-	}
-	
-	
-	/**
-	 * check if there is at least one staff account in Support Tracker match the given username
-	 * 
-	 * @param username need to be checked
-	 * @return true if there is a staff account in Support Tracker match the given username
-	 * @throws SQLException
-	 */
-	private boolean isAnySupportTrackerStaffAccountMatchUsername(String username) throws SQLException{
-		String query = "SELECT * FROM Staff where loginName = ?";
-		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
-		return rs.next();
-	}
-	
-	/**
-	 * check if there is at least one active staff account in Support Tracker match the given username
-	 * 
-	 * @param username need to be checked
-	 * @return true if there is a staff account in Support Tracker match the given username
-	 * @throws SQLException
-	 */
-	private boolean isAnyActiveSupportTrackerStaffAccountMatchUsername(String username) throws SQLException{
-		String query = "SELECT * FROM Staff where loginName = ?  and recordStatus = 'Y'";
-		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
-		return rs.next();
 	}
 	
 	

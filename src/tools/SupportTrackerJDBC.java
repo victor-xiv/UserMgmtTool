@@ -493,6 +493,12 @@ The valid mobile phone should look like one of the below forms:
 			logger.debug(es.getKey() + " : " + es.getValue()[0]);
 		}
 		
+		String username = maps.get("sAMAccountName")[0];
+		if(isAnySupportTrackerClientAccountMatchUsername(username)
+				|| isAnySupportTrackerStaffAccountMatchUsername(username)){
+			throw new SQLException("There is already this username in either ClientAccount or Staff table.");
+		}
+		
 		// creating query to select clientId that belong to the given companyName (stored in maps)
 		StringBuffer query = new StringBuffer();
 		String companyName = maps.get("company")[0];
@@ -1004,5 +1010,60 @@ The valid mobile phone should look like one of the below forms:
 			con.close();
 			con = null;
 		}
+	}
+	
+	
+	
+	/**
+	 * check if there is at least one client account in Support Tracker match the given username
+	 * 
+	 * @param username need to be checked
+	 * @return true if there is a client account in Support Tracker match the given username
+	 * @throws SQLException
+	 */
+	public static boolean isAnySupportTrackerClientAccountMatchUsername(String username) throws SQLException{
+		String query = "SELECT * FROM ClientAccount WHERE loginName = ?";
+		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		return rs.next();
+	}
+	
+	/**
+	 * check if there is at least one active client account in Support Tracker match the given username
+	 * 
+	 * @param username need to be checked
+	 * @return true if there is a client account in Support Tracker match the given username
+	 * @throws SQLException
+	 */
+	public static boolean isAnyActiveSupportTrackerClientAccountMatchUsername(String username) throws SQLException{
+		String query = "SELECT * FROM ClientAccount WHERE loginName = ? and active = 'Y'";
+		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		return rs.next();
+	}
+	
+	
+	/**
+	 * check if there is at least one staff account in Support Tracker match the given username
+	 * 
+	 * @param username need to be checked
+	 * @return true if there is a staff account in Support Tracker match the given username
+	 * @throws SQLException
+	 */
+	public static boolean isAnySupportTrackerStaffAccountMatchUsername(String username) throws SQLException{
+		String query = "SELECT * FROM Staff where loginName = ?";
+		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		return rs.next();
+	}
+	
+	/**
+	 * check if there is at least one active staff account in Support Tracker match the given username
+	 * 
+	 * @param username need to be checked
+	 * @return true if there is a staff account in Support Tracker match the given username
+	 * @throws SQLException
+	 */
+	public static boolean isAnyActiveSupportTrackerStaffAccountMatchUsername(String username) throws SQLException{
+		String query = "SELECT * FROM Staff where loginName = ?  and recordStatus = 'Y'";
+		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		return rs.next();
 	}
 }
