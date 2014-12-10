@@ -86,8 +86,12 @@ public class LdapTool {
 	 * e.g. the group that is the value of attribute ldap.group.permission.level.3 is stored in the list at index 3
 	 * 3). then this ArrayList<String> is assigned to the static field orionHealthGroupsOrderedByPermissionLevel for the later use.
 	 */
-	public static void readGroupsAndPermissionLevelFromConfigureFile(){
+	public static List<String> readGroupsAndPermissionLevelFromConfigureFile(){
 		Logger.getRootLogger().debug("About to read the groups with permission level from ldap.properties file");
+		
+		if(orionHealthGroupsOrderedByPermissionLevel != null){
+			return orionHealthGroupsOrderedByPermissionLevel;
+		}
 		
 		orionHealthGroupsOrderedByPermissionLevel = new ArrayList<String>();
 		
@@ -117,6 +121,7 @@ public class LdapTool {
 		}
 		
 		Logger.getRootLogger().debug("Finished reading the groups with permission level.");
+		return orionHealthGroupsOrderedByPermissionLevel;
 	}
 	
 	
@@ -253,9 +258,7 @@ public class LdapTool {
 	 * @throws NamingException when connection with LDAP server failed
 	 */
 	public LdapTool() throws FileNotFoundException, NamingException{
-		if(orionHealthGroupsOrderedByPermissionLevel == null){
-			readGroupsAndPermissionLevelFromConfigureFile();
-		}
+		readGroupsAndPermissionLevelFromConfigureFile();
 		
 		
 		logger.debug("About to connect to LDAP server");
@@ -290,7 +293,7 @@ public class LdapTool {
 			ctx = new InitialDirContext(env);
 			logger.debug("Connecting to Ldap server successfully");
 		}catch(ServiceUnavailableException se){
-			se.printStackTrace();
+//			se.printStackTrace();
 			logger.error("Connecting to LDAP server", se);
 			throw new ServiceUnavailableException(ErrorConstants.LDAP_PORT_CLOSED);
 			
@@ -307,12 +310,12 @@ public class LdapTool {
 				errorMessage = ErrorConstants.LDAP_SSL_HANDSHAKE_FAIL;
 			}
 			
-			ce.printStackTrace();
+//			ce.printStackTrace();
 			throw new CommunicationException(errorMessage);
 			
 		}catch(NamingException ex){
 			logger.error("Connecting to LDAP server", ex);
-			ex.printStackTrace();
+//			ex.printStackTrace();
 			throw new NamingException(ErrorConstants.FAIL_CONNECTING_LDAP);
 		}
 	}
@@ -320,9 +323,17 @@ public class LdapTool {
 
 	// had escaped reserved chars
 	/**
-	 * update the Ldap's user with the given attributes (paramMaps). The userDN is the index 0 element of the value that mapped with key "dn"
+	 * update the Ldap's user with the given attributes (paramMaps). 
+	 * In paramMaps must contains key/value = "dn"/userDNValue, where this key/value is used to determine which account need to be updated.
+	 * 
+	 * a). This method will remove all keys (in paramMaps) that its corresponding value (in paramMaps) is "" (empty string) from Ldap account.
+	 * b). It will update Ldap account with all keys (in paramMaps) that its corresponding value (in paramMaps) is not the same as the existing value. 
+	 * c). if there is a key/value = "displayName"/newDisplayName in paramMaps, this methods will rename the userDN of this Ldap account to this newDisplayName  
+	 * d). if there is a key/value = "password01"/newPsw in paramMaps, this methods will update the password of this account.
+	 *  
 	 * @param paramMaps: given attributes that need to be updated or deleted.
 	 * all DN values in paramMaps,must have not been escaped value at all. (they will be escaped in this method body)
+	 * 
 	 * @return: {"false","Failed to update details for user: "+userDN} if it failed to update.
 	 *          {"true", userDN} or {"true", newUserDN} otherwise.
 	 */
@@ -353,7 +364,7 @@ public class LdapTool {
 		try{
 			// Iterate through paramMaps
 			// if the value of each map entry is empty String "" => add its correspond key into removeList
-			// if the value of a map entry equals to the existValue of attr => add that map entry into replaceMap
+			// if the value of a map entry not equals to the existValue of attr => add that map entry into replaceMap
 			for(Map.Entry<String, String[]>entry:paramMaps.entrySet()){
 				try{
 					String existValue = (attrs.get(entry.getKey())!=null ? attrs.get(entry.getKey()).get().toString() : "");
@@ -387,11 +398,11 @@ public class LdapTool {
 		String newUserDN = "";
 		if(replaceMap.containsKey("displayName")){
 			String fullname = replaceMap.get("displayName")[0];
-			String groupBaseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+			String clientBaseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 			
 			// if replaceMap contains "company" key, then use this new key to update user
 			if(replaceMap.containsKey("company")){
-				newUserDN = "CN="+Rdn.escapeValue(fullname)+",OU="+Rdn.escapeValue(replaceMap.get("company")[0])+","+groupBaseDN;
+				newUserDN = "CN="+Rdn.escapeValue(fullname)+",OU="+Rdn.escapeValue(replaceMap.get("company")[0])+","+clientBaseDN;
 			
 			// if replaceMap doesn't contains "company" key, then use the previous one.
 			} else {
@@ -402,7 +413,7 @@ public class LdapTool {
 				int startIndexOfCompanyDN = tempDN.indexOf("OU=") + "OU=".length();
 				int endIndexOfCompanyDN = tempDN.indexOf(",OU=", startIndexOfCompanyDN);
 				String companyDN = userDN.substring(startIndexOfCompanyDN, endIndexOfCompanyDN);
-				newUserDN = "CN=" + Rdn.escapeValue(fullname) + ",OU=" + companyDN + "," + groupBaseDN;
+				newUserDN = "CN=" + Rdn.escapeValue(fullname) + ",OU=" + companyDN + "," + clientBaseDN;
 			} 
 			
 		}
@@ -461,7 +472,26 @@ public class LdapTool {
 	 * add a user into organisational. i.e. in Orion LDAP, it will add a user to Clients directory (not groups)
 	 * Generally, we use addUserToGroup() to add user into Group.
 	 * Generally, we use addUser() first, then followed by addUserToGroup()
-	 * @param paramMaps - parameters that will be used to build user's attributes
+	 * @param paramMaps - parameters that will be used to build user's attributes. the keys of this paramMaps must have all of the following:
+sAMAccountName					: username (login name)
+givenName	
+sn								: Sure name
+displayName
+password01						: new password
+isLdapClient
+company
+description						: position
+c								: Country Code (e.g. NZ for New Zealand)
+department
+streetAddress
+l								: City
+st								: State
+postalCode
+mail							: email
+telephoneNumber					: office phone
+facsimileTelephoneNumber		: Fax
+mobile
+info							: is the unique ID that get from clientAccountID column of the clientAccount table of Support Tracker DB
 	 * @return
 	 * @throws Exception 
 	 */
@@ -483,7 +513,7 @@ public class LdapTool {
 			
 			String companyName = paramMaps.get("company")[0];
 			// if companyName doesn't exist in "Client" add the companyName into "Client"
-			if(!companyName.equals(ORION_HEALTH_NAME) && !companyExists(companyName)){
+			if(!companyExists(companyName)){
 				if(!addCompany(companyName)){
 					// if companyName doesn't exist in "Client" and can't be added, just return false;
 					// throw new exception because the caller of this method will use this message (of this exception) as the result to inform to the user.
@@ -491,7 +521,7 @@ public class LdapTool {
 				}
 			}
 			// if company doesn't exist in LDAP's "Groups" add the company into "Groups"
-			if (!companyName.equals(ORION_HEALTH_NAME) && !companyExistsAsGroup(companyName)) {
+			if (!companyExistsAsGroup(companyName)) {
 				if (!addCompanyAsGroup(companyName)) {
 					// if companyName doesn't exist in "Groups" and can't be added, just return false;
 					// throw new exception because the caller of this method will use this message (of this exception) as the result to inform to the user.
@@ -499,10 +529,10 @@ public class LdapTool {
 				}
 			}
 			
-			String groupBaseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
-			String unescapedValuecompanyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+","+groupBaseDN;
+			String clientBaseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
+			String unescapedValuecompanyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+companyName+","+clientBaseDN;
 			String unescapedValueUserDN = "CN="+fullname+","+unescapedValuecompanyDN;
-			String escapedValueCompanyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+","+groupBaseDN;
+			String escapedValueCompanyDN = LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+","+clientBaseDN;
 			String escapedValueUserDN = "CN="+Rdn.escapeValue(fullname)+","+escapedValueCompanyDN;
 			Attributes attributes = new BasicAttributes(true);
 			//attributes.put("distinguishedName", userDN);
@@ -586,8 +616,8 @@ public class LdapTool {
 			
 			
 			//a). Add user to company organistion group
-				// if companyName is "Orion Health" then we don't need to add this user as a member of "Orion Health" group
-				// but (instead) we add this user to the lowest power of Orion Health Role 
+				// if companyName is "Orion Health" then:
+				// we add this user to the lowest power of Orion Health Role 
 				// the lowest power of Orion Health Role is the name of the group that stored at the last index of this array orionHealthGroupsOrderedByPermissionLevel  
 			if(companyName.equals(ORION_HEALTH_NAME)){
 				String orionLowestPwrGrp = orionHealthGroupsOrderedByPermissionLevel.get(orionHealthGroupsOrderedByPermissionLevel.size() - 1);
@@ -603,13 +633,6 @@ public class LdapTool {
 				}
 				
 			} else {
-				// if companyName is not Orion Health (then it is a client company name),
-				// then add this user to the Group of this company (organisation)
-				if(!addUserToGroup(unescapedValueUserDN, orgGroupDN)){
-					deleteUser(unescapedValueUserDN);
-					return false;
-				}
-				
 				// b). Add user to "LdapClient" group if this user is a client (not an Orion Health staff) 
 				// if this user is a client, then the value of paraMaps.get["isLdapClient"] is {"true"}
 				// if this user is a client, then this user must not be an Orion Health Staff
@@ -624,8 +647,16 @@ public class LdapTool {
 						return false;
 					}
 				}
-
 			}
+			
+			// then add this user to the Group of this company (organisation)
+			if(!addUserToGroup(unescapedValueUserDN, orgGroupDN)){
+				deleteUser(unescapedValueUserDN);
+				return false;
+			}
+				
+			
+
 			
 			
 			// add user into the default groups (default groups specified in ldap.properties config file)
@@ -673,6 +704,16 @@ public class LdapTool {
 	 */
 	public boolean addUserToGroup(String userDN, String groupDN) throws NamingException{
 		logger.debug("about to add user: " + userDN + " to group: " + groupDN);
+		
+		String companyName = getCNValueFromDN(groupDN);
+		if (!companyExistsAsGroup(companyName)) {
+			if (!addCompanyAsGroup(companyName)) {
+				// if companyName doesn't exist in "Groups" and can't be added, just return false;
+				// throw new exception because the caller of this method will use this message (of this exception) as the result to inform to the user.
+				throw new NamingException("The company: " + companyName + " doesn't exist in LDAP's GROUP directory and it can't be added into LDAP server's GROUP directory.");
+			}
+		}
+		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		groupDN = LdapTool.escapedCharsOnCompleteGroupDN(groupDN);
 		try	{
@@ -843,6 +884,24 @@ public class LdapTool {
 	}
 	
 	
+	/**
+	 * delete the user with given fullname who works for companyName
+	 * @param fullname of the user need to be deleted. this is not a username (or login name or sAMAccountName). normally, fullname=firstname + " " + lastname
+	 * 		This fullname must have not been escaped any special characters.
+	 * @param companyName that this user belong to. not the dn name of the organisation or group (e.g. Orion Health, not OU=Orion Health,OU=Clients,DC=orion,DC=dmz)
+	 * 		This companyName must have not been escaped any special characters.
+	 * @return true deleted successfully, false otherwise
+	 */
+	public boolean deleteUser(String fullname, String companyName){
+		logger.debug("about to delete user: " + fullname + " who works for client: " + companyName);
+		
+		String baseDN = "OU="+companyName+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
+		String userDN = "CN=" + fullname + "," + baseDN;
+				
+		return deleteUser(userDN);
+	}
+	
+	
 	
 	
 	/**
@@ -856,17 +915,48 @@ public class LdapTool {
 	 *  not clientDN = "OU=AMICAS, Inc (Now Merge)s,OU=Clients,DC=orion,DC=dmz"
 	 *  not ClientDN = "AMICAS\, Inc (Now Merge)s" 
 	 * @return a list of usernames who do not have an email address
+	 * @throws NamingException 
+	 */
+	public List<String> getAllUsersDonotHaveEmailForClient(String clientDN) throws NamingException{
+		List<String> usersNoEmail = new ArrayList<String>();
+		List<Attributes> attrsListOfUsrs = getAllUsersAsAttributesListFromClient(clientDN);
+		for(Attributes attributes : attrsListOfUsrs){
+			if (attributes.get("grouptype") != null) { // skip those groups 
+				continue;
+			}
+			
+			try{
+				String email = (String) attributes.get("mail").get();
+				
+				// if user has an empty (or white space) as their email address
+				if(email.trim().isEmpty()){
+					usersNoEmail.add((String)attributes.get("sAMAccountName").get());
+				}
+			
+				// if user has no email address
+				// attributes.get("mail") will be null
+				// then attributes.get("mail").get() will throw NullPointerException 
+			}catch (NullPointerException ne){
+				usersNoEmail.add((String)attributes.get("sAMAccountName").get());
+			}
+		}
+		
+		return usersNoEmail;
+	}
+	
+	/**
+	 * get all the user accounts that stored in the given clientDN. But every account that will be returned is represented as an Attributes object.
+	 * @param clientDN must have already been escapped. clientDN is the dn name of a client (an organisation or company) that stored in "Clients" folder of Ldap server.
+	 * @return a list of Attributes objects. Each Attributes object represents an Ldap account that stored in the given clientDN.
 	 * @throws InvalidNameException
 	 */
-	public List<String> getAllUsersDonotHaveEmailForClient(String clientDN) throws InvalidNameException{
-		logger.debug("about to search for all users who are memberOf " + clientDN);
-		List<String> usersNoEmail = new ArrayList<String>();
+	public List<Attributes> getAllUsersAsAttributesListFromClient(String clientDN) throws InvalidNameException{
+		logger.debug("about to search for all users who are stored in: " + clientDN);
+		List<Attributes> attrsList = new ArrayList<Attributes>();
 		LdapName basedDN = new LdapName(clientDN);
 		String filter = "(CN=*)";
 		
 		try {
-//			SearchControls control = new SearchControls();
-//			control.setReturningAttributes(new String[]{"mail", "sAMAccountName"});
 			NamingEnumeration<SearchResult> e = ctx.search(basedDN, filter, null);
 			while (e.hasMore()) {
 				logger.debug("search strated");
@@ -876,30 +966,14 @@ public class LdapTool {
 				if (attributes.get("grouptype") != null) { // skip those groups 
 					continue;
 				}
-				
-				try{
-					String email = (String) attributes.get("mail").get();
-					
-					// if user has an empty (or white space) as their email address
-					if(email.trim().isEmpty()){
-						usersNoEmail.add((String)attributes.get("sAMAccountName").get());
-					}
-				
-					// if user has no email address
-					// attributes.get("mail") will be null
-					// then attributes.get("mail").get() will throw NullPointerException 
-				}catch (NullPointerException ne){
-					usersNoEmail.add((String)attributes.get("sAMAccountName").get());
-				}
+				attrsList.add(attributes);
 
 			}
 			logger.debug("search finished");
 		} catch (NamingException e1) {
 			logger.debug("search for users in client: " + clientDN + " encountered a problem.", e1);
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
 		}
-		return usersNoEmail;
+		return attrsList;
 	}
 	
 	
@@ -907,14 +981,15 @@ public class LdapTool {
 	/**
 	 * return a sorted set of all organisations that are stored in Ldap's Clients.
 	 * All the names that stored in the return set are DN names (those names have already been escaped the special characters)
+	 * All the names are escaped-special-characters names.
 	 * e.g. output = {"OU=AMICAS\, Inc (Now Merge)s,OU=Clients,DC=orion,DC=dmz", "OU=Adirondack Medical Center,OU=Clients,DC=orion,DC=dmz", ...}
 	 * This method is different from getUserGroups() where all the names returned by this method are DNs. and the names returned by getUserGroups() are just names
 	 * @return
 	 */
-	public Set<String> getUserGroupDNs(){
+	public Set<String> getAllClientsDNs(){
 		logger.debug("about to search for DNs of all the organisations that are stored in Clients folder");
 		
-		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
 		String filter = "("+groupAttr+"=*)";
 		SortedSet<String> output = new TreeSet<String>();
@@ -939,13 +1014,16 @@ public class LdapTool {
 	
 	
 	/**
-	 * return a sorted set of all organisations that are stored in Ldap's Clients
+	 * return a sorted set of all organisations that are stored in Ldap's Clients.
+	 * the names in the return list are just display names of the organisations (they are not DN names of the organisations).
+	 * all the names are unescapped-special-characters names. 
+	 *  e.g. output = {"AMICAS, Inc (Now Merge)s", "Adirondack Medical Center", ...}
 	 * @return
 	 */
-	public SortedSet<String> getUserGroups(){
+	public SortedSet<String> getAllClientsDisplayNames(){
 		logger.debug("about to search for all the organisations that are stored in Clients folder");
 		
-		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
 		String filter = "("+groupAttr+"=*)";
 		SortedSet<String> output = new TreeSet<String>();
@@ -1048,16 +1126,16 @@ public class LdapTool {
 	 * @param name: is just a simple name (it is not a Distinguished name). The method will build a DN name. Please don't provide a DN name and Please don't escape any character in the name (just leave it as it is). (e.g. correct argument is: "Health, Bot"  not "Health\, Bot"
 	 * @return: all the dn in the Map were unescaped the reserved ldap chars (because it is the original value returning from Ldap) (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz"
 	 */
-	public TreeMap<String,String[]> getGroupUsers(String name){
+	public TreeMap<String,String[]> getClientUsers(String name){
 		logger.debug("about to search for the DN of the group: " + name);
 		
 		// escape all the reserve key words.
 		name = Rdn.escapeValue(name);
 		TreeMap<String,String[]> users = new TreeMap<String,String[]>();
-		String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String userAttr = LdapProperty.getProperty(LdapConstants.USER_ATTR);
 		String filter = "("+userAttr+"=*)";
-		String dn = "";
+		String escapedDN = "";
 		try{
 			NamingEnumeration<SearchResult> e = ctx.search(new LdapName(baseDN), filter, null);
 			while(e.hasMore()){
@@ -1065,18 +1143,17 @@ public class LdapTool {
 					SearchResult results = (SearchResult)e.next();
 					Attributes attributes = results.getAttributes();
 					String cn = attributes.get("cn").get().toString(); // displayName
-					dn = attributes.get("distinguishedName").get().toString();
-					dn = (String) Rdn.unescapeValue(dn);
-					int userAccountControl = Integer.parseInt(attributes.get("userAccountControl").get().toString());
+					escapedDN = attributes.get("distinguishedName").get().toString();
+					String unescapedDN = (String) Rdn.unescapeValue(escapedDN);
 					String disabled = "enabled";
-					if( (userAccountControl & 2) > 0 ){
+					if(isAccountDisabled(unescapedDN)){
 						disabled = "disabled";
 					}
-					users.put(cn, new String[]{dn, "enabled"});
+					users.put(cn, new String[]{escapedDN, disabled});
 					
 					logger.debug("search for the DN of the group " + name + " finished");
 				} catch (NullPointerException ne){
-					logger.error("Exception while querying dn: "+ dn + " from " + baseDN, ne);
+					logger.error("Exception while querying dn: "+ escapedDN + " from " + baseDN, ne);
 				}
 			}
 		}catch(NamingException ex){
@@ -1099,7 +1176,7 @@ public class LdapTool {
 		name = Rdn.escapeValue(name);
 		
 		try{
-			String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+			String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 			Attributes attrs = ctx.getAttributes(new LdapName(baseDN));
 			
 			logger.debug("finished searching for the attributes of the organisation: " + name);
@@ -1173,28 +1250,26 @@ public class LdapTool {
 	 * get the company name that the userDN is working for (from the LDAP server)
 	 * @param userDN represent the user/company. userDN must be a full dn-name and it must have not been escaped the reserved chars.
 	 * (e.g of the correct userDN that should give to this method: CN=Lisa, She/pherd,OU=Hospira Pty limited *Project*,OU=Clients,DC=orion,DC=dmz)
-	 * @return company simple name in String (not the DN name)
+	 * @return company simple name in String (not the DN name) or null if it cannot get one
 	 */
 	public String getUserCompany(String userDN){
 		logger.debug("about to search for the company name of user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
+		String company = null;
 		try{
-			Attributes attrs = ctx.getAttributes(new LdapName(userDN));
-			if(attrs.get("company") == null ){
-				String company = LdapTool.getOUvalueFromDNThasHasTwoOU(userDN);
-				logger.debug("finished searching for the company name of user: " + userDN);
-				
-				return company;
-			}else{
-				logger.debug("finished searching for the company name of user: " + userDN);
-				
-				return attrs.get("company").get().toString();
-			}
-		}catch(NamingException ex){
-			logger.error("Trying to get attribute " + userDN + "\t", ex);
-			ex.printStackTrace();
+			company = getOUvalueFromDNThasHasTwoOU(userDN);
+		} catch (IndexOutOfBoundsException e){
 		}
-		return null;
+		if(company == null){
+			try{
+				Attributes attrs = ctx.getAttributes(new LdapName(userDN));
+				company = attrs.get("company").get().toString();
+			}catch(NamingException | NullPointerException ex){
+				logger.error("Exception while trying to get attribute " + userDN + "\t", ex);
+//				ex.printStackTrace();
+			}
+		}
+		return company;
 	}
 	
 	
@@ -1206,7 +1281,7 @@ public class LdapTool {
 	 */
 	public boolean companyExists(String companyName){
 		logger.debug("about to search for the company: " + companyName);
-		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String filter = "("+LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+")";
 		NamingEnumeration<SearchResult> e;
 		try {
@@ -1266,7 +1341,7 @@ public class LdapTool {
 		company = Rdn.escapeValue(company);
 		
 		//Search user's company
-		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		//Create search string (sAMAccountName=<username>)
 		String filter = "("+LdapProperty.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
 		NamingEnumeration<SearchResult> e;
@@ -1299,7 +1374,7 @@ public class LdapTool {
 		
 		company = Rdn.escapeValue(company);
 		//Search user's company
-		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		//Create search string (mail=<email>)
 		String filter = "(mail="+email+")";
 		NamingEnumeration<SearchResult> e;
@@ -1332,7 +1407,7 @@ public class LdapTool {
 		logger.debug("about to search for user: " + fullname + " from company: " + company);
 		
 		//Search user's company
-		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		//Create search string (CN=Display Name)
 		String filter = "CN="+fullname;
 		NamingEnumeration<SearchResult> e;
@@ -1348,7 +1423,7 @@ public class LdapTool {
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
 			logger.error("Exception while searching for " + baseDN, ex);
-			ex.printStackTrace();
+//			ex.printStackTrace();
 		}
 		//Otherwise return false
 		return false;
@@ -1369,7 +1444,7 @@ public class LdapTool {
 		company = Rdn.escapeValue(company);
 		username = Rdn.escapeValue(username);
 		//Search user's company
-		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		//Create search string (sAMAccountName=<username>)
 		String filter = "("+LdapProperty.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
 		NamingEnumeration<SearchResult> e;
@@ -1405,7 +1480,7 @@ public class LdapTool {
 		username = Rdn.escapeValue(username);
 		company = Rdn.escapeValue(company);
 		//Search user's company
-		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		//Create search string (sAMAccountName=<username>)
 		String filter = "("+LdapProperty.getProperty(LdapConstants.USER_ATTR)+"="+username+")";
 		NamingEnumeration<SearchResult> e;
@@ -1462,7 +1537,7 @@ public class LdapTool {
 		logger.debug("about to add company: " + companyName + "into Clients folder (of Ldap Server)");
 		
 		// get baseDN for the user (it should be: OU=Clients,DC=orion,DC=dmz)
-		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		
 		Attributes attributes = new BasicAttributes(true);
 		attributes.put("objectClass", "top");
@@ -1651,10 +1726,10 @@ public class LdapTool {
 			}
 		}catch(NamingException ex){
 			logger.error(ex.toString());
-			ex.printStackTrace();
+//			ex.printStackTrace();
 		}catch(NullPointerException ex){
 			logger.error(ex.toString());
-			ex.printStackTrace();
+//			ex.printStackTrace();
 		}
 		
 		// 2). if we can't find groupName in the OU=Orion Health,OU=Clients,DC=orion,DC=dmz
@@ -1674,7 +1749,7 @@ public class LdapTool {
 	 * @return organisation DN
 	 */
 	public String getDNFromOrg(String orgName) {
-		String baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String attrName = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
 		String dn = attrName+"="+orgName+","+baseDN;
 		return dn;
@@ -1695,9 +1770,19 @@ public class LdapTool {
 	
 	
 	
-	
-	
-	
+	/**
+	 * 
+	 * @param userDN must has not been escaped
+	 * @return
+	 */
+	public boolean isAccountEnabled(String userDN){
+		return !isAccountDisabled(userDN);
+	}
+	/**
+	 * 
+	 * @param userDN must has not been escaped
+	 * @return
+	 */
 	public boolean isAccountDisabled(String userDN){
 		logger.debug("about to search whether this user is disabled or enabled: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
@@ -1712,7 +1797,11 @@ public class LdapTool {
 		}
 		return false;
 	}
-	
+	/**
+	 * 
+	 * @param userDN must has not been escaped
+	 * @return
+	 */
 	public boolean disableUser(String userDN){
 		logger.debug("about to disable user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
@@ -1733,6 +1822,11 @@ public class LdapTool {
 		}
 		return false;
 	}
+	/**
+	 * 
+	 * @param userDN must has not been escaped
+	 * @return
+	 */
 	public boolean enableUser(String userDN){
 		logger.debug("about to enable user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
@@ -1754,6 +1848,7 @@ public class LdapTool {
 	}
 	
 	
+
 	
 	
 	

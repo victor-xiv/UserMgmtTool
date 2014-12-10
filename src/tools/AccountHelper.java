@@ -132,11 +132,7 @@ mobile
 		else 	fullname = maps.get("givenName")[0] + " " + maps.get("sn")[0];
 		
 		// these variable used for adding a user into ConcertoAPI
-		String firstName = maps.get("givenName")[0];
-		String lastName = maps.get("sn")[0];
 		String userName = maps.get("sAMAccountName")[0];
-		String description = maps.get("description")[0];
-		String mail = maps.get("mail")[0];
 
 		// check if username exist in LDAP or Concerto
 		boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
@@ -173,14 +169,16 @@ mobile
 			try{
 				addStatus = lt.addUser(maps);
 			} catch (Exception e){
+				deletePreviouslyAddedClientFromSupportTracker(clientAccountId);
 				return "false|User "+maps.get("displayName")[0]+" has been added into Support Tracker DB. But, it was not added to LDAP, due to: " + e.getMessage();
 			}
 			
 			if( addStatus ){ // add a user into Ldap successfully
 				try {
-					ConcertoAPI.addClientUser(userName, firstName, lastName, fullname, description, mail, Integer.toString(clientAccountId));
+					ConcertoAPI.addClientUser(maps);
 				} catch (Exception e) {
 					// remove the previous added user from Support Tracker DB
+					lt.deleteUser(maps.get("displayName")[0], maps.get("company")[0]);
 					deletePreviouslyAddedClientFromSupportTracker(clientAccountId);
 					return "false|User "+maps.get("displayName")[0]+" was added to LDAP and Support Tracker. But it couldn't be added to Concerto Portal.";
 				}

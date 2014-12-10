@@ -63,7 +63,7 @@ public class LdapUserGroups {
 		}
 		
 		if( lt != null){
-			userGroups = lt.getUserGroups();
+			userGroups = lt.getAllClientsDisplayNames();
 			lt.close();
 		} else {
 			throw new ConnectException(ErrorConstants.UNKNOWN_ERR);

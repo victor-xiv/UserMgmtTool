@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.security.Security;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -162,7 +163,10 @@ public class TestServlet extends HttpServlet {
 			// if the connection was done successful, it will only return user detail as a Map object
 			// so, we don't care.
 			// we care only if it's throwing an except, which means that the connection is failed.
-			Map<String, String> userDetail = SupportTrackerJDBC.getUserDetails(userName);
+			List<String> organisations = SupportTrackerJDBC.getOrganisations();
+			if(organisations.size() <= 0){
+				throw new SQLException();
+			}
 			
 			logger.debug("finished testing Connection to Support Tracker DB");
 			
@@ -301,7 +305,7 @@ public class TestServlet extends HttpServlet {
 		}
 		
 		// delete the company from the Clients folder
-		baseDN = LdapProperty.getProperty(LdapConstants.GROUP_DN);
+		baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		companyDN = "ou="+ maps.get("company")[0] +","+baseDN;
 		if (baseDN==null) baseDN = "OU=Clients,DC=orion,DC=dmz";
 		if(!lt.deleteCompany(companyDN)){

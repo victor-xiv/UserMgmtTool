@@ -58,12 +58,18 @@ public class AdditionalFunctionsServlet extends HttpServlet {
 	}
 	
 	
+	/**
+	 * get a list of all users who doesn't have an email from the ldap server
+	 * then write out that list to the client (where client browser will show it as a downloadable file)
+	 * @param response
+	 * @throws IOException
+	 */
 	private void generateListAllUsersNoEmail(HttpServletResponse response) throws IOException{
 		logger.debug("Started generating a list of users who have no email.");
 		String content = "";
 		try {
 			LdapTool lt = new LdapTool();
-			Set<String> clients = lt.getUserGroupDNs();
+			Set<String> clients = lt.getAllClientsDNs();
 			ArrayList<String> users = new ArrayList<String>();
 			for(String dn : clients){
 				users.addAll(lt.getAllUsersDonotHaveEmailForClient(dn));

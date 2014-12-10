@@ -153,7 +153,13 @@ public class ChangePasswordServlet extends HttpServlet {
 		}
 		String newPsw = request.getParameter("NewPsw");
 		boolean isPswGenerated = false;
-		String result = updatePassword(userDN, newPsw, isPswGenerated);
+		String result = "failed|Could not get mobile phone.";
+		try {
+			result = updatePassword(userDN, newPsw, isPswGenerated);
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		response.getWriter().write(result);
 	}
 
@@ -163,6 +169,7 @@ public class ChangePasswordServlet extends HttpServlet {
 	 * @param request HttpServletRequest passed through from doPost() method. the session must contains "userDN" value
 	 * @param response HttpServletResponse, used to write a response to the client 
 	 * @throws IOException if failed to write to the response channel 
+	 * @throws NamingException 
 	 */
 	private void changePswByGenerateANew(HttpServletRequest request, HttpServletResponse response) throws IOException{
 		String userDN = getUserDN(request);
@@ -172,7 +179,13 @@ public class ChangePasswordServlet extends HttpServlet {
 		}
 		String newPsw = tools.PasswordGenerator.generatePswForLength(8);
 		boolean isPswGenerated = true;
-		String result = updatePassword(userDN, newPsw, isPswGenerated);
+		String result = "failed|Could not get mobile phone.";
+		try {
+			result = updatePassword(userDN, newPsw, isPswGenerated);
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+//			e.printStackTrace();
+		}
 		response.getWriter().write(result);
 	}
 	
@@ -184,6 +197,7 @@ public class ChangePasswordServlet extends HttpServlet {
 	 * @param response HttpServletResponse, used to write a response to the client. the response will be either "false" 
 	 * if this user doesn't have a mobile phone or has an invalid mobile phone or "true" if this has a valid mobile phone number
 	 * @throws IOException if failed to write to the response channel 
+	 * @throws NamingException 
 	 */
 	private void shouldAllowGeneratingPsw(HttpServletRequest request, HttpServletResponse response) throws IOException{
 		String userDN = getUserDN(request);
@@ -191,7 +205,13 @@ public class ChangePasswordServlet extends HttpServlet {
 		
 		logger.debug("Validate whether this user: " + userDN + " has a valid mobile number.");
 		
-		String mobile = getMobilePhoneForUser(userDN);
+		String mobile = null;
+		try {
+			mobile = getMobilePhoneForUser(userDN);
+		} catch (NamingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		if(mobile == null){
 			response.getWriter().write("false");
 		} else {
@@ -208,8 +228,9 @@ public class ChangePasswordServlet extends HttpServlet {
 	 * @param isPswGenerated true if newPsw param was generated programatically, false otherwise
 	 * @return the result of the updating process as a String
 	 * @throws IOException
+	 * @throws NamingException 
 	 */
-	public static String updatePassword(String userDN, String newPsw, boolean isPswGenerated) throws IOException {
+	public static String updatePassword(String userDN, String newPsw, boolean isPswGenerated) throws IOException, NamingException {
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Updating a new password for user: " + userDN + " with: " + newPsw);
 		
@@ -311,8 +332,9 @@ public class ChangePasswordServlet extends HttpServlet {
 	 * otherwise (and if there's no mobile number stored in the Support Tracker DB for the given user) it will return null
 
 	 * @throws FileNotFoundException if LdapTool connection object can't be instantiated
+	 * @throws NamingException 
 	 */
-	public static String getMobilePhoneForUser(String userDN) throws FileNotFoundException{
+	public static String getMobilePhoneForUser(String userDN) throws FileNotFoundException, NamingException{
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Start retrieving a mobile phone number for this user: " + userDN);
 		
@@ -330,10 +352,19 @@ public class ChangePasswordServlet extends HttpServlet {
 			logger.debug("This userDN: " + userDN + " doesn't have a login (sAMAccountName) name.");
 			return "This user doesn't have a login name.";
 		}
-
-	// II). retrieve the mobile phone number from Support Tracker DB
-		String mobile = SupportTrackerJDBC.validateAndGetMobilePhoneOfUser(username); 
-		return mobile;
+		String company = lt.getUserCompany(userDN);
+		Attributes attrs = lt.getUserAttributes(userDN);
+		try{
+			String clientAccountId = attrs.get("Info").get().toString();
+	
+		// II). retrieve the mobile phone number from Support Tracker DB
+			String mobile = SupportTrackerJDBC.validateAndGetMobilePhoneOfUser(username, clientAccountId); 
+			return mobile;
+		} catch (NullPointerException e){
+			// NullPointerException thrown when attrs.get("Info") is null (when there's no account id stored in ldap account)
+			// so, we can't find the mobile phone from the support tracker db.
+			return null;
+		}
 	}
 	
 }

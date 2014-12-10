@@ -44,7 +44,7 @@ public class AccountRequestServlet extends HttpServlet {
 	 */
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
-	{
+	{	
 		logger.debug("AccountRequestServlet about to process Get request: " + request.getQueryString());
 		
 		Hashtable<String, String> parameters = ValidatedRequestHandler.processRequest(request);

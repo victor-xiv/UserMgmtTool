@@ -73,7 +73,10 @@
   	<servlet-name>AdditionalFunctions</servlet-name>
   	<servlet-class>servlets.AdditionalFunctionsServlet</servlet-class>
   </servlet>
-  
+  <servlet>
+  	<servlet-name>OrganisationDetails</servlet-name>
+  	<servlet-class>servlets.OrganisationDetailsServlet</servlet-class>
+  </servlet>
   
   
   
@@ -154,6 +157,10 @@
   <servlet-mapping>
     <servlet-name>AdditionalFunctions</servlet-name>
     <url-pattern>/AdditionalFunctions</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+  	<servlet-name>OrganisationDetails</servlet-name>
+  	<url-pattern>/OrganisationDetails</url-pattern>
   </servlet-mapping>
   
 </web-app>

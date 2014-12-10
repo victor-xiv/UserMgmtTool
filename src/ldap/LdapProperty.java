@@ -27,7 +27,7 @@ public class LdapProperty {
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
 		File conf = new File(home, "conf");
-        File properties = new File(conf, "ldap.properties");
+		File properties = new File(conf, "ldap.properties");
         try{
         	FileInputStream fis = new FileInputStream(properties);
         	props.load(fis);
@@ -61,7 +61,7 @@ public class LdapProperty {
 		Properties props = new Properties();
 		File home = new File(getCatalinaBase());
 		File conf = new File(home, "conf");
-        File properties = new File(conf, "ldap.properties");
+		File properties = new File(conf, "ldap.properties");
         try{
         	FileInputStream fis = new FileInputStream(properties);
         	props.load(fis);

@@ -30,6 +30,8 @@ public class SupportTrackerJDBC {
 	private static String jdbcPassword;
 	
 	
+	private static Connection con = null;
+	
 	/**
 	 * retrieving the mobile phone number of the give username from Support Tracker DB 
 	 * @param username is the value of the column loginName of ClientAccount table. it is the same as sAMAccountName of Ldap server
@@ -38,19 +40,45 @@ public class SupportTrackerJDBC {
 	 * the return value has not been modified or validate.
 	 * @throws SQLException
 	 */
-	public static String getRawMobilePhoneOfUser(String username) throws SQLException {
+	public static String getRawMobilePhoneOfUser(String username, String clientAccountId) throws SQLException {
 		if(username==null || username.trim().isEmpty()) return null;
 		
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Started querying for a mobile number of a user: " + username);
 		
-		String query = "SELECT contactPersonMobile FROM ClientAccount WHERE loginName = '"+username+"'";
+		String query = "SELECT contactPersonMobile " +
+							"FROM ClientAccount " +
+							"WHERE loginName = ? " +
+							"and clientId = (SELECT clientId " +
+												"FROM Client " +
+												"where companyName = ?)";
 		
-		ResultSet rs = runGivenQueryOnSupportTrackerDB(query);
+		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, clientAccountId});
 		
+		ArrayList<String> results = new ArrayList<>();
+		while(rs!=null && rs.next()){
+			results.add(rs.getString("contactPersonMobile"));
+		}
+		
+		// if results are more than one record => try to get the one active
 		String result = null;
-		if(rs!=null && rs.next()){
-			result = rs.getString("contactPersonMobile");
+		if(results.size() > 1){
+			query = "SELECT contactPersonMobile " +
+						"FROM ClientAccount " +
+						"WHERE loginName = ? " +
+						"and active = 'Y' " +
+						"and clientId = (SELECT clientId " +
+											"FROM Client " +
+											"where companyName = ?)";
+
+			rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, clientAccountId});
+			
+			// if there are more than active records, => just pick the first one
+			if(rs!=null && rs.next()){
+				result = rs.getString("contactPersonMobile");
+			}
+		} else if (results.size() == 1){
+			result = results.get(0);
 		}
 		
 		logger.debug("mobile number of " + username + " is: " + result);
@@ -65,13 +93,13 @@ public class SupportTrackerJDBC {
 	 * @return the phone number of the given username, if that phone number is validate and can be used to send SMS programatically.
 	 * Otherwise, null is returned.
 	 */
-	public static String validateAndGetMobilePhoneOfUser(String username) {
+	public static String validateAndGetMobilePhoneOfUser(String username, String clientAccountId) {
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Start retrieving and validating the mobile phone of user: " + username);
 		
 		String mobile = null;
 		try{
-			mobile = getRawMobilePhoneOfUser(username);
+			mobile = getRawMobilePhoneOfUser(username, clientAccountId);
 			if(mobile == null || mobile.trim().isEmpty()) 
 				throw new SQLException("This user: " + username + " deson't exist in Suppor Tracker DB");
 		} catch (SQLException e){
@@ -153,9 +181,9 @@ The valid mobile phone should look like one of the below forms:
 		List<String> results = new ArrayList<String>();
 		String query = "SELECT contactPersonMobile FROM ClientAccount";
 
-		ResultSet rs = runGivenQueryOnSupportTrackerDB(query);
+		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{});
 
-		while (rs.next()) {
+		while (rs!=null && rs.next()) {
 
 			String result = rs.getString("contactPersonMobile");
 			if (result != null && !result.trim().isEmpty()) {
@@ -169,25 +197,70 @@ The valid mobile phone should look like one of the below forms:
 	
 	/**
 	 * a helper method to create a connection with Support Tracker DB and run any given query
-	 * @param query SQL query
+	 * @param query SQL query in this query must contain "?" where this "?" will be replaced by the given params.
+	 * if there are more than one "?" then it will be replaced by the params in the order of the element stored in the params.
+	 * e.g. query="select * from clientAccount where loginName = ? and clientId = ?"
+	 *      so, params must be: {"loginNameValueHere", "idNumberHere-e.g.17"}
+	 * It means that the number of the "?" in the query must be exactly the same as the number of elements in the given params list.
+	 * @param params is the list of the value that will be used to replace "?"
 	 * @return ResultSet object which is the result of the execution of the given query
 	 * @throws SQLException if DB connection failed during the process.
 	 */
-	public static ResultSet runGivenQueryOnSupportTrackerDB(String query) throws SQLException{
-		Logger.getRootLogger().debug("started querying for: " + query);
-		Connection con = null;
-		con = getConnection();
-		
-		ResultSet rs = null;
-		if(con != null){
-			// execute the delete query, return false if there's no recorded deleted
-			Statement st = con.createStatement();
-			 rs = st.executeQuery(query);
+	public static ResultSet runGivenStatementWithParamsOnSupportTrackerDB(String query, String[] params) throws SQLException {
+		Connection con = getConnection();
+		PreparedStatement qryStm = con.prepareStatement(query);
+		for (int i=0; i<params.length; i++) {
+			String param = params[i];
+			try{
+				int num = Integer.parseInt(param);
+				qryStm.setInt(i+1, num);
+			} catch (NumberFormatException ne1){
+				try{
+					double d =  Double.parseDouble(param);
+					qryStm.setDouble(i+1, d);
+				} catch (NumberFormatException ne2){
+					qryStm.setString(i+1, param);
+				}
+				
+			}
 		}
-		
-		Logger.getRootLogger().debug("finished querying for: " + query);
+		ResultSet rs = qryStm.executeQuery();
 		return rs;
 	}
+	
+	/**
+	 * a helper method to create a connection with Support Tracker DB and run update query
+	 * @param query SQL query in this query must contain "?" where this "?" will be replaced by the given params.
+	 * if there are more than one "?" then it will be replaced by the params in the order of the element stored in the params.
+	 * e.g. query=""UPDATE ClientAccount SET active = 'N' WHERE loginName = ? and clientId = ?"
+	 *      so, params must be: {"loginNameValueHere", "idNumberHere-e.g.17"}
+	 * It means that the number of the "?" in the query must be exactly the same as the number of elements in the given params list.
+	 * @param params is the list of the value that will be used to replace "?"
+	 * @return the number of rows that have been updated
+	 * @throws SQLException if DB connection failed during the process.
+	 */
+	public static int runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(String updateQuery, String[] params) throws SQLException{
+		Connection con = getConnection();
+		PreparedStatement qryStm = con.prepareStatement(updateQuery);
+		for (int i=0; i<params.length; i++) {
+			String param = params[i];
+			try{
+				int num = Integer.parseInt(param);
+				qryStm.setInt(i+1, num);
+			} catch (NumberFormatException ne1){
+				try{
+					double d =  Double.parseDouble(param);
+					qryStm.setDouble(i+1, d);
+				} catch (NumberFormatException ne2){
+					qryStm.setString(i+1, param);
+				}
+				
+			}
+		}
+		return qryStm.executeUpdate();
+	}
+	
+	
 	
 	
 	
@@ -217,18 +290,18 @@ The valid mobile phone should look like one of the below forms:
 								+ "where [clientId] = ("
 										+ "SELECT [clientId] "
 										+ "FROM [SupportTracker].[dbo].[Client] "
-										+ "where rtrim(ltrim([Client].[companyName])) = \'%s\' "
+										+ "where rtrim(ltrim([Client].[companyName])) = ? "
 										+ "COLLATE SQL_Latin1_General_CP1_CI_AS "
 								+ ")"
 								+ "group by [responsibleStaffId]"
 								+ "order by count([responsibleStaffId]) DESC"
 				+ ")"
 			,
-			gnLabel, fnLabel, companyName );
+			gnLabel, fnLabel);
 		
 		String result = null;
 		
-		ResultSet rs = runGivenQueryOnSupportTrackerDB(query);
+		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{companyName});
 		if(rs!=null && rs.next()){
 			result = rs.getString(gnLabel) + " " +rs.getString(fnLabel);
 		}
@@ -240,16 +313,16 @@ The valid mobile phone should look like one of the below forms:
 
 	/**
 	 * get the detail of the given user
-	 * @param username (login or sAMAccountName name for both support tracker and ldap server) that his/her detail needed to be returned
-	 * @return a Map object that stored the detail of the given username
+	 * @param username (login name or sAMAccountName name for both support tracker and ldap server) that his/her detail needed to be returned
+	 * @return a Map object that stored the detail of the given username. So, if there's no username available in the support tracker DB, then it will return an empty Map.
+	 * 			if the connection failed (or the query has not been executed successfully, it will return null.
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
-	public static Map<String,String> getUserDetails(String username) throws SQLException{
+	public static Map<String,String> getUserDetails(String username, String clientAccountId) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		logger.debug("about to get the details of user from Support Tracker DB " + username);
 		
-		Map<String,String> userDetails = new HashMap<String,String>();
 		// building query
 		StringBuffer query = new StringBuffer();
 		query.append("SELECT CA.contactPersonName as displayName, ");
@@ -259,6 +332,11 @@ The valid mobile phone should look like one of the below forms:
 		query.append(       "CA.contactPersonFax as facsimileTelephoneNumber, ");
 		query.append(       "CA.contactPersonEmail as mail, ");
 		query.append(       "CA.contactPersonMobile as mobile, ");
+		query.append(       "CA.clientId as clientId, ");
+		query.append(       "CA.contactPersonPager as contactPersonPager, ");
+		query.append(       "CA.active as active, ");
+		query.append(       "CA.clientAccountId as clientAccountId, ");
+		query.append(       "CA.loginName as sAMAccountName, ");
 		query.append(       "CL.companyName as company, ");
 		query.append(       "CL.companyAddress as streetAddress, ");
 		query.append(       "CC.countryCode as c ");
@@ -266,43 +344,78 @@ The valid mobile phone should look like one of the below forms:
 		query.append( "INNER JOIN Client CL ON CA.clientId = CL.clientId ");
 		query.append(  "LEFT OUTER JOIN Client_Country CC ON CL.clientId = CC.clientId ");
 		query.append(  "LEFT OUTER JOIN Country_Code AS CCode ON CC.countryCode = CCode.code ");
-		query.append( "WHERE CA.loginName LIKE '"+username+"' ");
+		query.append(" WHERE CA.loginName LIKE ? ");
+		query.append(" and CA.clientAccountId = ? ");
+
 		
-		// connecting to Database server
-		Connection con = getConnection();
+		Map<String, String> userDetails= new HashMap<>(); 
 		
-		
-		if(con != null){
-			try {
-				// executing the query
-				Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery(query.toString());
-				ResultSetMetaData meta = rs.getMetaData();
-				meta.getColumnCount();
-				while(rs.next()){
-					logger.debug("Found user details: "+username);
-					// put user info (from the query results) into a Map object (userDetails)
-					for(int i = 1; i <= meta.getColumnCount(); i++){
-						userDetails.put(meta.getColumnName(i), rs.getString(i));
-						logger.debug(meta.getColumnName(i)+"|"+rs.getString(i));
-					}
-				}
-			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
-			} finally {
-				try {
-					// closing the connection
-					con.close();
-				} catch (SQLException e1) {
-					logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e1);
+		try {
+			// executing the query
+			ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query.toString(), new String[]{username, clientAccountId});
+			ResultSetMetaData meta = rs.getMetaData();
+			meta.getColumnCount();
+			while (rs != null && rs.next()) {
+				logger.debug("Found user details: " + username);
+				// put user info (from the query results) into a Map object (usd)
+				for (int i = 1; i <= meta.getColumnCount(); i++) {
+					userDetails.put(meta.getColumnName(i), rs.getString(i));
+					logger.debug(meta.getColumnName(i) + "|" + rs.getString(i));
 				}
 			}
+		} catch (SQLException e) {
+			logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
+			throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
 		}
 		
 		logger.debug("finished getting the details of user from Support Tracker DB " + username);
 		
 		return userDetails;
+	}
+	
+	
+	
+	/**
+	 * get the staff detail of the given username
+	 * @param username (login name or sAMAccountName name for both support tracker and ldap server) that his/her detail needed to be returned
+	 * @return a Map object that stored the detail of the given username. So, if there's no username available in the support tracker DB, then it will return an empty Map.
+	 * 			if the connection failed (or the query has not been executed successfully, it will return null.
+	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
+	 */
+	public static Map<String, String> getOrionHealthStaffDetails(String username) throws SQLException{
+		if(username == null || username.trim().isEmpty()) return null;
+		
+		Logger logger = Logger.getRootLogger();
+		logger.debug("selecting the details of a staff: " + username);
+		
+		String query = "SELECT  " +
+							" positionCodeId as positionCodeId, " +
+							" familyName as sn, " +
+							" givenName as givenName, " +
+							" email as mail, " +
+							" workPhone as telephoneNumber, " +
+							" mobile, " +
+							" page, " +
+							" recordStatus, " +
+							" userPrivilegeId, " +
+							" loginName as sAMAccountName, " +
+							" receiveSms " +
+							" FROM [SupportTracker].[dbo].[Staff] " +
+							" where [SupportTracker].[dbo].[Staff].[loginName] = ? ";
+		
+		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		ResultSetMetaData meta = rs.getMetaData();
+		int numbColumns = meta.getColumnCount();
+		
+		Map<String, String> staffDetails = new HashMap<String, String>();
+		while(rs!=null && rs.next()){
+			for(int i=1; i<=numbColumns; i++){
+				staffDetails.put(meta.getColumnName(i), rs.getString(i));
+			}
+		}
+
+		logger.debug("finished selecting resposible staff for company: " + username);
+		return staffDetails;
 	}
 	
 	//ADDITIONAL FUNCTION - SPT-316
@@ -322,37 +435,12 @@ The valid mobile phone should look like one of the below forms:
 		query.append("SELECT ORG.companyName as name ");
 		query.append(  "FROM Client ORG ");
 		
-		// connecting to Database server
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e1) {
-			throw e1;
-			// no need to log, it has been logged inthe getConnection()
+		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query.toString(), new String[]{});
+		while(rs!=null && rs.next()){
+			orgs.add(rs.getString(1));
 		}
-		
-		if(con != null){
-			try {
-				logger.debug("about to query support tracker db: " + query.toString());
-				// executing the query
-				Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery(query.toString());
-				while(rs.next()){
-					orgs.add(rs.getString(1));
-				}
-				logger.debug("query successfully completed");
-			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
-			} finally {
-				try {
-					// closing connection
-					con.close();
-				} catch (SQLException e1) {
-					logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e1);
-				}
-			}
-		}
+		logger.debug("query successfully completed");
+			
 		Collections.sort(orgs);
 		
 		logger.debug("finished getting all the organisations from Support Tracker DB ");
@@ -377,34 +465,11 @@ The valid mobile phone should look like one of the below forms:
 		query.append("SELECT email ");
 		query.append(  "FROM Staff ");
 		
-		// connecting to Database server
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e1) {
-			throw e1;
-			// no need to log, it has been logged inthe getConnection()
+		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query.toString(), new String[]{});
+		while(rs!=null && rs.next()){
+			orgs.add(rs.getString(1).toLowerCase());
 		}
-		
-		if(con != null){
-			try {
-				//executing query
-				Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery(query.toString());
-				while(rs.next()){
-					orgs.add(rs.getString(1).toLowerCase());
-				}
-			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
-			} finally {
-				try {
-					con.close();
-				} catch (SQLException e1) {
-					logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e1);
-				}
-			}
-		}
+				
 		Collections.sort(orgs);
 		
 		logger.debug("fnished getting all the organisations from Support Tracker DB ");
@@ -461,7 +526,7 @@ The valid mobile phone should look like one of the below forms:
 			try {
 				Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery(query.toString());
-				while(rs.next()){
+				while(rs!=null && rs.next()){
 					clientId = rs.getInt(1);
 				}
 			} catch (SQLException e) {
@@ -516,7 +581,7 @@ The valid mobile phone should look like one of the below forms:
 					Statement st = con.createStatement();
 					ResultSet rs = st.executeQuery(query.toString());
 					// get the clientAccountID from the query result
-					while(rs.next()){
+					while(rs!=null && rs.next()){
 						clientAccountId = rs.getInt(1);
 					}
 				} catch (SQLException e) {
@@ -526,11 +591,11 @@ The valid mobile phone should look like one of the below forms:
 			}
 			
 			// closing connection
-			try {
-				con.close();
-			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-			}
+//			try {
+//				con.close();
+//			} catch (SQLException e) {
+//				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+//			}
 			
 			logger.debug("finished adding client to Support Tracker DB");
 			
@@ -611,7 +676,7 @@ The valid mobile phone should look like one of the below forms:
 					Statement st = con.createStatement();
 					ResultSet rs = st.executeQuery(query.toString());
 					// get the staffId from the query result
-					while (rs.next()) {
+					while (rs!=null && rs.next()) {
 						staffId = rs.getInt(1);
 					}
 				} catch (SQLException e) {
@@ -621,11 +686,11 @@ The valid mobile phone should look like one of the below forms:
 			}
 
 			// closing connection
-			try {
-				con.close();
-			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-			}
+//			try {
+//				con.close();
+//			} catch (SQLException e) {
+//				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+//			}
 			
 			logger.debug("finished adding staff to Support Tracker DB: ");
 			
@@ -685,52 +750,130 @@ The valid mobile phone should look like one of the below forms:
 	 * @return true if there are some users (status) have been changed, false otherwise
 	 * @throws SQLException if the connection to DB failed or SQL query failed to be executed
 	 */
-	public static boolean toggleUserStatus(String username, boolean enabled) throws SQLException{
+	public static boolean toggleUserStatus(String username, String clientAccountId, boolean enabled) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		logger.debug("toggling user in support tracker DB " + username + " to: " + enabled);
 		
-		// building SQL query
-		StringBuffer query = new StringBuffer("UPDATE ClientAccount SET active = ");
 		if(enabled){
-			query.append("'Y'");
+			return enableClientAccount(username, clientAccountId) > 0;
 		}else{
-			query.append("'N'");
-		}
-		query.append(" WHERE loginName = '" + username + "'");
-		
-		// connecting to Database server
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e1) {
-			throw e1;
-			// no need to log, it has been logged inthe getConnection()
+			return disableClientAccount(username) > 0;
 		}
 		
-		int result = -1;
-		if(con != null){
-			// execute the SQL
-			try {
-				Statement st = con.createStatement();
-				result = st.executeUpdate(query.toString());
-			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
-			} finally {
-				// closing connection
-				try {
-					con.close();
-				} catch (SQLException e) {
-					logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e);
-				}
-			}
-		}
-		
-		logger.debug("finished toggling user in support tracker DB " + username + " to: " + enabled);
-		
-		return result > 0;
 	}
+	
+	
+	/**
+	 * update the "active" column to "Y" for the row in ClientAccount table that match the given useranme and clientAccountId
+	 * @param username
+	 * @param clientAccountId
+	 * @return the number of rows that have been updated
+	 * @throws SQLException
+	 */
+	public static int enableClientAccount(String username, String clientAccountId) throws SQLException{
+		// building SQL query
+		String query = "UPDATE ClientAccount SET active = 'Y' WHERE loginName = ? and clientAccountId = ? ";
+				
+		int result = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, clientAccountId});
+		return result;
+	}
+	
+	/**
+	 * update the "active" column to "N" for the rows in ClientAccount table that match username
+	 * @param username
+	 * @return the number of rows that have been updated
+	 * @throws SQLException
+	 */
+	public static int disableClientAccount(String username) throws SQLException {
+		// building SQL query
+		String query = "UPDATE ClientAccount SET active = 'N' WHERE loginName = ? ";
+
+		int result = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		return result;
+	}
+	
+	/**
+	 * update the "recordStatus" to "N" for the rows in Staff table that match username
+	 * @param username
+	 * @return
+	 * @throws SQLException
+	 */
+	public static int disableStaffAccount(String username) throws SQLException {
+		// building SQL query
+		String query = "UPDATE Staff SET recordStatus='N' WHERE loginName = ? ";
+
+		int result = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		return result;
+	}
+
+	/**
+	 * update the "recordStatus" to "Y" for the rows in Staff table that match username
+	 * @param username
+	 * @param staffId
+	 * @return
+	 * @throws SQLException
+	 */
+	public static int enableStaffAccount(String username, String staffId) throws SQLException{
+		String query = "UPDATE Staff SET recordStatus='Y' WHERE loginName = ? and staffId = ?";
+
+		int result = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, staffId});
+
+		return result;
+	}
+	
+	
+	
+	
+	/**
+	 * @param username
+	 * @param clientAccountId
+	 * @return true if there is an account that match both username and clieant and its "active" column is not "Y".
+	 * 			false if there is an account that match both username and clieant and its "active" column is "Y".
+	 * @throws SQLException if there's no record that match both username and clientAccountId
+	 */
+	public static boolean isClientAccountDisabled(String username, String clientAccountId) throws SQLException{
+		if(username==null || username.trim().isEmpty()) throw new SQLException("No username given.");
+		
+		Map<String, String> userDetails = getUserDetails(username, clientAccountId);
+		if(userDetails==null || userDetails.isEmpty()){
+			throw new SQLException("No record of the given user: " + username);
+		}
+		return !userDetails.get("active").equals("Y");
+	}
+	/**
+	 * @param username
+	 * @param clientAccountId
+	 * @return true if there is an account that match both username and clieant and its "active" column is "Y".
+	 * 			false if there is an account that match both username and clieant and its "active" column is not "Y".
+	 * @throws SQLException if there's no record that match both username and clientAccountId
+	 */
+	public static boolean isClientAccountEnabled(String username, String clientAccountId) throws SQLException {
+		return !isClientAccountDisabled(username, clientAccountId);
+	}
+	
+	/**
+	 * @param username
+	 * @return true if there is at least a row that match username and its "recordStatus" is "Y"
+	 * @throws SQLException
+	 */
+	public static boolean isStaffAccountEnabled(String username) throws SQLException{
+		if(username==null || username.trim().isEmpty()) throw new SQLException("No username given.");
+		
+		String query = "SELECT * FROM Staff where loginName = ? and recordStatus = 'Y'";
+		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		return rs.next();
+	}
+	
+	/**
+	 * @param username
+	 * @return return true if there is no any row that match username and its "recordsStatus" is "Y"
+	 * @throws SQLException
+	 */
+	public static boolean isStaffAccountDisabled(String username) throws SQLException{
+		return !isStaffAccountEnabled(username);
+	}
+	
 	
 	/**
 	 * Use the given firstname and surname to produce a set of possible and available names
@@ -782,7 +925,7 @@ The valid mobile phone should look like one of the below forms:
 				// remove any names that have already been in the database
 				Statement st = con.createStatement();
 				ResultSet rs = st.executeQuery(query.toString());
-				while(rs.next()){
+				while(rs!=null && rs.next()){
 					String str = rs.getString(1);
 					names.remove(str);
 					logger.debug("Found: "+str);
@@ -793,11 +936,11 @@ The valid mobile phone should look like one of the below forms:
 			}
 			//MODIFIED CODE - NEEDS TO BE INSIDE IF - SPT-448
 			//Close connection (IF CONNECTION IS NOT NULL)
-			try {
-				con.close();
-			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e);
-			}
+//			try {
+//				con.close();
+//			} catch (SQLException e) {
+//				logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e);
+//			}
 			//END MODIFIED CODE
 		}
 		String[] strNames = new String[names.size()];
@@ -816,39 +959,50 @@ The valid mobile phone should look like one of the below forms:
 	 * @return an Object represent the connection to the database server
 	 * @throws SQLException if the connection failed.
 	 */
-	private static Connection getConnection() throws SQLException{
-		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+	public static Connection getConnection() throws SQLException{
+		if(con == null || con.isClosed()){
+			Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+			
+			logger.debug("About to connect to Support Tracker Database");
+			
+			jdbcUrl = LdapProperty.getProperty(DBConstants.ST_JDBC_URL);
+			jdbcUser = LdapProperty.getProperty(DBConstants.ST_JDBC_USER);
+			jdbcPassword = LdapProperty.getProperty(DBConstants.ST_JDBC_PASSWORD);
+			try {
+				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+				con = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword);
+				
+				if(con != null) logger.debug("Successfully connected to Support Tracker Database");
+				else logger.error("Fail in connecting to Support Tracker Database. Fail to define the failture reason.");
+				
+				return con;
+				
+			} catch (ClassNotFoundException e) {
+				logger.error(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND, e);
+				throw new SQLException(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND);
+				
+			} catch (ExceptionInInitializerError e){
+				logger.error(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB, e);
+				throw new SQLException(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB);
+				
+			} catch (LinkageError e){
+				logger.error(ErrorConstants.FAIL_LINKAGE_DB, e);
+				throw new SQLException(ErrorConstants.FAIL_LINKAGE_DB);
+				
+			} catch (SQLException e) {
+				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+				throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
+				
+			}
+		}
 		
-		logger.debug("About to connect to Support Tracker Database");
-		
-		jdbcUrl = LdapProperty.getProperty(DBConstants.ST_JDBC_URL);
-		jdbcUser = LdapProperty.getProperty(DBConstants.ST_JDBC_USER);
-		jdbcPassword = LdapProperty.getProperty(DBConstants.ST_JDBC_PASSWORD);
-		try {
-			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-			Connection con = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword);
-			
-			if(con != null) logger.debug("Successfully connected to Support Tracker Database");
-			else logger.error("Fail in connecting to Support Tracker Database. Fail to define the failture reason.");
-			
-			return con;
-			
-		} catch (ClassNotFoundException e) {
-			logger.error(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND, e);
-			throw new SQLException(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND);
-			
-		} catch (ExceptionInInitializerError e){
-			logger.error(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB, e);
-			throw new SQLException(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB);
-			
-		} catch (LinkageError e){
-			logger.error(ErrorConstants.FAIL_LINKAGE_DB, e);
-			throw new SQLException(ErrorConstants.FAIL_LINKAGE_DB);
-			
-		} catch (SQLException e) {
-			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-			throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
-			
+		return con;
+	}
+	
+	public static void closeConnection() throws SQLException{
+		if(con!=null){
+			con.close();
+			con = null;
 		}
 	}
 }

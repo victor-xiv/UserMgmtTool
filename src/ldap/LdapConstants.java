@@ -11,13 +11,14 @@ public class LdapConstants {
 	public static String SSL_CERT_LOC = "ssl.trustStore";
 	public static String SSL_CERT_PWD = "ssl.trustStorePassword";
 	public static String GROUP_DEFAULT = "group.default";
-	public static String GROUP_DN = "group.baseDN";
+	public static String CLIENT_DN = "client.baseDN";
 	public static String GROUP_OBJECT = "group.object";
 	public static String GROUP_ATTR = "group.attribute";
 	public static String USER_OBJECT = "user.object";
 	public static String USER_ATTR = "user.attribute";
 	public static String OUTPUT_FOLDER = "output.folder";
 	public static String GROUP_LDAP_CLIENT = "group.ldap.client";
+	public static String GROUP_LDAP_USER="group.ldap.user";
 	//ADDITIONAL CONSTANTS - SPT-312
 	//Code for 'Groups' entity (not 'Clients')
 	public static String BASEGROUP_DN = "basegroup.baseDN";

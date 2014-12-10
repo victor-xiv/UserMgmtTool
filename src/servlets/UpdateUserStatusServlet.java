@@ -2,9 +2,9 @@ package servlets;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.sql.SQLException;
 
 import javax.naming.NamingException;
+import javax.naming.directory.Attributes;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,7 +15,7 @@ import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 
-import tools.ConcertoJDBC;
+import tools.ConcertoAPI;
 import tools.SupportTrackerJDBC;
 
 @SuppressWarnings("serial")
@@ -57,23 +57,26 @@ public class UpdateUserStatusServlet extends HttpServlet {
 				return;
 			}
 			
-			boolean status = false;
+			boolean enabled = false;
 			if(action.equals("enabling")){
 				updated = lt.enableUser(userDN);
-				status = true;
+				enabled = true;
 			} else if(action.equals("disabling")){
 				updated = lt.disableUser(userDN);
-				status = false;
+				enabled = false;
 			} else {
 				lt.close();
 				return;
 			}
 			
 			String username = lt.getUsername(userDN);
+			Attributes attrs = lt.getUserAttributes(userDN);
 			try {
-				ConcertoJDBC.toggleUserStatus(username, status);
-				SupportTrackerJDBC.toggleUserStatus(username, status);
-			} catch (SQLException e1) {
+				SupportTrackerJDBC.toggleUserStatus(username, attrs.get("Info").get().toString(), enabled);
+				
+				if(enabled) ConcertoAPI.undeleteAccountOfGivenUser(username);
+				else ConcertoAPI.deleteAccountOfGivenUser(username);
+			} catch (Exception e1) {
 				response.getWriter().write("false|" + e1.getMessage());
 				return;
 				// we're not logging here, because it has been logged

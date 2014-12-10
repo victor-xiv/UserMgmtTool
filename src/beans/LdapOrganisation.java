@@ -40,7 +40,7 @@ public class LdapOrganisation{
 		}
 		
 		if( lt != null){
-			users = lt.getGroupUsers(name);
+			users = lt.getClientUsers(name);
 			Attributes attrs = lt.getOrganisationAttributes(name);
 			try{
 				setName(attrs.get("name")!=null ? attrs.get("name").get().toString():"");

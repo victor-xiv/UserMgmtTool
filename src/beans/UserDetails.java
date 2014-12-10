@@ -1,6 +1,7 @@
 package beans;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.log4j.Logger;
@@ -25,42 +26,46 @@ public class UserDetails {
 		Logger logger = Logger.getRootLogger();
 		logger.debug("Querying the details of user " + username + " from Support Tracker DB and Portal DB");
 		
-		Map<String, String> userDetails = null;
-		try {
-			userDetails = SupportTrackerJDBC.getUserDetails(username);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		if(userDetails == null){
-			// TODO
-		}
+		Map<String, String> userDetails = new HashMap<String, String>();
 		
+		// becuase both Concerto account and Support Tracker account are storing the same information, but some times both information have different values
+		// and we give priority to Support Tracker information.
+		// so, if there are different values, we will use the values stored in Support Tracker
+		// thats why we pull out the information from Concerto and put into userDetails
+		// then pull out information from Support Tracker and put into userDetails, if there are the same information, 
+		// the values from Support Tracker will replace the ones from Concerto
 		
 		try {
 			userDetails.putAll(ConcertoJDBC.getUserDetails(username));
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			// dt need to do anything
+		}
+		
+		try {
+			userDetails.putAll(SupportTrackerJDBC.getUserDetails(username, userDetails.get("info")));
+		} catch (SQLException e) {
+			// dt need to do anything
 		}
 		
 		setUsername(username);
-		setFirstName(userDetails.get("givenName")!=null?userDetails.get("givenName"):"");
-		setLastName(userDetails.get("sn")!=null?userDetails.get("sn"):"");
+
 		setDisplayName(userDetails.get("displayName")!=null?userDetails.get("displayName"):"");
 		setDepartment(userDetails.get("department")!=null?userDetails.get("department"):"");
 		setCompany(userDetails.get("company")!=null?userDetails.get("company"):"");
 		setDescription(userDetails.get("description")!=null?userDetails.get("description"):"");
 		setStreet(userDetails.get("streetAddress")!=null?userDetails.get("streetAddress"):"");
-		setCity(userDetails.get("l")!=null?userDetails.get("l"):"");
-		setState(userDetails.get("st")!=null?userDetails.get("st"):"");
-		setPostalCode(userDetails.get("postalCode")!=null?userDetails.get("postalCode"):"");
 		setCountryCode(userDetails.get("c")!=null?userDetails.get("c"):"");
 		setphoneNumber(userDetails.get("telephoneNumber")!=null?userDetails.get("telephoneNumber"):"");
 		setFax(userDetails.get("facsimileTelephoneNumber")!=null?userDetails.get("facsimileTelephoneNumber"):"");
 		setMobile(userDetails.get("mobile")!=null?userDetails.get("mobile"):"");
 		setEmail(userDetails.get("mail")!=null?userDetails.get("mail"):"");
 		setClientId(userDetails.get("info")!=null?userDetails.get("info"):"");
+		
+		setFirstName(userDetails.get("givenName")!=null?userDetails.get("givenName"):"");
+		setLastName(userDetails.get("sn")!=null?userDetails.get("sn"):"");
+		setCity(userDetails.get("l")!=null?userDetails.get("l"):"");
+		setState(userDetails.get("st")!=null?userDetails.get("st"):"");
+		setPostalCode(userDetails.get("postalCode")!=null?userDetails.get("postalCode"):"");
 		
 		logger.debug("Finished querying the details of user " + username + " from Support Tracker DB and Portal DB");
 	}

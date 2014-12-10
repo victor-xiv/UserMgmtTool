@@ -284,12 +284,12 @@ public class RegisterUserServlet extends HttpServlet {
 		boolean compExistsAsClient = lt.companyExists(company);
 		boolean compExistsAsGroup = lt.companyExistsAsGroup(company);
 
-		if(company.equals(LdapTool.ORION_HEALTH_NAME)){ 
-			// if this user is an orion health staff, 
-			// then we don't need to check whether the Orion Health exists in Clients and Groups 
-			compExistsAsClient = true;
-			compExistsAsGroup = true;
-		}
+//		if(company.equals(LdapTool.ORION_HEALTH_NAME)){ 
+//			// if this user is an orion health staff, 
+//			// then we don't need to check whether the Orion Health exists in Clients and Groups 
+//			compExistsAsClient = true;
+//			compExistsAsGroup = true;
+//		}
 		
 		// Get list of supported companies from database
 		List<String> orgs = null;
