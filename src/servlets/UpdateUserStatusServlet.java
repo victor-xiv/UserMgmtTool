@@ -72,7 +72,17 @@ public class UpdateUserStatusServlet extends HttpServlet {
 			String username = lt.getUsername(userDN);
 			Attributes attrs = lt.getUserAttributes(userDN);
 			try {
-				SupportTrackerJDBC.toggleUserStatus(username, attrs.get("Info").get().toString(), enabled);
+				String id = attrs.get("Info")==null ? "0" : attrs.get("Info").get().toString();
+				
+				// if it is a staff account
+				if(userDN.contains(lt.ORION_HEALTH_NAME)){
+					if(enabled) SupportTrackerJDBC.enableStaffAccount(username, id);
+					else SupportTrackerJDBC.disableStaffAccount(username);
+					
+				// if client account
+				} else {
+					SupportTrackerJDBC.toggleUserStatus(username, id, enabled);
+				}
 				
 				if(enabled) ConcertoAPI.undeleteAccountOfGivenUser(username);
 				else ConcertoAPI.deleteAccountOfGivenUser(username);

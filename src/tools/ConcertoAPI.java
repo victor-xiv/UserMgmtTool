@@ -573,8 +573,6 @@ info							: is the unique ID that get from clientAccountID column of the client
 		String userName = maps.get("sAMAccountName")[0];
 		String description = maps.get("description")[0];
 		String mail = maps.get("mail")[0];
-		String clientAccountId = maps.get("info")[0];
-		String company = maps.get("company")[0];
 		
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = getConcertoServicePort();
