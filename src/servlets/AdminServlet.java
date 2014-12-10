@@ -65,6 +65,7 @@ public class AdminServlet extends HttpServlet {
 				try {
 					LdapTool lt = new LdapTool();
 					List<String> groups = lt.getOrionHealthGroupsThisUserAllowToAccess(unescappedUserDN);
+					lt.close();
 					session.setAttribute(this.OHGROUPS_ALLOWED_ACCESSED, groups);
 				} catch (NamingException e) {
 					parameters.put("error", e.getMessage());

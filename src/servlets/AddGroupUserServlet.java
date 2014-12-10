@@ -87,7 +87,7 @@ public class AddGroupUserServlet extends HttpServlet {
 				baseGroups = lt.getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(ohGroupsThisUserCanAccess);
 			}
 				
-			lt.close();
+			if(lt!=null) lt.close();
 		} catch (Exception e){
 			// preapring a failed response to client
 			String value = String.format("<failed>Addition of organisation '%s' to group %s has failed. Reason of the failure: %s.</failed>", 

@@ -74,7 +74,7 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 				baseGroups = lt.getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(ohGroupsThisUserCanAccess);
 			}
 			
-			lt.close();
+			if(lt!=null) lt.close();
 			
 			if(attr != null){
 				namingEnum = attr.getAll();

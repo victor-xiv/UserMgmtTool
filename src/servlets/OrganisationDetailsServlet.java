@@ -205,6 +205,8 @@ public class OrganisationDetailsServlet extends HttpServlet{
 		sfXml.append("</response>");
 		
 		logger.debug("fixing account has been completed. the result of the process is: " + sfXml.toString());
+		if(lt!=null) lt.close();
+		
 		return sfXml.toString();
 	}
 	
@@ -322,6 +324,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 		// close the <response> root of XML and return it as a string
 		sfXml.append("</response>");
 		logger.debug("account status determination has been finished: " + sfXml.toString());
+		if(lt!=null) lt.close();
 		
 		return sfXml.toString();
 	}

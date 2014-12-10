@@ -240,6 +240,7 @@ public class TestServlet extends HttpServlet {
 			lt = new LdapTool();
 		} catch (FileNotFoundException | NamingException e) {
 			result += " Ldap cannot be connected because: " + e.getMessage();
+			if(lt!=null) lt.close();
 			return result;
 		}
 		
@@ -254,6 +255,7 @@ public class TestServlet extends HttpServlet {
 				}
 			} catch (NamingException e) {
 				result += " The tested company: \"" + maps.get("company")[0]  + "\" cannot be added because: " + e.getMessage();
+				if(lt!=null) lt.close();
 				return result;
 			}
 		
@@ -265,10 +267,12 @@ public class TestServlet extends HttpServlet {
 			try {
 				if (!lt.addCompanyAsGroup(maps.get("company")[0])) {
 					result += " But cannot be added into groups.";
+					if(lt!=null) lt.close();
 					return result;
 				}
 			} catch (NamingException e) {
 				result += " But cannot be added into groups because: " + e.getMessage();
+				if(lt!=null) lt.close();
 				return result;
 			}
 			result += " And was added successfully into groups.";
@@ -278,10 +282,12 @@ public class TestServlet extends HttpServlet {
 		try {
 			if(!lt.addUser(maps)){
 				result += " the tested user: \"" + maps.get("sAMAccountName")[0] + "\" couldnot be added.";
+				if(lt!=null) lt.close();
 				return result;
 			}
 		} catch (Exception e) {
 			result += " the tested user: \"" + maps.get("sAMAccountName")[0] + "\" couldnot be added because: " + e.getMessage();
+			if(lt!=null) lt.close();
 			return result;
 		}
 		
@@ -292,6 +298,7 @@ public class TestServlet extends HttpServlet {
 		if(!lt.deleteUser(userDN)){
 			result = "Ldap is succesfully connected. But, the tested user and company cannot be deleted. Please delete them manually (for next time test). "
 					+ "Username is: \"" + maps.get("sAMAccountName")[0] + "\" and company name is: \"" + maps.get("company")[0] + "\"";
+			if(lt!=null) lt.close();
 			return result;
 		}
 		
@@ -301,6 +308,7 @@ public class TestServlet extends HttpServlet {
 		String companyDN = "CN="+ maps.get("company")[0] +","+baseDN;
 		if(!lt.deleteGroupCompany(companyDN)){
 			result = "Ldap is sucessfully connected. But, the tested group cannot be deleted. Please delete it manually (for next time test). That group name is: \"" + maps.get("company")[0] + "\"";
+			if(lt!=null) lt.close();
 			return result;
 		}
 		
@@ -310,9 +318,11 @@ public class TestServlet extends HttpServlet {
 		if (baseDN==null) baseDN = "OU=Clients,DC=orion,DC=dmz";
 		if(!lt.deleteCompany(companyDN)){
 			result = "Ldap is sucessfully connected. But, the tested group cannot be deleted. Please delete it manually (for next time test). That group name is: \"" + maps.get("company")[0] + "\"";
+			if(lt!=null) lt.close();
 			return result;
 		}
 		
+		if(lt!=null) lt.close();
 		return "Ldap was successfully connected.";
 	}
 	

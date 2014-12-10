@@ -104,7 +104,7 @@ public class CheckTypeServlet extends HttpServlet {
 				ldap = true;
 			}
 			//Close LdapTool
-			lt.close();
+			if(lt!=null) lt.close();
 		}
 		
 		if (!ldap) {

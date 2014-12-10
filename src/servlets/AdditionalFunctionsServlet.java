@@ -78,6 +78,7 @@ public class AdditionalFunctionsServlet extends HttpServlet {
 			for(String s : users){
 				content += s + "\n";
 			}
+			lt.close();
 					
 		} catch (FileNotFoundException | NamingException e) {
 			logger.error("Failed to generate list of users who have no email address", e);
