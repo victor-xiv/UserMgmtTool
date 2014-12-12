@@ -1023,8 +1023,8 @@ info							: is the unique ID that get from clientAccountID column of the client
 		logger.debug("about to search for all the organisations that are stored in Clients folder");
 		
 		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
-		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
-		String filter = "("+groupAttr+"=*)";
+		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR); // it should be "cn"
+		String filter = "("+groupAttr+"=*)"; // it should be "cn"
 		SortedSet<String> output = new TreeSet<String>();
 		try{
 			logger.debug("LdapTool is about searching for groups of: " + baseDN);
@@ -1241,11 +1241,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * get the company name that the userDN is working for (from the LDAP server)
 	 * @param userDN represent the user/company. userDN must be a full dn-name and it must have not been escaped the reserved chars.
 	 * (e.g of the correct userDN that should give to this method: CN=Lisa, She/pherd,OU=Hospira Pty limited *Project*,OU=Clients,DC=orion,DC=dmz)
-	 * @return company simple name in String (not the DN name) or null if it cannot get one
+	 * @return company simple name (unescaped special chars name. e.g. comapnyname="Amicas, Ins" not "Amica\, Ins" in String (not the DN name) or null if it cannot get one
 	 */
 	public String getUserCompany(String userDN){
 		logger.debug("about to search for the company name of user: " + userDN);
-		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		String company = null;
 		try{
 			company = getOUvalueFromDNThasHasTwoOU(userDN);
@@ -1253,6 +1252,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 		}
 		if(company == null){
 			try{
+				userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 				Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 				company = attrs.get("company").get().toString();
 			}catch(NamingException | NullPointerException ex){
@@ -1388,15 +1388,15 @@ info							: is the unique ID that get from clientAccountID column of the client
 	
 	/**
 	 * Simple function to check if a given userDN exists.
-	 * @param fullname - user's display name
-	 * @param company - user's company
+	 * @param fullname - user's display name  (must have not been escaped any special chars)
+	 * @param company - user's company (must have not been escaped any special chars)
 	 * @return true if more than zero search matches (means userDN exists).
 	 */
 	public boolean userDNExists(String fullname, String company){
 		logger.debug("about to search for user: " + fullname + " from company: " + company);
 		
 		//Search user's company
-		String baseDN = "OU="+company+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
+		String baseDN = "OU="+Rdn.escapeValue(company)+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		//Create search string (CN=Display Name)
 		String filter = "CN="+fullname;
 		NamingEnumeration<SearchResult> e;

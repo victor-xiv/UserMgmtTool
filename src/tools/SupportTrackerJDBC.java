@@ -345,21 +345,30 @@ The valid mobile phone should look like one of the below forms:
 		query.append(  "LEFT OUTER JOIN Client_Country CC ON CL.clientId = CC.clientId ");
 		query.append(  "LEFT OUTER JOIN Country_Code AS CCode ON CC.countryCode = CCode.code ");
 		query.append(" WHERE CA.loginName LIKE ? ");
-		query.append(" and CA.clientAccountId = ? ");
+		
+		if(clientAccountId != null && !clientAccountId.trim().isEmpty()) query.append(" and CA.clientAccountId = ? ");
 
 		
 		Map<String, String> userDetails= new HashMap<>(); 
 		
 		try {
 			// executing the query
-			ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query.toString(), new String[]{username, clientAccountId});
+			ResultSet rs = null;
+			
+			if(clientAccountId != null && !clientAccountId.trim().isEmpty()){
+				rs = runGivenStatementWithParamsOnSupportTrackerDB(query.toString(), new String[]{username, clientAccountId});
+			} else {
+				rs = runGivenStatementWithParamsOnSupportTrackerDB(query.toString(), new String[]{username});
+			}
+			
 			ResultSetMetaData meta = rs.getMetaData();
 			meta.getColumnCount();
 			while (rs != null && rs.next()) {
 				logger.debug("Found user details: " + username);
 				// put user info (from the query results) into a Map object (usd)
 				for (int i = 1; i <= meta.getColumnCount(); i++) {
-					userDetails.put(meta.getColumnName(i), rs.getString(i));
+					String value = rs.getString(i) == null ? "" : rs.getString(i).trim();
+					userDetails.put(meta.getColumnName(i), value);
 					logger.debug(meta.getColumnName(i) + "|" + rs.getString(i));
 				}
 			}

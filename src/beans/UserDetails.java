@@ -36,13 +36,15 @@ public class UserDetails {
 		// the values from Support Tracker will replace the ones from Concerto
 		
 		try {
-			userDetails.putAll(ConcertoJDBC.getUserDetails(username));
+			Map<String, String> temp = ConcertoJDBC.getUserDetails(username);
+			if(temp != null && !temp.isEmpty()) userDetails.putAll(temp);
 		} catch (SQLException e) {
 			// dt need to do anything
 		}
 		
 		try {
-			userDetails.putAll(SupportTrackerJDBC.getUserDetails(username, userDetails.get("info")));
+			Map<String, String> temp = SupportTrackerJDBC.getUserDetails(username, null);
+			if(temp!=null && !temp.isEmpty()) userDetails.putAll(temp);
 		} catch (SQLException e) {
 			// dt need to do anything
 		}

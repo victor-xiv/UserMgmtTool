@@ -352,7 +352,6 @@ public class ChangePasswordServlet extends HttpServlet {
 			logger.debug("This userDN: " + userDN + " doesn't have a login (sAMAccountName) name.");
 			return "This user doesn't have a login name.";
 		}
-		String company = lt.getUserCompany(userDN);
 		Attributes attrs = lt.getUserAttributes(userDN);
 		try{
 			String clientAccountId = attrs.get("Info").get().toString();
