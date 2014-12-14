@@ -2,6 +2,7 @@ package tools;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -44,7 +45,7 @@ public class ConcertoJDBC {
 						  + "END, UA.cValue ");
 		query.append(  "FROM UserAttribute UA ");
 		query.append( "INNER JOIN cUser CU ON UA.cUser = CU.uniqueId ");
-		query.append( "WHERE CU.name = '"+username+"' ");
+		query.append( "WHERE CU.name = ? ");
 		query.append(   "AND UA.cValue IS NOT NULL ");
 		query.append(   "AND CAST(UA.cValue AS VARCHAR) <> '' ");
 		query.append(   "AND UA.name IN ('Full Name.Family Name', ");
@@ -56,8 +57,9 @@ public class ConcertoJDBC {
 		// executing the query
 		if(con != null){
 			try {
-				Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery(query.toString());
+				PreparedStatement st = con.prepareStatement(query.toString());
+				st.setString(1, username);
+				ResultSet rs = st.executeQuery();
 				logger.debug("Found user details: "+username);
 				
 				// put the key,value from the results into Map Object
@@ -98,67 +100,7 @@ public class ConcertoJDBC {
 	
 	
 	
-	/**
-	 * set [dbo].[cUser].[deleted] to either 0 (if given enabled==true) or 1 (enabled==false)
-	 * for any rows that contains name == the given username
-	 * @param username that want to apply the query on
-	 * @param enabled define the value of deleted. deleted is 0 if enabled==true, otherwise deleted is 1
-	 * @return true if the query was successfully executed, false otherwise
-	 * @throws SQLException if there is an exception before/during the connection, or exception during the query execution.
-	 */
-	public static boolean toggleUserStatus(String username, boolean enabled) throws SQLException{
-		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
-		
-		logger.debug("toggling user enable : " + username + " to: " + enabled);
-		
-		// building query statement
-		StringBuffer query = new StringBuffer("UPDATE cUser SET deleted = ");
-		if(enabled){
-			query.append("0");
-		}else{
-			query.append("1");
-		}
-		query.append(" WHERE name = '"+username+"'");
-		
-		// connecting
-		Connection con = getConnection();
-		
-		// execute the query
-		int result = -1;
-		if(con != null){
-			try {
-				Statement st = con.createStatement();
-				result = st.executeUpdate(query.toString());
-				
-			} catch (SQLException e) {
-				// because we rethrow the exception. So, we need to close the connection first.
-				try {
-					con.close();
-				} catch (SQLException e1) {
-					logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e1);
-					// we are not re-throwing this exception, because we're just trying to close the connection.
-				}
-				
-				// catch this exception and re-throw it, because we need a clean exception message
-				// to present on the web browser
-				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
-				
-			}
-			
-			// if there's no any exception in executing the query, then close the connection
-			try {
-				con.close();
-			} catch (SQLException e1) {
-				logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e1);
-				// we are not re-throwing this exception, because we're just trying to close the connection.
-			}
-		}
-		
-		logger.debug("finished toggling user enable : " + username + " to: " + enabled);
-		
-		return result > 0;
-	}
+	
 	
 	
 	

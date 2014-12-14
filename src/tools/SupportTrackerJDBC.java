@@ -508,11 +508,8 @@ The valid mobile phone should look like one of the below forms:
 			throw new SQLException("There is already this username in either ClientAccount or Staff table.");
 		}
 		
-		// creating query to select clientId that belong to the given companyName (stored in maps)
-		StringBuffer query = new StringBuffer();
+		
 		String companyName = maps.get("company")[0];
-		
-		
 		// handle special case, which the companyName is Orion Health
 		// the account being created is for the internal staff
 		if(companyName.trim().equalsIgnoreCase(LdapTool.ORION_HEALTH_NAME)){
@@ -522,104 +519,82 @@ The valid mobile phone should look like one of the below forms:
 		
 		
 		
-		
-		// e.g. example of a final query      SELECT clientId FROM Client WHERE companyName = 'Aamal Medical Co'
-		query.append("SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = '" + companyName + "'");
+		// creating query to select clientId that belong to the given companyName (stored in maps)
+		// e.g. final query should look like this:      "SELECT clientId FROM Client WHERE companyName = 'Aamal Medical Co'"
+		String qry = "SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = ?";
+		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(qry, new String[]{companyName});
 		int clientId = -1;
-		
-		// connecting to Database server
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e1) {
-			throw e1;
-			// no need to log, it has been logged in the getConnection()
+		while(rs!=null && rs.next()){
+			clientId = rs.getInt(1);
 		}
-
-		if (con != null) {
-			// executing the query and trying to get the clientId of the companyName to store in clientID
-			try {
-				Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery(query.toString());
-				while(rs!=null && rs.next()){
-					clientId = rs.getInt(1);
-				}
-			} catch (SQLException e) {
+				
+		//if there is a companyName in the DB (is not -1), insert a client account with this clientId
+		//the client account info contained in given maps
+		int status = -1;
+		if( clientId != -1 ){
+			// building a query (in String)
+			// e.g example of a query:   INSERT INTO ClientAccount (contactPersonName, contactPersonDepartment, contactPersonPosition, contactPersonPhone, contactPersonFax, contactPersonEmail, contactPersonMobile, loginName, clientId, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			StringBuffer query = new StringBuffer();
+			query.append("INSERT INTO ClientAccount (contactPersonName, contactPersonDepartment, ");
+			query.append("contactPersonPosition, contactPersonPhone, contactPersonFax, ");
+			query.append("contactPersonEmail, contactPersonMobile, loginName, clientId, active) ");
+			query.append("VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+			
+			String[] params = new String[10];
+			params[0] = maps.get("displayName")[0];
+			params[1] = maps.get("department")[0] == null ? "" : maps.get("department")[0];
+			params[2] = maps.get("description")[0] == null ? "" : maps.get("description")[0];
+			params[3] = maps.get("telephoneNumber")[0] == null ? "" : maps.get("telephoneNumber")[0];
+			params[4] = maps.get("facsimileTelephoneNumber")[0] == null ? "" : maps.get("facsimileTelephoneNumber")[0];
+			params[5] =	maps.get("mail")[0];
+			params[6] = maps.get("mobile")[0] == null ? "" : maps.get("mobile")[0];
+			params[7] = maps.get("sAMAccountName")[0];
+			params[8] = "" + clientId;
+			params[9] = "Y";
+			
+			try{
+				status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query.toString(), params);
+				logger.debug(String.format("Added user with name: %s and clientId %d successfully",
+									maps.get("displayName")[0], clientId));
+			} catch (SQLException e){
 				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 				throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
 			}
-				
-			//if there is a companyName in the DB (is not -1), insert a client account with this clientId
-			//the client account info contained in given maps
-			int status = -1;
-			if( clientId != -1 ){
-				// building a query (in String)
-				// e.g example of a query:   INSERT INTO ClientAccount (contactPersonName, contactPersonDepartment, contactPersonPosition, contactPersonPhone, contactPersonFax, contactPersonEmail, contactPersonMobile, loginName, clientId, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-				query = new StringBuffer();
-				query.append("INSERT INTO ClientAccount (contactPersonName, contactPersonDepartment, ");
-				query.append("contactPersonPosition, contactPersonPhone, contactPersonFax, ");
-				query.append("contactPersonEmail, contactPersonMobile, loginName, clientId, active) ");
-				query.append("VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-				try {
-					// building parameterized query
-					PreparedStatement pst = con.prepareStatement(query.toString());
-					pst.setString(1, maps.get("displayName")[0]);
-					pst.setString(2, maps.get("department")[0] == null ? "" : maps.get("department")[0]);
-					pst.setString(3, maps.get("description")[0] == null ? "" : maps.get("description")[0]);
-					pst.setString(4, maps.get("telephoneNumber")[0] == null ? "" : maps.get("telephoneNumber")[0]);
-					pst.setString(5, maps.get("facsimileTelephoneNumber")[0] == null ? "" : maps.get("facsimileTelephoneNumber")[0]);
-					pst.setString(6, maps.get("mail")[0]);
-					pst.setString(7, maps.get("mobile")[0] == null ? "" : maps.get("mobile")[0]);
-					pst.setString(8, maps.get("sAMAccountName")[0]);
-					pst.setInt(9, clientId);
-					pst.setString(10, "Y");
-					// execute the query
-					status = pst.executeUpdate();
-					logger.debug(String.format("Added user with name: %s and clientId %d successfully",  maps.get("displayName")[0], clientId));
-				} catch (SQLException e) {
-					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
-				}
-			} else {
-				// throw new exception because the caller of this method will use this message (of this exception) as the result to inform to the user.
-				throw new SQLException("This company name " + companyName + " deosn't exist in Support Tracker database.");
-			}
-			
-			// this client has been added, try to get and return its clientAccountId  
-			int clientAccountId = -1;
-			if( status > 0 ){
-				// building a query to query for clientAccountId from ClientAccount table
-				// the clientAccountID which just created with the insertion query earlier
-				query = new StringBuffer();
-				query.append("SELECT TOP 1 clientAccountId FROM ClientAccount WHERE loginName = '"+maps.get("sAMAccountName")[0]+"'");
-				try {
-					Statement st = con.createStatement();
-					ResultSet rs = st.executeQuery(query.toString());
-					// get the clientAccountID from the query result
-					while(rs!=null && rs.next()){
-						clientAccountId = rs.getInt(1);
-					}
-				} catch (SQLException e) {
-					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
-				}
-			}
-			
-			// closing connection
-//			try {
-//				con.close();
-//			} catch (SQLException e) {
-//				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-//			}
-			
-			logger.debug("finished adding client to Support Tracker DB");
-			
-			return clientAccountId;
-			//Extended } to encompass large block, to prevent null pointer exceptions on con - SPT-448
+
+		} else {
+			// throw new exception because the caller of this method will use
+			// this message (of this exception) as the result to inform to the
+			// user.
+			throw new SQLException("This company name " + companyName
+					+ " deosn't exist in Support Tracker database.");
 		}
-		return -1;
+
+		// this client has been added, try to get and return its clientAccountId
+		int clientAccountId = -1;
+		if (status > 0) {
+			clientAccountId = SupportTrackerJDBC.getClientAccountId(maps.get("sAMAccountName")[0]);
+		}
+
+		logger.debug("finished adding client to Support Tracker DB");
+
+		return clientAccountId;
 	}
 	
+	/**
+	 * query the Support Tracker DB and getting the last id (if there are more than one) of the ClientAccount that match with the given username
+	 * @param username is loginName (or sAMAccountName from Ldap)
+	 * @return last id (if there are more than one) of the ClientAccount that match with the given username
+	 * @throws SQLException
+	 */
+	public static int getClientAccountId(String username) throws SQLException{
+		String query = "SELECT clientAccountId FROM ClientAccount WHERE loginName = ?";
+		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		int id =  -1;
+		while(rs!=null && rs.next()){
+			id = rs.getInt(1);
+		}
+		return id;
+	}
 	
 	/**
 	 * use the given maps object to add a row into Staff table of Support Tracker DB
@@ -634,86 +609,67 @@ The valid mobile phone should look like one of the below forms:
 	public static int addStaffAccount(Map<String, String[]> maps) throws SQLException {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		logger.debug("about to add staff to Support Tracker DB: ");
-		
-		// connecting to Database server
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e1) {
-			throw e1;
-			// no need to log, it has been logged in the getConnection()
-		}
 
 		int status = 0;
-		if (con != null) {
-				String query = "INSERT INTO Staff "
+		String query = "INSERT INTO Staff "
 						+ "(positionCodeId, familyName, givenName, email, workPhone, "
 						+ "mobile, page, recordStatus, userPrivilegeId, loginName, "
 						+ "receiveSms) "
 						+ "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-				
-				try {
-					// building parameterized query
-					PreparedStatement pst = con.prepareStatement(query);
-					pst.setInt(1, 14);
-					pst.setString(2, maps.get("sn")[0]);
-					pst.setString(3, maps.get("givenName")[0]);
-					pst.setString(4, maps.get("mail")[0]);
-					pst.setString(5, maps.get("telephoneNumber")[0]);
-					pst.setString(6, maps.get("mobile")[0]);
-					pst.setString(7, ""); // page column
-					pst.setString(8, "Y"); // recordStatus column
-					pst.setInt(9, 2);   // userPrivilegeId column
-					pst.setString(10, maps.get("sAMAccountName")[0]);
-					pst.setString(11, "N");
-										
-					// execute the query
-					status = pst.executeUpdate();
-					
-					logger.debug(String.format("Added user with name: %s successfully", maps.get("displayName")[0]));
-				} catch (SQLException e) {
-					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
-				}
-			
-			// this staff account has been added, try to get and return its
-			// staffId
-			int staffId = -1;
-			if (status > 0) {
-				// building a query to query for staffId from
-				// Staff table
-				// the staffId which just created with the insertion
-				// query earlier
-				query = "SELECT staffId FROM Staff WHERE loginName = '" + 
-						maps.get("sAMAccountName")[0] + "'"; 
 
-				try {
-					Statement st = con.createStatement();
-					ResultSet rs = st.executeQuery(query.toString());
-					// get the staffId from the query result
-					while (rs!=null && rs.next()) {
-						staffId = rs.getInt(1);
-					}
-				} catch (SQLException e) {
-					logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+		// params for the query
+		String[] params = new String[11]; 
+		params[0] = "" + 14;
+		params[1] = maps.get("sn")[0];
+		params[2] = maps.get("givenName")[0];
+		params[3] = maps.get("mail")[0];
+		params[4] = maps.get("telephoneNumber")[0];
+		params[5] = maps.get("mobile")[0];
+		params[6] = "";// page column
+		params[7] = "Y"; // recordStatus column
+		params[8] = "2"; //userPrivilegeId column
+		params[9] = maps.get("sAMAccountName")[0];
+		params[10] = "N";
+		
+		try{
+			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, params);
+			logger.debug(String.format("Added user with name: %s successfully", maps.get("displayName")[0]));
+			
+		} catch (SQLException e) {
+			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
 					throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
-				}
-			}
-
-			// closing connection
-//			try {
-//				con.close();
-//			} catch (SQLException e) {
-//				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-//			}
+		}
 			
-			logger.debug("finished adding staff to Support Tracker DB: ");
-			
-			return staffId;
+		// this staff account has been added, try to get and return its
+		// staffId
+		int staffId = -1;
+		if (status > 0) {
+			staffId = SupportTrackerJDBC.getStaffId(maps.get("sAMAccountName")[0]);
 		}
 		
-		return -1;
+		logger.debug("finished adding staff to Support Tracker DB: ");
+
+		return staffId;
 	}
+	
+	
+	/**
+	 * query the Support Tracker DB and getting the last id (if there are more than one) of the Staff account that match with the given username
+	 * @param username is loginName (or sAMAccountName from Ldap)
+	 * @return last id (if there are more than one) of the account that match given username
+	 * @throws SQLException
+	 */
+	public static int getStaffId(String username) throws SQLException{
+		String query = "SELECT staffId FROM Staff WHERE loginName = ?";
+		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
+		int id =  -1;
+		while(rs!=null && rs.next()){
+			id = rs.getInt(1);
+		}
+		return id;
+	}
+	
+	
 	
 	
 	
@@ -728,32 +684,17 @@ The valid mobile phone should look like one of the below forms:
 		
 		logger.debug("deleting client that has ID from support tracker DB " + clientAccountId);
 		
-		String query = String.format("DELETE ClientAccount WHERE clientAccountId = %d", clientAccountId);
+		String query = "DELETE ClientAccount WHERE clientAccountId = ?";
 		
-		Connection con = null;
-		try {
-			con = getConnection();
-		} catch (SQLException e) {
-			throw e;
-			// don't need to log here, it has been logged in getConnection()
+		int st = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{""+clientAccountId});
+		
+		if(st > 0){
+			logger.debug(String.format("Deleted clientAccountId: %d successfully", clientAccountId));
+			return true;
+		} else {
+			logger.debug(String.format("There's no row affected when attampted to delete clientAccountId: %d.", clientAccountId));
+			return false;
 		}
-		
-		if(con != null){
-			// execute the delete query, return false if there's no recorded deleted
-			Statement st = con.createStatement();
-			
-			if(st.executeUpdate(query)!=0){
-				logger.debug(String.format("Deleted clientAccountId: %d successfully", clientAccountId));
-				return true;
-			} else {
-				logger.debug(String.format("There's no row affected when attampted to delete clientAccountId: %d.", clientAccountId));
-				return false;
-			}
-		}
-		
-		logger.debug("finished deleting client that has ID from support tracker DB " + clientAccountId);
-		
-		return false;
 	}
 	
 	
@@ -914,32 +855,18 @@ The valid mobile phone should look like one of the below forms:
 		names.add((surname+firstname.charAt(0)).toLowerCase()); //alanj
 		
 		// create a query that contains all those 4 possible names
-		StringBuffer query = new StringBuffer();
-		query.append("SELECT loginName FROM ClientAccount WHERE loginName IN ('");
-		query.append(names.first());
-		Iterator<String> it = names.iterator();
-		it.next();
-		while( it.hasNext() ){
-			query.append("', '" + it.next());
+		String query = "SELECT loginName FROM ClientAccount WHERE loginName IN (";
+		for(int i=0; i<names.size(); i++){
+			query += " ? ";
+			if(i != (names.size() -1)) query += ",";
 		}
-		query.append("')");
-		logger.debug(query.toString());
+		query += ")";
 		
-		// connecting to Database server
-		Connection con= null;
-		try {
-			con = getConnection();
-		} catch (SQLException e1) {
-			throw e1;
-			//no need to log, it has been logged inthe getConnection()
-		}
 		
-		if(con != null){
 			try {
 				// query those possible names from the database
 				// remove any names that have already been in the database
-				Statement st = con.createStatement();
-				ResultSet rs = st.executeQuery(query.toString());
+				ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, names.toArray(new String[names.size()]));
 				while(rs!=null && rs.next()){
 					String str = rs.getString(1);
 					names.remove(str);
@@ -957,7 +884,7 @@ The valid mobile phone should look like one of the below forms:
 //				logger.error(ErrorConstants.FAIL_CLOSING_DB_CONNECT, e);
 //			}
 			//END MODIFIED CODE
-		}
+
 		String[] strNames = new String[names.size()];
 		strNames = names.toArray(strNames);
 		

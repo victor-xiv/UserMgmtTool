@@ -1611,34 +1611,6 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			}
 		}
 	}
-	
-	
-//	/**
-//	 * 
-//	 * @param attributes
-//	 * @return
-//	 * @throws MalformedURLException
-//	 * @throws Exception
-//	 */
-//	private boolean isGivenUsernameDisabledInLdapConcertoAndSupportTracker(Attributes attributes) throws MalformedURLException, Exception{
-//		String escapedUserDN = (String)attributes.get("distinguishedname").get();
-//		String unescapedUserDN = (String)Rdn.unescapeValue(escapedUserDN);
-//		String username = (String) attributes.get("sAMAccountName").get();
-//		String id = (String) attributes.get("Info").get();
-//		boolean result = lt.isAccountDisabled(unescapedUserDN);
-//		if(ConcertoAPI.doesUserExist(username)){
-//			result = result && ConcertoAPI.isAccountDisabled(username);
-//		}
-//		if(isAnySupportTrackerClientAccountMatchUsername(username)){
-//			result = result && SupportTrackerJDBC.isClientAccountDisabled(username, id);
-//		}
-//		
-//		if(isAnySupportTrackerStaffAccountMatchUsername(username)){
-//			result = result && SupportTrackerJDBC.isStaffAccountDisabled(username);
-//		}
-//		
-//		return result;
-//	}
 
 }
 
