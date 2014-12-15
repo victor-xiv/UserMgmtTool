@@ -128,12 +128,12 @@ function getIdIndex(encodedUserDN){
 	function SubmitGroupForm() {
 		cleanUpThePage();
 		// send a POST request to AddGroupServlet with parameters: name (dn-name of this group) and groupselect (dn-name of selected group)
-    	var thisGroupDN = document.getElementById("thisGroupDN").value;
-    	var newGroupName = document.getElementById("groupselect").value;
+    	var thisGroupDN_encoded = document.getElementById("thisGroupDN").value;
+    	var newGroupName_encoded = document.getElementById("groupselect").value;
     	ajax.open("POST", "AddGroup", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-        var params = "thisGroupDN=" + encodeURIComponent(thisGroupDN) + "&newGroupName=" + encodeURIComponent(newGroupName);
+        var params = "thisGroupDN=" + thisGroupDN_encoded + "&newGroupName=" + newGroupName_encoded;
         ajax.send(params);
     	
         // handling ajax state
@@ -158,7 +158,7 @@ function getIdIndex(encodedUserDN){
 		        		for(var i=0; i<memberOfList.length; i++){
 		        			var dnValue = memberOfList[i].firstElementChild.firstChild.nodeValue;
 		        			var nameValue = memberOfList[i].lastElementChild.firstChild.nodeValue;
-		        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+dnValue+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
+		        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+escape(dnValue)+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
 		        		}
 		        		value += "</table>";
 		        		document.getElementById("memberOf").innerHTML = value;	              
@@ -168,7 +168,7 @@ function getIdIndex(encodedUserDN){
 		        		var nonMemberOfList = xmlDoc.getElementsByTagName("notMemberOf");
 		        		for(var i=0; i<nonMemberOfList.length; i++){
 		        			var nameValue = nonMemberOfList[i].firstChild.nodeValue;
-		        			value += "<option value='" + nameValue + "'>" + nameValue + "</option>";
+		        			value += "<option value='" + escape(nameValue) + "'>" + nameValue + "</option>";
 		        		}
 		        		document.getElementById("groupselect").innerHTML = value;
 		        		
@@ -185,7 +185,7 @@ function getIdIndex(encodedUserDN){
         		} else {
             		// if reponse is not 200
             		// set the add-removeFailed element
-            		var reason = "Addition of group '" + thisGroupDN + "' to group " + newGroupName +
+            		var reason = "Addition of group '" + unescape(thisGroupDN_encoded) + "' to group " + unescape(newGroupName_encoded) +
             					" has failed. Because Server is not responding to the request.";
     				document.getElementById("add-removeFailed").innerHTML = reason;
     				return false;
@@ -195,14 +195,14 @@ function getIdIndex(encodedUserDN){
 	}
 	
 	// remove a group "removedGroupDN" (appeared on the page) from given "fromGroupDN"
-	function deleteGroup(fromGroupDN){
+	function deleteGroup(fromGroupDN_encoded){
 		cleanUpThePage();
 		
-    	var removedGroupDN = document.getElementById("thisGroupDN").value;
+    	var removedGroupDN_encoded = document.getElementById("thisGroupDN").value;
     	ajax.open("POST", "RemoveAGroupFromGroup", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-        var params = "removedGroupDN=" + encodeURIComponent(removedGroupDN) + "&fromGroupDN=" + encodeURIComponent(fromGroupDN);
+        var params = "removedGroupDN=" + removedGroupDN_encoded + "&fromGroupDN=" + fromGroupDN_encoded;
         
         ajax.send(params);  
         
@@ -228,7 +228,7 @@ function getIdIndex(encodedUserDN){
 			        		for(var i=0; i<memberOfList.length; i++){
 			        			var dnValue = memberOfList[i].firstElementChild.firstChild.nodeValue;
 			        			var nameValue = memberOfList[i].lastElementChild.firstChild.nodeValue;
-			        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+dnValue+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
+			        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+escape(dnValue)+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
 			        		}
 		        		} else { // there's no group in the list memberOf
 		        			value += "<tr><td> No groups </td></tr>";
@@ -241,15 +241,15 @@ function getIdIndex(encodedUserDN){
 		        		var nonMemberOfList = xmlDoc.getElementsByTagName("notMemberOf");
 		        		for(var i=0; i<nonMemberOfList.length; i++){
 		        			var nameValue = nonMemberOfList[i].firstChild.nodeValue;
-		        			value += "<option value='" + nameValue + "'>" + nameValue + "</option>";
+		        			value += "<option value='" + escape(nameValue) + "'>" + nameValue + "</option>";
 		        		}
 		        		document.getElementById("groupselect").innerHTML = value;
 		        		
-		        		var passed = "This group has been deleted from group: " + fromGroupDN + " successfully.";
+		        		var passed = "This group has been deleted from group: " + unescape(fromGroupDN_encoded) + " successfully.";
             			document.getElementById("add-removePassed").innerHTML = passed;
 		        	} else {
 		        		var failedMessage = "Deletion of this group "
-														+ "from group " + fromGroupDN + " has failed."
+														+ "from group " + unescape(fromGroupDN_encoded) + " has failed."
 											+ failed.firstChild.nodeValue;
 							
 						document.getElementById("add-removeFailed").innerHTML = failedMessage;
@@ -271,10 +271,10 @@ function getIdIndex(encodedUserDN){
 	// then "xmlRslt" will be used to update the accounts statuses when user click on the "Show account status" button
 	// we do like this, because it is to slow to wait fro server to response with the account status
 	// so, we let the user work with the accounts first, then provide them the ability to update later when the server provided the response
-	function getAllAccountsForThisOrganisation(orgSimpleName){
+	function getAllAccountsForThisOrganisation(encodedClientSimpleName){
 		cleanUpThePage();
 		
-		var param = "rqst=getAllUsersOfOrganisation&orgSimpleName=" + encodeURI(orgSimpleName);
+		var param = "rqst=getAllUsersOfOrganisation&orgSimpleName=" + encodedClientSimpleName;
 		
 		var jqxhr = $.post("OrganisationDetails", param, function(result){
 			try{
@@ -301,9 +301,9 @@ function getIdIndex(encodedUserDN){
 				function(intIndex){
 					var userDN = $(this).find("dn")[0].firstChild.data;
 					var displayName = $(this).find("name")[0].firstChild.data;
-					var thisIdIndex = putNameAndGetIdIndex(encodeURI(userDN));
+					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					disabledUsersText += '<div id="'+thisIdIndex+'" class="row"><span style="float: inherit; width: 200px; text-align: center;">'+
-											'<a  id="'+thisIdIndex+'Title'+'"  href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '" style="font-style: italic; color: #808080;" >'+
+											'<a  id="'+thisIdIndex+'Title'+'"  href="UserDetails.jsp?dn=' +escape(userDN)+ '" style="font-style: italic; color: #808080;" >'+
 											displayName + ' (disabled)</a></span></div>';
 				}
 			);
@@ -315,9 +315,9 @@ function getIdIndex(encodedUserDN){
 				function(intIndex){
 					var userDN = $(this).find("dn")[0].firstChild.data;
 					var displayName = $(this).find("name")[0].firstChild.data;
-					var thisIdIndex = putNameAndGetIdIndex(encodeURI(userDN));
+					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					enabledUsersText += '<div id="'+thisIdIndex+'" class="row"><span style="float: inherit; width: 200px; text-align: center;">'+
-											'<a href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '">' +displayName+ '</a></span></div>';
+											'<a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></span></div>';
 				}
 			);
 			$('#EnbaledUsers').html(enabledUsersText);
@@ -333,10 +333,10 @@ function getIdIndex(encodedUserDN){
 					var userDN = $(this).find("dn")[0].firstChild.data;
 					var displayName = $(this).find("name")[0].firstChild.data;
 					var solution = $(this).find("solution")[0].firstChild.data;
-					var thisIdIndex = putNameAndGetIdIndex(encodeURI(userDN));
+					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					limitedUsersText += '<tr id="'+thisIdIndex+'">';
-					limitedUsersText += '<td><a  id="'+thisIdIndex+'Title'+'"  class="Add" onclick="fixUserAccount(\'' +encodeURI(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
-                						'<td><a href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '">' +displayName+ '</a></td>'+
+					limitedUsersText += '<td><a  id="'+thisIdIndex+'Title'+'"  class="Add" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+                						'<td><a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
                 						'</tr>';
 				}
 			);
@@ -355,10 +355,10 @@ function getIdIndex(encodedUserDN){
 						var userDN = $(this).find("dn")[0].firstChild.data;
 						var displayName = $(this).find("name")[0].firstChild.data;
 						var solution = $(this).find("solution")[0].firstChild.data;
-						var thisIdIndex = putNameAndGetIdIndex(encodeURI(userDN));
+						var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 						brokenUsersText += '<tr id="'+thisIdIndex+'">';
-						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="CantBeFixed" onclick="fixUserAccount(\'' +encodeURI(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
-											'<td><a style="color:black" href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '">' +displayName+ '</a></td>'+
+						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="CantBeFixed" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+											'<td><a style="color:black" href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
 		                					'</tr>';  
 					}	
 			);
@@ -368,10 +368,10 @@ function getIdIndex(encodedUserDN){
 						var userDN = $(this).find("dn")[0].firstChild.data;
 						var displayName = $(this).find("name")[0].firstChild.data;
 						var solution = $(this).find("solution")[0].firstChild.data;
-						var thisIdIndex = putNameAndGetIdIndex(encodeURI(userDN));
+						var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 						brokenUsersText += '<tr id="'+thisIdIndex+'">';
-						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="fixUserAccount(\'' +encodeURI(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
-											'<td><a style="font-style: italic; color: #808080;"  href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '">' +displayName+ ' (disabled)</a></td>'+
+						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+											'<td><a style="font-style: italic; color: #808080;"  href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ ' (disabled)</a></td>'+
 		                					'</tr>';  
 					}
 			);
@@ -381,10 +381,10 @@ function getIdIndex(encodedUserDN){
 					var userDN = $(this).find("dn")[0].firstChild.data;
 					var displayName = $(this).find("name")[0].firstChild.data;
 					var solution = $(this).find("solution")[0].firstChild.data;
-					var thisIdIndex = putNameAndGetIdIndex(encodeURI(userDN));
+					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					brokenUsersText += '<tr id="'+thisIdIndex+'">';
-					brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="fixUserAccount(\'' +encodeURI(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
-										'<td><a href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '">' +displayName+ '</a></td>'+
+					brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+										'<td><a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
 	                					'</tr>';  
 				}	
 			);
@@ -413,7 +413,7 @@ function getIdIndex(encodedUserDN){
 				
 				var userDN = $(xmlRslt).find("dn")[0].firstChild.data;
 				var displayName = $(xmlRslt).find("name")[0].firstChild.data;
-				var thisIdIndex = getIdIndex(encodeURI(userDN));
+				var thisIdIndex = getIdIndex(escape(userDN));
 				
 				// all broken has been fixed (no any failed to fix in the XML result)
 				if($(xmlRslt).find("failedToFix").length < 1){
@@ -429,7 +429,7 @@ function getIdIndex(encodedUserDN){
 					// if a disabled broken account has been fixed.
 					if(isItDisabledAcct){
 						var disabledUser = '<div id="'+thisIdIndex+'" class="row"><span style="float: inherit; width: 200px; text-align: center;">'+
-											'<a  id="'+thisIdIndex+'Title'+'"  href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '" style="font-style: italic; color: #808080;" '+
+											'<a  id="'+thisIdIndex+'Title'+'"  href="UserDetails.jsp?dn=' +escape(userDN)+ '" style="font-style: italic; color: #808080;" '+
 											'title="">'+ displayName + ' (disabled)</a></span></div>';
 						$('#DisabledUsers').append(disabledUser);
 					
@@ -437,7 +437,7 @@ function getIdIndex(encodedUserDN){
 					// other type of broken account has been fixed 
 					} else {
 						var fixedUser = '<div id="'+thisIdIndex+'" class="row"><span style="float: inherit; width: 200px; text-align: center;">'+
-											'<a href="UserDetails.jsp?dn=' +encodeURI(userDN)+ '">' +displayName+ '</a></span></div>';
+											'<a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></span></div>';
 						$('#EnbaledUsers').append(fixedUser);
 					}
 					
@@ -476,7 +476,7 @@ function getIdIndex(encodedUserDN){
 
 
 </head>
-  <body onload='getAllAccountsForThisOrganisation("<%=request.getParameter("name")%>")'>
+  <body onload='getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")'>
   
   
 
@@ -492,7 +492,7 @@ function getIdIndex(encodedUserDN){
               <td align="center">
                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo"/></div>
                 <h1><%=request.getParameter("name") %></h1>
-				<input id="thisGroupDN" type="hidden" value="<%=lt.getDNFromGroup(request.getParameter("name"))%>"/> <!-- this hidden input used to get complete groupDN for other processes -->
+				<input id="thisGroupDN" type="hidden" value="<%=java.net.URLEncoder.encode(lt.getDNFromGroup(request.getParameter("name")))%>"/> <!-- this hidden input used to get complete groupDN for other processes -->
 				
 				
 
@@ -565,14 +565,14 @@ function getIdIndex(encodedUserDN){
 		for( int i = 0; i < keySet.length; i++ ){
 			String userCn = keySet[i];
 			String userDn = users.get(userCn)[0];
-			userDn = java.net.URLEncoder.encode(userDn);
+			String encodedUserDN = java.net.URLEncoder.encode(userDn);
 			boolean accountDisabled = users.get(userCn)[1].equals("disabled"); 
 			if(accountDisabled){
 				disabledUserCNs.add(userCn);
 			} else { %>
 					<div class="row">
 						<span style="float: inherit; width: 200px; text-align: center;">
-							<a href="UserDetails.jsp?dn=<%=userDn %>"><%=userCn %></a>
+							<a href="UserDetails.jsp?dn=<%=encodedUserDN %>"><%=userCn %></a>
 						</span>
 					</div>
 				
@@ -584,10 +584,11 @@ function getIdIndex(encodedUserDN){
 	<%	for(int i=0; i<disabledUserCNs.size(); i++){ 
 			String userCn = disabledUserCNs.get(i);
 			String userDn = users.get(userCn)[0];
+			String encodedUserDN = java.net.URLEncoder.encode(userDn);
 	%>
       				<div class="row">
-							<span style="float: inherit; width: 200px; text-align: center;">
-								<a href="UserDetails.jsp?dn=<%=userDn %>"><%=userCn %></a>
+							<span style="float: inherit; width: 200px; text-align: center; font-style: italic; color: #808080;">
+								<a href="UserDetails.jsp?dn=<%=encodedUserDN %>"><%=userCn %> (disabled)</a>
 							</span>
 						</div>
 	<%	} %>
@@ -677,7 +678,7 @@ function getIdIndex(encodedUserDN){
 				String name = LdapTool.getCNValueFromDN(dn);
 				groups.remove(name);%>
 					<tr id='<%=dn%>'>
-                    	<td><a class="Delete" onclick="deleteGroup('<%=dn%>')" href="#" title="Delete"></a></td>
+                    	<td><a class="Delete" onclick="deleteGroup('<%=java.net.URLEncoder.encode(dn)%>')" href="#" title="Delete"></a></td>
 						<td><%= name %></td>
                     </tr>
 		<% 	}
@@ -692,7 +693,7 @@ function getIdIndex(encodedUserDN){
                   <input type="hidden" id="name" name="name" value="<%= request.getParameter("name") %>" />
                   <select name="groupselect" id="groupselect">
 			<% for (String group : groups) {%>
-		  		    <option value="<%= group %>"><%= group %></option>
+		  		    <option value="<%= java.net.URLEncoder.encode(group) %>"><%= group %></option>
 		 	<% } %>
                   </select>
                   <a class="Button" href="#" id="addbutton" onclick="javascript: SubmitGroupForm()">Add Organisation to Group</a>

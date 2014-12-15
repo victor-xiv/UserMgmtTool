@@ -49,36 +49,25 @@ public class SupportTrackerJDBC {
 		String query = "SELECT contactPersonMobile " +
 							"FROM ClientAccount " +
 							"WHERE loginName = ? " +
-							"and clientId = (SELECT clientId " +
-												"FROM Client " +
-												"where companyName = ?)";
+							"and clientAccountId = ?";
 		
 		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, clientAccountId});
 		
-		ArrayList<String> results = new ArrayList<>();
+		String result = null;
 		while(rs!=null && rs.next()){
-			results.add(rs.getString("contactPersonMobile"));
+			result = rs.getString("contactPersonMobile");
 		}
 		
-		// if results are more than one record => try to get the one active
-		String result = null;
-		if(results.size() > 1){
-			query = "SELECT contactPersonMobile " +
-						"FROM ClientAccount " +
-						"WHERE loginName = ? " +
-						"and active = 'Y' " +
-						"and clientId = (SELECT clientId " +
-											"FROM Client " +
-											"where companyName = ?)";
+		// if there's no result from ClientAccount, try to query the Staff account table
+		if(result == null){
+			query = "SELECT mobile FROM Staff where loginName = ?";
 
-			rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, clientAccountId});
+			rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
 			
-			// if there are more than active records, => just pick the first one
-			if(rs!=null && rs.next()){
-				result = rs.getString("contactPersonMobile");
+			// if there are more than active records, => just pick the last one
+			while(rs!=null && rs.next()){
+				result = rs.getString("mobile");
 			}
-		} else if (results.size() == 1){
-			result = results.get(0);
 		}
 		
 		logger.debug("mobile number of " + username + " is: " + result);
@@ -256,6 +245,17 @@ The valid mobile phone should look like one of the below forms:
 				}
 				
 			}
+		}
+		return qryStm.executeUpdate();
+	}
+	
+	
+	public static int runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(String updateQuery, String[] params) throws SQLException{
+		Connection con = getConnection();
+		PreparedStatement qryStm = con.prepareStatement(updateQuery);
+		for (int i=0; i<params.length; i++) {
+			String param = params[i];
+			qryStm.setString(i+1, param);
 		}
 		return qryStm.executeUpdate();
 	}
@@ -553,7 +553,8 @@ The valid mobile phone should look like one of the below forms:
 			params[9] = "Y";
 			
 			try{
-				status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query.toString(), params);
+				status = SupportTrackerJDBC.runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query.toString(), params);
+//				status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query.toString(), params);
 				logger.debug(String.format("Added user with name: %s and clientId %d successfully",
 									maps.get("displayName")[0], clientId));
 			} catch (SQLException e){
@@ -632,7 +633,8 @@ The valid mobile phone should look like one of the below forms:
 		params[10] = "N";
 		
 		try{
-			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, params);
+			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query, params);
+//			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, params);
 			logger.debug(String.format("Added user with name: %s successfully", maps.get("displayName")[0]));
 			
 		} catch (SQLException e) {

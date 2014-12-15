@@ -62,7 +62,7 @@
 	List<String> userGroupsList = Arrays.asList(userGroups);
   for( int i = 0; i < userGroups.length; i++ ){  %>
                   <div class="row">
-                    <a href="OrganisationDetails.jsp?name=<%=userGroups[i] %>"><%=userGroups[i] %></a>
+                    <a href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(userGroups[i]) %>"><%=userGroups[i] %></a>
                   </div>
 <%  } 
   List<String> orgs = SupportTrackerJDBC.getOrganisations();

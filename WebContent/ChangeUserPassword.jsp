@@ -96,7 +96,7 @@ function SubmitForm(){
 	ajax3.open("POST", "ChangePassword", true);
 	ajax3.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
 	ajax3.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-	var params = "rqst=" + "ChangePassword" + "&NewPsw=" + encodeURI(document.getElementById('password01').value);
+	var params = "rqst=" + "ChangePassword" + "&NewPsw=" + escape(document.getElementById('password01').value);
 	ajax3.send(params);
 
 	// handling ajax state

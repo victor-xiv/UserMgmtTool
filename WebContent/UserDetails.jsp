@@ -218,14 +218,14 @@
         }
         return false;
     }
-    function deleteGroup(groupDN){
+    function deleteGroup(encodedGroupDN){
     	cleanUpThePage();
     	
-    	var dn = document.getElementById("dnInput").value;
+    	var encodedUserDN = document.getElementById("dnInput").value;
     	ajax.open("POST", "RemoveAGroupFromUser", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-        var params = "userDN=" + encodeURIComponent(dn) + "&groupDN=" + encodeURIComponent(groupDN);
+        var params = "userDN=" + encodedUserDN + "&groupDN=" + encodedGroupDN;
         
         ajax.send(params);  
         
@@ -252,7 +252,7 @@
 			        		for(var i=0; i<memberOfList.length; i++){
 			        			var dnValue = memberOfList[i].firstElementChild.firstChild.nodeValue;
 			        			var nameValue = memberOfList[i].lastElementChild.firstChild.nodeValue;
-			        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+dnValue+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
+			        			value += "<tr id='" +escape(dnValue)+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+escape(dnValue)+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
 			        		}
 		        		} else { // there's no group in the list memberOf
 		        			value += "<tr><td> No groups </td></tr>";
@@ -265,15 +265,15 @@
 		        		var nonMemberOfList = xmlDoc.getElementsByTagName("notMemberOf");
 		        		for(var i=0; i<nonMemberOfList.length; i++){
 		        			var nameValue = nonMemberOfList[i].firstChild.nodeValue;
-		        			value += "<option value='" + nameValue + "'>" + nameValue + "</option>";
+		        			value += "<option value='" + escape(nameValue) + "'>" + nameValue + "</option>";
 		        		}
 		        		document.getElementById("groupselect").innerHTML = value;
 		        		
-            			var passed = "This user has been deleted from group: " + groupDN + " successfully.";
+            			var passed = "This user has been deleted from group: " + unescape(encodedGroupDN) + " successfully.";
             			document.getElementById("add-removeGroupPassed").innerHTML = "<font color=\"green\"><b>" + passed +"</b></font>";
 		        	} else {
-		        		var failedMessage = "<font color=\"red\"><b>Deletion of group '" + groupDN 
-														+ "' from user " + dn + " has failed.</b>"
+		        		var failedMessage = "<font color=\"red\"><b>Deletion of group '" + unescape(encodedGroupDN) 
+														+ "' from user " + unescape(encodedUserDN) + " has failed.</b>"
 											+ "<b>"+ failed.firstChild.nodeValue +"</b></font>";
 							
 						document.getElementById("add-removeGroupFailed").innerHTML = failedMessage;
@@ -295,13 +295,13 @@
     	
     	// send a POST request to AddGroupUser servlet with parameters: dn and gropselect
     	// this is a dn-name of this user
-    	var dn = document.getElementById("dnInput").value;
+    	var encodedUserDN = document.getElementById("dnInput").value;
     	// this groupSelect is just a simple name (not a dn-name)
-    	var groupSelect = document.getElementById("groupselect").value; 
+    	var encodedGroupSelect = document.getElementById("groupselect").value; 
     	ajax.open("POST", "AddGroupUser", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-        var params = "dn=" + encodeURIComponent(dn) + "&groupselect=" + encodeURIComponent(groupSelect);
+        var params = "dn=" + encodedUserDN + "&groupselect=" + encodedGroupSelect;
         ajax.send(params);
     	
         // handling ajax state
@@ -326,7 +326,7 @@
 		        		for(var i=0; i<memberOfList.length; i++){
 		        			var dnValue = memberOfList[i].firstElementChild.firstChild.nodeValue;
 		        			var nameValue = memberOfList[i].lastElementChild.firstChild.nodeValue;
-		        			value += "<tr id='" +dnValue+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+dnValue+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
+		        			value += "<tr id='" +escape(dnValue)+ "'> <td><a class='Delete' onclick=\"deleteGroup('"+escape(dnValue)+"')\" href='#' title='Delete'></a></td> <td>"+nameValue+"</td> </tr>";
 		        		}
 		        		value += "</table>";
 		        		document.getElementById("memberOf").innerHTML = value;	              
@@ -336,7 +336,7 @@
 		        		var nonMemberOfList = xmlDoc.getElementsByTagName("notMemberOf");
 		        		for(var i=0; i<nonMemberOfList.length; i++){
 		        			var nameValue = nonMemberOfList[i].firstChild.nodeValue;
-		        			value += "<option value='" + nameValue + "'>" + nameValue + "</option>";
+		        			value += "<option value='" + escape(nameValue) + "'>" + nameValue + "</option>";
 		        		}
 		        		document.getElementById("groupselect").innerHTML = value;
 		        		
@@ -351,8 +351,8 @@
         		} else {
             		// if reponse is not 200
             		// set the add-removeGroupFailed element
-            		var reason = "<font color=\"red\"><b>Addition of organisation '" + dn 
-    															+ "' to group " + groupSelect + " has failed.</b>"
+            		var reason = "<font color=\"red\"><b>Addition of organisation '" + unescape(encodedUserDN) 
+    															+ "' to group " + unescape(encodedGroupSelect) + " has failed.</b>"
     												  "<b> Server is not responding to the request. </b>"
     													+"</font>";
     				document.getElementById("add-removeGroupFailed").innerHTML = reason;
@@ -364,7 +364,7 @@
     function ToggleStatus() {
     	cleanUpThePage();
     	
-    	var url = "UpdateUserStatus?dn="+encodeURIComponent('<%=request.getParameter("dn") %>');
+    	var url = "UpdateUserStatus?dn=<%=java.net.URLEncoder.encode(request.getParameter("dn")) %>";
         if (document.getElementById('accstatus').innerHTML == "Disabled") {
             url += "&action=enabling";
         }else{
@@ -635,8 +635,8 @@ NamingEnumeration e = attr.getAll();
 		dn = (String)Rdn.unescapeValue(dn);
 		String name = LdapTool.getCNValueFromDN(dn);
 		baseGroups.remove(name);%>
-	              <tr id='<%= dn %>'>
-	              		<td><a class="Delete" onclick="deleteGroup( '<%= dn %>' )" href="#" title="Delete"></a></td>
+	              <tr id='<%= java.net.URLEncoder.encode(dn) %>'>
+	              		<td><a class="Delete" onclick="deleteGroup( '<%= java.net.URLEncoder.encode(dn) %>' )" href="#" title="Delete"></a></td>
 	              		<td><%= name %></td>
 	              </tr>
 	<%} 
@@ -649,12 +649,12 @@ NamingEnumeration e = attr.getAll();
                 <form id="addto" method="post" action="AddGroupUser">
                   <!-- <br /><span id="addlabel"><b>Add to Group:</b></span><br /> -->
                   <input id="dnInput" type="hidden" name="dn" value="
-    <%=request.getParameter("dn") %>" />
+    <%=java.net.URLEncoder.encode(request.getParameter("dn")) %>" />
     <%session.setAttribute("dn", request.getParameter("dn")); %>
                   <select name="groupselect" id="groupselect">
     <%for (String group : baseGroups) {%>
 		  		    <option value="
-		<%= group %>"><%= group %>
+		<%= java.net.URLEncoder.encode(group) %>"><%= group %>
 		  		    </option>
 	<%}%>
                   </select>
