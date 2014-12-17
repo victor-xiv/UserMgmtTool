@@ -196,6 +196,9 @@ The valid mobile phone should look like one of the below forms:
 	 * @throws SQLException if DB connection failed during the process.
 	 */
 	public static ResultSet runGivenStatementWithParamsOnSupportTrackerDB(String query, String[] params) throws SQLException {
+		Logger.getRootLogger().debug("run query: " + query + " with params: " + params);
+		
+		
 		Connection con = getConnection();
 		PreparedStatement qryStm = con.prepareStatement(query);
 		for (int i=0; i<params.length; i++) {
@@ -229,6 +232,8 @@ The valid mobile phone should look like one of the below forms:
 	 * @throws SQLException if DB connection failed during the process.
 	 */
 	public static int runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(String updateQuery, String[] params) throws SQLException{
+		Logger.getRootLogger().debug("run query: " + updateQuery + " with params: " + params);
+		
 		Connection con = getConnection();
 		PreparedStatement qryStm = con.prepareStatement(updateQuery);
 		for (int i=0; i<params.length; i++) {
@@ -251,6 +256,8 @@ The valid mobile phone should look like one of the below forms:
 	
 	
 	public static int runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(String updateQuery, String[] params) throws SQLException{
+		Logger.getRootLogger().debug("run query: " + updateQuery + " with params: " + params);
+		
 		Connection con = getConnection();
 		PreparedStatement qryStm = con.prepareStatement(updateQuery);
 		for (int i=0; i<params.length; i++) {
@@ -398,6 +405,7 @@ The valid mobile phone should look like one of the below forms:
 		logger.debug("selecting the details of a staff: " + username);
 		
 		String query = "SELECT  " +
+							" staffId, " +
 							" positionCodeId as positionCodeId, " +
 							" familyName as sn, " +
 							" givenName as givenName, " +
@@ -597,6 +605,45 @@ The valid mobile phone should look like one of the below forms:
 		return id;
 	}
 	
+	
+	/**
+	 * update the ClientAccount table with the given maps on any rows (accounts) that match to username and clientAccountId
+	 * @param username
+	 * @param clientAccountId
+	 * @param maps must contains key/value for these keys: {"displayName", "department", "description", "telephoneNumber",
+	 *  "facsimileTelephoneNumber", "mail", "mobile", "sAMAccountName"}
+	 * @return true if at least one row has been updated, false if there's no any row has been updated.
+	 */
+	public static boolean updateClientAccount(String username, String clientAccountId, Map<String,String[]> maps){
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("about to update client to Support Tracker DB: " + username);
+		
+		String query = "UPDATE ClientAccount SET contactPersonName = ? , contactPersonDepartment = ? , "
+						+ " contactPersonPosition = ? , contactPersonPhone = ? , contactPersonFax = ? , "
+						+ " contactPersonEmail = ? , contactPersonMobile = ? WHERE loginName = ? ";		
+		String[] params = new String[8];
+		params[0] = maps.get("displayName")[0];
+		params[1] = maps.get("department") == null ? "" : maps.get("department")[0];
+		params[2] = maps.get("description") == null ? "" : maps.get("description")[0];
+		params[3] = maps.get("telephoneNumber") == null ? "" : maps.get("telephoneNumber")[0];
+		params[4] = maps.get("facsimileTelephoneNumber") == null ? "" : maps.get("facsimileTelephoneNumber")[0];
+		params[5] =	maps.get("mail")==null ? "":maps.get("mail")[0];
+		params[6] = maps.get("mobile") == null ? "" : maps.get("mobile")[0];
+		params[7] = maps.get("sAMAccountName")[0];
+		
+		try{
+			int status = runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query, params);
+			logger.debug(String.format("Update user with name: %s successfully", username));
+			return status > 0;
+		} catch (SQLException e){
+			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+			return false;
+		}
+	}
+
+
+	
 	/**
 	 * use the given maps object to add a row into Staff table of Support Tracker DB
 	 * @param maps must have * keys, and its value is an element array, where the element at index 0 is the value
@@ -611,6 +658,13 @@ The valid mobile phone should look like one of the below forms:
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		logger.debug("about to add staff to Support Tracker DB: ");
 
+		// we are not allowing to have the same username in the database 
+		String username = maps.get("sAMAccountName")[0];
+		if(isAnySupportTrackerClientAccountMatchUsername(username)
+				|| isAnySupportTrackerStaffAccountMatchUsername(username)){
+			throw new SQLException("There is already this username in either ClientAccount or Staff table.");
+		}
+		
 		int status = 0;
 		String query = "INSERT INTO Staff "
 						+ "(positionCodeId, familyName, givenName, email, workPhone, "
@@ -671,6 +725,42 @@ The valid mobile phone should look like one of the below forms:
 		return id;
 	}
 	
+	
+	/**
+	 * update the Staff table with the given paramMaps on any rows (accounts) that match to username
+	 * @param username
+	 * @param paramMaps: must contains key/value for these keys:   {"sn", "givenName", "mail", "telephoneNumber", "mobile"}
+	 * @return true if at least one row has been updated, false if there's no any row has been updated.
+	 */
+	public static boolean updateStaffAccount(String username, Map<String,String[]> paramMaps){
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		logger.debug("about to update staff to Support Tracker DB: " + username);
+
+		int status = 0;
+		String query = "UPDATE Staff SET familyName = ? , givenName= ? , "
+				+ " email = ? , workPhone = ? , mobile = ? WHERE loginName = ?";
+
+		// params for the query
+		String[] params = new String[6]; 
+		params[0] = paramMaps.get("sn")==null ? "":paramMaps.get("sn")[0];
+		params[1] = paramMaps.get("givenName")==null ? "":paramMaps.get("givenName")[0];
+		params[2] = paramMaps.get("mail")==null ? "":paramMaps.get("mail")[0];
+		params[3] = paramMaps.get("telephoneNumber")==null ? "":paramMaps.get("telephoneNumber")[0];
+		params[4] = paramMaps.get("mobile")==null ? "":paramMaps.get("mobile")[0];
+		params[5] = username;
+		
+		try{
+			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query, params);
+			logger.debug(String.format("Update user with name: %s successfully", username));
+			
+		} catch (SQLException e) {
+			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+		}
+		
+		logger.debug("finished adding staff to Support Tracker DB: ");
+
+		return status > 0;
+	}
 	
 	
 	
@@ -772,10 +862,10 @@ The valid mobile phone should look like one of the below forms:
 	 * @return
 	 * @throws SQLException
 	 */
-	public static int enableStaffAccount(String username, String staffId) throws SQLException{
-		String query = "UPDATE Staff SET recordStatus='Y' WHERE loginName = ? and staffId = ?";
+	public static int enableStaffAccount(String username) throws SQLException{
+		String query = "UPDATE Staff SET recordStatus='Y' WHERE loginName = ?";
 
-		int result = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, staffId});
+		int result = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
 
 		return result;
 	}

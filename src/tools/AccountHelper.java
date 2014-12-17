@@ -149,6 +149,20 @@ mobile
 			return "false|Requesting user already exists in Concerto server";
 		}
 		
+		// we are not allowing Support Tracker DB (in ClientAccount table and Staff table) to have more than one username
+		boolean usrExistsInSupporTrackerDB = false;
+		try{
+			usrExistsInSupporTrackerDB = SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(userName)
+										|| SupportTrackerJDBC.isAnySupportTrackerStaffAccountMatchUsername(userName);
+		} catch (SQLException e){
+			return "false|Couldnot connection to Support Tracker DB";
+		}
+		if(usrExistsInSupporTrackerDB){
+			return "false|Requesting username already exists in Support Tracker DB.";
+		}
+		
+		
+		
 		// ADDING USER ACCOUNT CODE STARTS FROM HERE \\
 		
 		int clientAccountId = -1;
@@ -277,7 +291,7 @@ mobile
 	
 	
 	/**
-	 * a helper method to help doGet() to delete clientAccountId from the Support Tracker DB. (this method is used to avoid duplicate code only)
+	 * a helper method to help createAccount() to delete clientAccountId from the Support Tracker DB. (this method is used to avoid duplicate code only)
 	 * It was successful to add a user into support tracker (and the clientAccountId was returned from support tracker).
 	 * But, it was unsuccessful to add that user to LDAP. So, we need to delete this newly added clientAccountId from Support Tracker.
 	 * @param clientAccountId
@@ -292,4 +306,7 @@ mobile
 			logger.error("An exception occured while deleting this clientAccountId: " + clientAccountId);
 		}
 	}
+	
+	
+	
 }

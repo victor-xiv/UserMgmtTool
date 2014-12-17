@@ -2,7 +2,26 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <title>Person: <%=request.getParameter("dn") %></title>
+  
+  	<%
+  		// synchronizing the account details from Support Tracker DB to Ldap Account
+  		// Because we are allowing the user to modify their name (first name, family name)
+  		// which result to the posibility of:
+  		// a change of the display name
+  		// a change of DN (distinguished name) of the account.
+  		// So, after the synchronization and if there was a change in display name (or distinguished name)
+  		// then the value of "dn" parameter held in the request or request.getParameter("dn") is out of date
+  		// and the value userDN after this line 'userDN = SyncAccountDetails.syncAndGetBackNewUserDNForGivenUserDN(userDN);'
+  		// is the up to date one.
+  		
+  		// so, if you need a userDN in this page, you have to use userDN variable, instead of getting
+  		// the value from  request.getParameter("dn").
+  	
+  		String userDN = request.getParameter("dn"); 
+  		userDN = SyncAccountDetails.syncAndGetBackNewUserDNForGivenUserDN(userDN);
+  	%>
+  
+    <title>Person: <%=userDN %></title>
     <script type="text/javascript" language="javascript" src="./js/ajaxgen.js"></script>
     <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
     <link rel="stylesheet" href="./css/general.css" type="text/css" />
@@ -25,10 +44,10 @@
   	<%@ page import="javax.naming.ldap.Rdn" %>
   	<%@ page import="java.util.List" %>
   	<%@ page import="servlets.AdminServlet" %>
+  	<%@ page import="tools.SyncAccountDetails" %>
   	
   	
     <% 	try{
-    		String userDN = request.getParameter("dn");
     		user.processUserDN(userDN);
     		groups.refreshGetUserGroup();
     		
@@ -50,7 +69,7 @@
 	    Set<String> baseGroups = null;
 	
 	    if(lt != null){
-	    	attrs = lt.getUserAttributes(request.getParameter("dn"));
+	    	attrs = lt.getUserAttributes(userDN);
 	    	attr = attrs.get("memberOf");
 	    	List<String> ohGroupsThisUserCanAccess = (List<String>)session.getAttribute(AdminServlet.OHGROUPS_ALLOWED_ACCESSED);
 	    	if(ohGroupsThisUserCanAccess == null){
@@ -364,7 +383,7 @@
     function ToggleStatus() {
     	cleanUpThePage();
     	
-    	var url = "UpdateUserStatus?dn=<%=java.net.URLEncoder.encode(request.getParameter("dn")) %>";
+    	var url = "UpdateUserStatus?dn=<%=java.net.URLEncoder.encode(userDN) %>";
         if (document.getElementById('accstatus').innerHTML == "Disabled") {
             url += "&action=enabling";
         }else{
@@ -461,8 +480,8 @@
                       <span class="formw">
                         <input disabled="disabled" type="text" id="sAMAccountName" name="sAMAccountName" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="1"
                          value="<%=user.getUsername() %>" />
-                        <input type="hidden" name="dn" value="<%=request.getParameter("dn") %>" />
-<%	session.setAttribute("dn", request.getParameter("dn")); %>
+                        <input type="hidden" name="dn" value="<%=userDN %>" />
+<%	session.setAttribute("dn", userDN); %>
                       </span>
                       <span class="required">*</span>
                     </div>
@@ -616,10 +635,11 @@
                   <%  if(session.getAttribute("passed") != null){ %> 
                     	<span id="add-removeGroupPassed" style="float: center;" class="passed"><%=session.getAttribute("passed") %></span>
                   <%      session.removeAttribute("passed");
-                      } else { %>
-                  		<span id="add-removeGroupPassed" style="float: center;" class="passed"></span>
+                      } else if(session.getAttribute("failed") != null){ %>
+                  		<span id="add-removeGroupFailed" style="float: center;" class="failed"><%=session.getAttribute("failed") %></span>
                   <% } %>
                   		
+                  		<span id="add-removeGroupPassed" style="float: center;" class="passed"></span>
 						<span id="add-removeGroupFailed" style="float: center;" class="failed"></span>
 					</div>
 					
@@ -649,8 +669,8 @@ NamingEnumeration e = attr.getAll();
                 <form id="addto" method="post" action="AddGroupUser">
                   <!-- <br /><span id="addlabel"><b>Add to Group:</b></span><br /> -->
                   <input id="dnInput" type="hidden" name="dn" value="
-    <%=java.net.URLEncoder.encode(request.getParameter("dn")) %>" />
-    <%session.setAttribute("dn", request.getParameter("dn")); %>
+    <%=java.net.URLEncoder.encode(userDN) %>" />
+    <%session.setAttribute("dn", userDN); %>
                   <select name="groupselect" id="groupselect">
     <%for (String group : baseGroups) {%>
 		  		    <option value="

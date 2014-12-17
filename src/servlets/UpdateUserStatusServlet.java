@@ -76,7 +76,7 @@ public class UpdateUserStatusServlet extends HttpServlet {
 				
 				// if it is a staff account
 				if(userDN.contains(lt.ORION_HEALTH_NAME)){
-					if(enabled) SupportTrackerJDBC.enableStaffAccount(username, id);
+					if(enabled) SupportTrackerJDBC.enableStaffAccount(username);
 					else SupportTrackerJDBC.disableStaffAccount(username);
 					
 				// if client account

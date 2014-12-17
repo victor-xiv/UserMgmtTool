@@ -1127,7 +1127,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 								// update 'recordStatus' in Staff to 'Y'
 								try{
 									String staffId = (String) attrs.get("Info").get();
-									if(SupportTrackerJDBC.enableStaffAccount(username, staffId)>0){
+									if(SupportTrackerJDBC.enableStaffAccount(username)>0){
 										fixedRslts.add("17-b: Activated Support Tracker Staff account.");
 									} else {
 										failedToFixRslts.add("17-b: Couldn't activate Support Tracker Staff account.");

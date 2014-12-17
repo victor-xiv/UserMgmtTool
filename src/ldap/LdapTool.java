@@ -1208,6 +1208,31 @@ info							: is the unique ID that get from clientAccountID column of the client
 		return null;
 	}
 	
+	/**
+	 * get attribute of a Ldap user who has login name (or username or sAMAccountName)
+	 * @param clientDN is an OU account that represent the DN of the client or organisation. It must have not been escaped any reserved chars
+	 * @param sAMAccountName (login name or username)
+	 * @return an Attributes object that stores all the current attributes belong to this sAMAccountName
+	 *         null otherwise
+	 */
+	public Attributes getUserAttributesWhoBelongsToClientAndHasLoginName(String clientDN, String sAMAccountName){
+		logger.debug("getting attributes for the given username: " + sAMAccountName + " from: " + clientDN);
+		clientDN = escapedCharsOnCompleteCompanyDN(clientDN);
+		List<Attributes> usersAttrsList;
+		try {
+			usersAttrsList = getAllUsersAsAttributesListFromClient(clientDN);
+			for(Attributes attrs : usersAttrsList){
+				if(attrs.get("sAMAccountName").get().toString().equalsIgnoreCase(sAMAccountName)){
+					logger.debug("finished getting for the attributes of the user: " + sAMAccountName);
+					return attrs;
+				}
+			}
+		} catch (NamingException e) {
+			logger.error("Exception occured while getting Attributes for username: " + sAMAccountName, e);
+		} 
+		return null;
+	}
+	
 
 	
 	
@@ -1726,7 +1751,9 @@ info							: is the unique ID that get from clientAccountID column of the client
 
 	
 	/**
-	 * Produce organisationDN (without escapping reserved charsA) from organisation name
+	 * Produce organisationDN from organisation name. 
+	 * if the given orgName is an escaped-reserved-char name, then the return will be an escaped dn.
+	 * if the given orgName is an unescaped-reserved-char name, then the return will be an unescaped dn.
 	 * @param orgName - organisation name
 	 * @return organisation DN
 	 */
@@ -1755,7 +1782,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	/**
 	 * 
 	 * @param userDN must has not been escaped
-	 * @return
+	 * @return true if account is enabled
 	 */
 	public boolean isAccountEnabled(String userDN){
 		return !isAccountDisabled(userDN);
@@ -1763,7 +1790,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	/**
 	 * 
 	 * @param userDN must has not been escaped
-	 * @return
+	 * @return true if account is disabled
 	 */
 	public boolean isAccountDisabled(String userDN){
 		logger.debug("about to search whether this user is disabled or enabled: " + userDN);
@@ -1781,7 +1808,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	/**
 	 * 
 	 * @param userDN must has not been escaped
-	 * @return
+	 * @return true if account has been disabled successfully
 	 */
 	public boolean disableUser(String userDN){
 		logger.debug("about to disable user: " + userDN);
@@ -1805,7 +1832,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	/**
 	 * 
 	 * @param userDN must has not been escaped
-	 * @return
+	 * @return true if account has been enabled successfully
 	 */
 	public boolean enableUser(String userDN){
 		logger.debug("about to enable user: " + userDN);

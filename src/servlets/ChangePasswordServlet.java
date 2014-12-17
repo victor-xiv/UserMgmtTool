@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 import tools.ConcertoAPI;
 import tools.EmailClient;
 import tools.SupportTrackerJDBC;
+import tools.SyncAccountDetails;
 import tools.ValidatedRequestHandler;
 
 
@@ -63,7 +64,7 @@ public class ChangePasswordServlet extends HttpServlet {
 			}
 		
 			
-		// 2). if the request is getting through directly from Support Tracker 
+		// 2). if the request is getting through directly from Portal
 		} else {
 			// validate and encrypt the request
 			Hashtable<String, String> reqParams = ValidatedRequestHandler.processRequest(request);
@@ -89,6 +90,9 @@ public class ChangePasswordServlet extends HttpServlet {
 						"<font color=\"red\">" + reqParams.get("error") + "</font>");
 				// we are not logging this error here, because it is already
 				// logged in the ValidatedRequestHandler.processRequest()
+				String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
+				response.sendRedirect(redirectURL);
+				return;
 			}
 		}
 		
@@ -97,10 +101,21 @@ public class ChangePasswordServlet extends HttpServlet {
 		if (userDN.isEmpty()){
 			session.setAttribute("error", "<font color=\"red\">There is no userDN found in the request parameters.</font>");
 			logger.error("userDN is an empty String");
+			String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
+			response.sendRedirect(redirectURL);
+			return;
 		}
 		
-		logger.debug("Redirect request to: " + "ChangeUserPassword.jsp");
 		
+		
+		/**
+		 * synchronizing the account details from Support Tracker DB to Ldap account
+		 */
+		userDN = SyncAccountDetails.syncAndGetBackNewUserDNForGivenUserDN(userDN);
+		
+		
+		
+		logger.debug("Redirect request to: " + "ChangeUserPassword.jsp");
 		session.setAttribute("userDN", userDN);
 		String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
 		response.sendRedirect(redirectURL);
@@ -232,7 +247,7 @@ public class ChangePasswordServlet extends HttpServlet {
 	 */
 	public static String updatePassword(String userDN, String newPsw, boolean isPswGenerated) throws IOException, NamingException {
 		Logger logger = Logger.getRootLogger();
-		logger.debug("Updating a new password for user: " + userDN + " with: " + newPsw);
+		logger.debug("Updating a new password for user: " + userDN );
 		
 		LdapTool lt = null;
 		try {
@@ -276,7 +291,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		String mobile = getMobilePhoneForUser(userDN);
 		
 		if(mobile == null || !isPswGenerated){
-			logger.debug("A new password: " + newPsw + " has been updated on this user. " + userDN +". But, his/her mobile phone is invalid");
+			logger.debug("A new password has been updated on this user. " + userDN +". But, his/her mobile phone is invalid");
 			lt.close();
 			return "passed|A new password: " + newPsw + " has been updated for this user. ";
 		} else {
@@ -289,7 +304,7 @@ public class ChangePasswordServlet extends HttpServlet {
 			}
 			
 			
-			logger.debug("a new password " + newPsw + " updated successfully for this user: " + userDN + ". A SMS has been sent to this number: " + mobile);
+			logger.debug("a new password has been updated successfully for this user: " + userDN + ". A SMS has been sent to this number: " + mobile);
 			lt.close();
 			return "passed|The new password has been updated successfully. If this user is not receiving a text message at "+mobile+" within 24 hours, please contact Orion Health's support team.";
 		}

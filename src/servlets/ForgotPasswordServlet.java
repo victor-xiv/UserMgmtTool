@@ -86,15 +86,15 @@ private static final long serialVersionUID = 1L;
 				+ "What page you are looking at. A screenshot of this page and the previous page that link to this page."
 				+ "Thanks for your cooperation.");
 		
-		logger.debug("about to change password for userDN: " + userDN + " to a new password: " + password);
+		logger.debug("about to change password for userDN: " + userDN);
 		
 		//If successful, print success
 		if (lt.changePassword(userDN, password)){
 			out.println("Password changed successfully.");
-			logger.debug("Password changed successfully, for userDN: " + userDN + " to a new password: " + password);
+			logger.debug("Password changed successfully, for userDN: " + userDN );
 		//If fail, print output
 		} else {
-			logger.debug("Password changed unsuccessfully, for userDN: " + userDN + " to a new password: " + password);
+			logger.debug("Password changed unsuccessfully, for userDN: " + userDN);
 			out.println("Unable to change password. The password you entered may be too simple or insecure.<br />"+
 					"Please contact the server administrator for assistance or email your "+
 					"request to <a href=mailto:support@orionhealth.com>support@orionhealth.com</a>");
