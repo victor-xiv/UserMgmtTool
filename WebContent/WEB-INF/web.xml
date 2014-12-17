@@ -1,6 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee"  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
   <display-name>Ldap User Management</display-name>
+  
+  
+  
+  
+  
+  
+  
+  <!-- all the requests are intercepted to catch any bad-behavior exception -->
+  <!-- In that case the response will be set to 400 (Bad Request) -->
+  <filter>
+  	<filter-name>ResponseExceptionFilter</filter-name>
+  	<filter-class>filters.ResponseExceptionFilter</filter-class>
+  </filter>
+  
+  <filter-mapping>
+  	<filter-name>ResponseExceptionFilter</filter-name>
+  	<url-pattern>/*</url-pattern>
+  </filter-mapping>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   <servlet>
     <servlet-name>ChangePassword</servlet-name>
     <servlet-class>servlets.ChangePasswordServlet</servlet-class>
