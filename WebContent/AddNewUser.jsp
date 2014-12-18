@@ -479,6 +479,18 @@ function prepareUrlParams(){
                      </div>
                    </form>
                  </div>
+                 
+                 
+                 
+<% if (request.getParameter("company")!=null){ %>   
+                <div class='row'>
+					<a class="Button" href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(request.getParameter("company"))%>">Back to <b><%=request.getParameter("company")%></b></a>
+					<br/><br/>
+				</div>
+<% } %>
+				
+                 
+                 
                  <div align="center" id="passed" class="passed">
 <%	if( session.getAttribute("passed") != null){ %>
                  <%=session.getAttribute("passed")%>

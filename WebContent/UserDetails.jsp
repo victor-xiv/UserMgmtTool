@@ -686,6 +686,13 @@ NamingEnumeration e = attr.getAll();
 
 
 <%} //this bracket is paired with the open at else after if(isAdmin) %>
+
+				<div class='row'>
+					<a class="Button" href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(user.getCompany())%>">Back to <b><%=user.getCompany()%></b></a>
+					<br/><br/>
+				</div>
+				
+				
                 <div align="center"><img src="./css/images/swish.gif" alt="There should be an image here...." /></div>
                 <div align="center" class="disclaimer2">Having problems?<br />Email <a href="mailto:support@orionhealth.com">support@Orionhealth.com</a><br /><br /></div>
               </td>

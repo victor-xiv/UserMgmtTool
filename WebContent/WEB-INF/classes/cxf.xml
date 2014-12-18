@@ -34,7 +34,7 @@
         <sec:exclude>.*_DH_anon_.*</sec:exclude>
       </sec:cipherSuitesFilter>
     </http:tlsClientParameters>
-    <http:client AutoRedirect="true" Connection="Keep-Alive"/>
+    <http:client AutoRedirect="true" Connection="Keep-Alive" ConnectionTimeout="30000" ReceiveTimeout="30000"/>
  
   </http:conduit>
  

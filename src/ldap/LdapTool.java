@@ -1146,7 +1146,8 @@ info							: is the unique ID that get from clientAccountID column of the client
 					
 					logger.debug("search for the DN of the group " + clientName + " finished");
 				} catch (NullPointerException ne){
-					logger.error("Exception while querying dn: "+ unescapedDN + " from " + baseDN, ne);
+					// null pointer occured when given clientName is a group (not a company/organisation stored in "Clients" folder) 
+//					logger.error("Exception while querying dn: "+ unescapedDN + " from " + baseDN, ne);
 				}
 			}
 		}catch(NamingException ex){

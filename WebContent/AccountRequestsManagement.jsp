@@ -224,10 +224,14 @@ function AcceptRequest(idx) {
     	if(ajax.readyState == 4){
     	    if(ajax.status == 200){
     	      results = ajax.responseText.split("|");
-    	      if(results[0] == "true"){
+    	      
+    	      if(results[0] == "true"){ // successfully accepting a request
     	      	document.getElementById('validation_msg').innerHTML =
     	          "<font color=\"#00FF00\">* "+results[1]+"</font><br />";
-    	      }else{
+    	          
+    	          $('#acctReqRow' + idx).remove(); // remove the request from the page
+    	          
+    	      }else{ // failed accepting a request
     	    	document.getElementById('validation_msg').innerHTML =
     	          "<font color=\"#FF0000\">* "+results[1]+"</font><br />";
     	    	document.getElementById('accept' + idx).className = 'Button';
@@ -272,10 +276,15 @@ function DeclineRequest(idx) {
 	  if(ajax.readyState == 4){
 		    if(ajax.status == 200){
 		      results = ajax.responseText.split("|");
-		      if(results[0] == "true"){
+		      
+		      if(results[0] == "true"){ // successfully process the declining
 		      	document.getElementById('validation_msg').innerHTML =
 		          "<font color=\"#00FF00\">* "+results[1]+"</font><br />";
-		      }else{
+		          
+		      	$('#acctReqRow' + idx).remove(); // remove the request from the page
+		      	
+		      	
+		      }else{ // unsuccessfully process the declining
 		    	document.getElementById('validation_msg').innerHTML =
 		          "<font color=\"#FF0000\">* "+results[1]+"</font><br />";
 		    	document.getElementById('accept' + idx).className = 'Button';
@@ -409,7 +418,7 @@ no longer needed
 					String acceptID = "accept"+id;
 					String declineID = "decline"+id;
 					String requestID = "request"+id;	%>
-	                 <div class="row">
+	                 <div class="row" id="acctReqRow<%=id%>">
 	                    <div id="<%=nodeID %>" class="CollapseRegionLink" style="text-align: left;" onclick="applyClick('<%=id %>'); ">
 	                      
 	                      <table style="width:480px">

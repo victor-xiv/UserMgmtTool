@@ -402,7 +402,7 @@ function getIdIndex(encodedUserDN){
 	function fixUserAccount(uriEncodedUserDN){
 		//alert(uriEncodedUserDN);
 		cleanUpThePage();
-		$("#add-removePassed").html("Loading...");
+		$("#add-removePassed").html("Processing request...");
 		
 		var params = "rqst=fixUser&userDN=" + uriEncodedUserDN;
 		
@@ -497,7 +497,7 @@ function getIdIndex(encodedUserDN){
 				
 
 
-				<!-- used to update the process status, and process result. e.g. "Loading..." or "Successfully added a grou" or "Failed to update account status" -->
+				<!-- used to update the process status, and process result. e.g. "Processing request..." or "Successfully added a grou" or "Failed to update account status" -->
 				<div class="row">
                    	<span id="add-removePassed" style="float:center; color:green; font-weight:bold;" class="passed"></span>
 				</div>

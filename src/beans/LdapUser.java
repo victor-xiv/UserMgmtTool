@@ -13,6 +13,7 @@ import ldap.LdapTool;
 import org.apache.log4j.Logger;
 
 public class LdapUser {
+	private String userDN;
 	private String username, firstName, lastName, displayName, department;
 	private String company, description, street, city, state, postalCode;
 	private String country, phoneNumber, fax, mobile, email;
@@ -60,12 +61,13 @@ public class LdapUser {
 			}
 			
 			try{
+				this.userDN = userDN;
 				setUsername(attrs.get("sAMAccountName")!=null?attrs.get("sAMAccountName").get().toString():"");
 				setFirstName(attrs.get("givenName")!=null?attrs.get("givenName").get().toString():"");
 				setLastName(attrs.get("sn")!=null?attrs.get("sn").get().toString():"");
 				setDisplayName(attrs.get("displayName")!=null?attrs.get("displayName").get().toString():"");
 				setDepartment(attrs.get("department")!=null?attrs.get("department").get().toString():"");
-				setCompany(attrs.get("company")!=null?attrs.get("company").get().toString():"");
+				setCompany(lt.getUserCompany(userDN));
 				setDescription(attrs.get("description")!=null?attrs.get("description").get().toString():"");
 				setStreet(attrs.get("streetAddress")!=null?attrs.get("streetAddress").get().toString():"");
 				setCity(attrs.get("l")!=null?attrs.get("l").get().toString():"");
@@ -89,6 +91,10 @@ public class LdapUser {
 	}
 	
 	
+	
+	public String getUserDN(){
+		return userDN;
+	}
 	
 	/**
 	 * setter method

@@ -23,6 +23,9 @@ try{
  * Password must contatins A-Z, a-z, 0-9
  */
 function validatePwd01(){
+	document.getElementById('passed').innerHTML = "";
+	document.getElementById('failed').innerHTML = "";
+	
     var regex = new RegExp("[A-Za-z0-9]{8,12}");
     if(document.getElementById('password01').value == "" ){
         document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Please enter a valid password.</font>";
@@ -92,6 +95,7 @@ function SubmitForm(){
 		ajax3 = new ActiveXObject("Microsoft.XMLHTTP");
 	}
 	
+	document.getElementById('passed').innerHTML = "Processing request...";
 
 	ajax3.open("POST", "ChangePassword", true);
 	ajax3.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
@@ -103,6 +107,9 @@ function SubmitForm(){
 	ajax3.onreadystatechange = function() {
 		// handling once request responded
 		if (ajax3.readyState == 4) {
+			
+			document.getElementById('passed').innerHTML = "";
+			
 			// if response "OK"
 			if (ajax3.status == 200) {
 				var rsp = ajax3.responseText;
@@ -133,6 +140,8 @@ function generateRandomPassword(){
 		ajax1 = new ActiveXObject("Microsoft.XMLHTTP");
 	}
 	
+	
+	document.getElementById('passed').innerHTML = "Processing request...";
 
 	ajax1.open("POST", "ChangePassword", true);
 	ajax1.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
@@ -144,6 +153,9 @@ function generateRandomPassword(){
 	ajax1.onreadystatechange = function() {
 		// handling once request responded
 		if (ajax1.readyState == 4) {
+			
+			document.getElementById('passed').innerHTML = "";
+			
 			// if response "OK"
 			if (ajax1.status == 200) {
 				var rsp = ajax1.responseText;
@@ -216,7 +228,9 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 			                <td align="center">
                                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
 					            <h1>Password Management</h1>
-					            <h2> Update a password for: <%=user.getDisplayName() %> </h2>
+					            <h2> Update a password for: <h2> <h1><a href="UserDetails.jsp?dn=<%=java.net.URLEncoder.encode(user.getUserDN()) %>"><b><%=user.getDisplayName()%></b></a></h1>
+						
+						
 					            <img src="css/images/swish.gif" alt="#" />
 					            <br />
 <%	if( session.getAttribute("error") != null){ %>
@@ -241,9 +255,13 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
                                             <span class="msg" id="pwd_msg02"></span>
                                         </div>
                                         <div class="row"></div>
-				                        <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 180px; height: 20px;">
+				                        <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; height: 20px;">
 					                        <a class="Button" href="#" onclick="javascript: SubmitForm()">Submit</a>
 					                        <a class="Button" href="#" onclick="javascript: ResetForm()">Reset</a>
+					                    </div>
+					                    
+					                    <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; height: 20px;">
+					                    	<a class="Button" href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(user.getCompany())%>">Back to <%=user.getCompany()%></a>
 					                    </div>
 					                </form>
 					                
