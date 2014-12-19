@@ -41,23 +41,15 @@ import tools.SupportTrackerJDBC;
  * All conditions to defined the account type (broken, limited or disabled) are described at: http://woki/display/~jordans/User+Account+Management+Pseudo+Code+for+SPT-1272
  *
  */
-public class OrganisationDetailsServlet extends HttpServlet{
+public class AccountStatusDetailsServlet extends HttpServlet{
 	
 	// set up logger
 	private Logger logger = Logger.getRootLogger();
 	private LdapTool lt = null;
 	
-	private final String RETURN_CHAR = "\r\n";
-	private final String ORIONSTAFFS_DN = "CN=OrionStaffs,OU=Clients,DC=orion,DC=dmz";
-	private final String DOMAINADMIN_DN = "CN=Domain Admins,CN=Users,DC=orion,DC=dmz";
-	private final String LDAPUSERS_DN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_USER);
-	private final String LDAPCLIENTS_DN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_CLIENT);
-	private final String[] CONCERTO_ADMIN_LIST = new String[] { "Administrators", "Support Tracker Administrators", 
-																"Administrators [Migration]", "Records Administrators" };
-	private final List<String> ORION_ROLES_LIST = LdapTool.readGroupsAndPermissionLevelFromConfigureFile();
-	private final String ORION_HIGHEST_ROLE_DN = "CN=" + ORION_ROLES_LIST.get(0)+",OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
-	private final String ORION_LOWEST_ROLE_DN = "CN=" + ORION_ROLES_LIST.get(ORION_ROLES_LIST.size()-1) + ",OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
-	private final String CONCERTO_CLIENT = "Clients";
+	
+	public static final String RETURN_CHAR = "\r\n";
+	
 		
 	
 	public void doGet(HttpServletRequest request, HttpServletResponse response) {
@@ -70,7 +62,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 		String rqst = request.getParameter("rqst");
 		String rslt = "";
 		
-		logger.debug("OrganisationDetailsServlet about to process Post request for request: " + rqst);
+		logger.debug("AccountStatusDetailsServlet about to process Post request for request: " + rqst);
 		logger.debug("Session: " + request.getSession(true) + " is about to process Post request: " + rqst);
 		
 		try {
@@ -94,6 +86,11 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			}
 			break;
 			
+		case "getAUserStatusDetails" : 
+			String unescapedUserDN = request.getParameter("unescapedUserDN");
+			rslt = getAUserStatusDetailsInXMLString(unescapedUserDN);
+			break;
+		
 		case "fixUser" :
 			String userDN = request.getParameter("userDN");
 			try {
@@ -107,13 +104,110 @@ public class OrganisationDetailsServlet extends HttpServlet{
 		default:
 		}
 		
-		logger.debug("OrganisationDetailsServlet finished process Post request. here's the result: \n" + rslt);
+		logger.debug("AccountStatusDetailsServlet finished process Post request. here's the result: \n" + rslt);
 		
 		response.getWriter().write(rslt);
 		response.getWriter().flush();
 		response.getWriter().close();
 	}
 	
+	
+	
+	/**
+	 * This method is receiving a client name (client name means: organisation name or company name that stored in "Clients" folder of Ldap server).
+	 * Then it iterate through each member that stored in this Client name folder (of Ldap server) and determine the account status of this each account.
+	 * The account status can be: 
+	 * 1). Enabled: nothing wrong with the account, 
+	 * 2). Limited: nothing wrong with the account, but the account doesn't have corresponding Support Tracker account. Which means the user cannot has limitation in access to others features.
+	 * 3). Disabled: account has been disabled in Ldap, Support Tracker DB and Concerto Portal. Because it has been disabled, so it doesn't mean that this account has no problem. 
+	 * 			It means that if we enable this account back, and put this account through this method again, then we might found some broken issues.
+	 * 4). Disabled Broken: this account has been disabled in Ldap server, but it has not been disabled in Support Tracker DB and/or it has not been disabled in Concerto Portal.
+	 * 			It similar to "Disabled" accounts for other issues.
+	 * 5). Broken: this account is enabled, but there are various issues with the account. However, those issues can be fixed programmatically
+	 * 6). Broken and Cannot Be Fixed: this account is enabled, but the issues related this account cannot be fixed programmatically or it requires user intervention.
+	 * 
+	 *   All conditions to defined the account type (broken, limited or disabled) are described at: 
+	 *   http://woki/display/~jordans/User+Account+Management+Pseudo+Code+for+SPT-1272
+	 * 
+	 * @param client : is the client name (must not have been escaped) or organisation name or company name (that stored in "Client" folder of Ldap server). But, it is not a DN of that client.
+	 * 
+	 * @return if there's no disruption in the processing, it will return a string that represent an XML, which its root name <response> and the children 
+	 * of this <response> (there are only 1st level children, no deeper level) are: <brokenInDisabling>, <disabled>, <brokenCantBeFixed>, <broken>, <limited>, <enabled>.
+	 * Those branches can be:
+	 * <brokenInDisabling><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenInDisabling>
+	 * <disabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn> <solution>proposingSolutions</solution></disabled>
+	 * <brokenCantBeFixed><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenCantBeFixed>
+	 * <broken><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></broken>
+	 * <limited><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></limited>
+	 * <enabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn></enabled>
+	 * 
+	 * @throws NamingException if there is a name that Ldap cannot validate or work with.
+	 */
+	
+	
+	//userDN must not have been escaped
+	/**
+	 * this method perform similarly to getAllUsersOfClientInXMLString() method. The difference is only
+	 * getAllUsersOfClientInXMLString() is checking all the users that are the members of the given client (or organisation/company). and
+	 * this method is checking for the account status of a user account (by the given userDN). 
+	 * 
+	 * the account status of this account can only be one of the below possibilities
+	 * 1). Enabled: nothing wrong with the account, 
+	 * 2). Limited: nothing wrong with the account, but the account doesn't have corresponding Support Tracker account. Which means the user cannot has limitation in access to others features.
+	 * 3). Disabled: account has been disabled in Ldap, Support Tracker DB and Concerto Portal. Because it has been disabled, so it doesn't mean that this account has no problem. 
+	 * 			It means that if we enable this account back, and put this account through this method again, then we might found some broken issues.
+	 * 4). Disabled Broken: this account has been disabled in Ldap server, but it has not been disabled in Support Tracker DB and/or it has not been disabled in Concerto Portal.
+	 * 			It similar to "Disabled" accounts for other issues.
+	 * 5). Broken: this account is enabled, but there are various issues with the account. However, those issues can be fixed programmatically
+	 * 6). Broken and Cannot Be Fixed: this account is enabled, but the issues related this account cannot be fixed programmatically or it requires user intervention.
+	 * 
+	 *   All conditions to defined the account type (broken, limited or disabled) are described at: 
+	 *   http://woki/display/~jordans/User+Account+Management+Pseudo+Code+for+SPT-1272
+	 * 
+	 * @param userDN is the distinguished name of a user account (that need to be checked). It must have not been escaped the reserved chars
+	 * 
+	 * @return if there's no disruption in the processing, it will return a string that represent an XML, which its root name <response> and the children 
+	 * of this <response> (there are only 1st level children, no deeper level) is only one of these: either <brokenInDisabling>, <disabled>, <brokenCantBeFixed>, <broken>, <limited> or <enabled>.
+	 * 
+	 * an return status contains:
+	 * <brokenInDisabling><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenInDisabling>
+	 * <disabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn> <solution>proposingSolutions</solution></disabled>
+	 * <brokenCantBeFixed><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenCantBeFixed>
+	 * <broken><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></broken>
+	 * <limited><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></limited>
+	 * <enabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn></enabled>
+	 * 
+	 */
+	public String getAUserStatusDetailsInXMLString(String userDN){
+		logger.debug("start checking the account status details for user: " + userDN);
+		
+		// create xml string that stores data and has root <response> for returning to the caller of this method
+		StringBuffer sfXml = new StringBuffer();
+		sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
+		sfXml.append("<response>");
+				
+		// prepare a thread to process this account.
+		// we use this thread because we want to reuse the thread that process account in bulk (a list of Attributes)
+		// so, we make a list of a single Attribute (that represents this userDN) and let this thread to process
+		Attributes attrs = lt.getUserAttributes(userDN);
+		List<Attributes> attrsL = new ArrayList<>();
+		attrsL.add(attrs);
+		ThreadProcessingAttribute t = new ThreadProcessingAttribute(attrsL);
+		t.start();
+		try {
+			t.join(); //we want main thread to wait for this thread 
+		} catch (InterruptedException e) {
+		}
+		
+		String rslt = t.getThisThreadXMLResult();
+		sfXml.append(rslt);
+		sfXml.append("</response>");
+		
+		logger.debug("result of user: " + userDN + " is: " + sfXml.toString());
+		lt.close();
+		
+		return sfXml.toString();
+	}
 	
 	/**
 	 * fix the given account (give as a unescaped userDN) and return the result of the fixing process.
@@ -138,6 +232,8 @@ public class OrganisationDetailsServlet extends HttpServlet{
 		String fixedRslts = "";
 		String failedRslts = "";
 		
+		ThreadProcessingAttribute  th = new ThreadProcessingAttribute();
+		
 		// we have three different types of problems and fixing processes
 		// so, we will store them in these rslts array
 		String[] rslts = new String[3];
@@ -146,7 +242,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			logger.debug("about to fix a disabled account");
 			// if this account has been disabled.
 			// we fix only broken in disabling the account (we are not fixing any other broken issues)
-			rslts[0] = checkingAndFixingForDisabledLdapAccount(true, attrs);
+			rslts[0] = th.checkingAndFixingForDisabledLdapAccount(true, attrs);
 			rslts[1] = "";
 			rslts[2] = "";
 			
@@ -155,8 +251,8 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			// if this account is activated
 			// we fix all broken issues (because at this stage, we safely assume that there's no broken in disabling (because this account is not disabled))
 			rslts[0] = "";
-			rslts[1] = checkingAndFixingForBrokenAccount(true, attrs);
-			rslts[2] = checkingAndFixingForLimitedUser(true, attrs);
+			rslts[1] = th.checkingAndFixingForBrokenAccount(true, attrs);
+			rslts[2] = th.checkingAndFixingForLimitedUser(true, attrs);
 		}
 		
 		logger.debug("start preparing the XML result for sending to client");
@@ -287,7 +383,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 		// create each thread and pass the list of accounts that it need to handle to its constructor.
 		for(final ArrayList<Attributes> attrsListForAThread : attrsListForAllThreads){
 			if(attrsListForAThread!=null && attrsListForAThread.size()>0){
-				ThreadProcessingAttribute t = new ThreadProcessingAttribute(attrsListForAThread, this);
+				ThreadProcessingAttribute t = new ThreadProcessingAttribute(attrsListForAThread);
 				t.start();
 				allThreads.add(t);
 				
@@ -330,32 +426,233 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	}
 	
 	
+
+	
+	
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * this class is a helper thread that process all the object in the given Attributes list (passed through the Constructor param).
+ * Each Attributes object represent a Ldap account. This thread try to determine the account status of each account and its result
+ * is stored into its own "sfxmlOfThisThread" object (StringBuffer object). it also provides a method that return this result as a String.
+ */
+class ThreadProcessingAttribute extends Thread{
+	// a list of Attributes object, where each Attributes object represent an Ldap account.
+	List<Attributes> attrsListForThisThread = null;
+	// result of the accounts statuses of all the accounts that are stored as Attributes(es) in the attrsListForThisThread 
+	StringBuffer sfxmlOfThisThread = new StringBuffer();
+	
+	LdapTool lt = null;
+	ConcertoAPI concerto = null;
+	
+	Logger logger = Logger.getRootLogger();
+	
+	
+	
+	private final String RETURN_CHAR = AccountStatusDetailsServlet.RETURN_CHAR;
+	private final String ORIONSTAFFS_DN = "CN=OrionStaffs,OU=Clients,DC=orion,DC=dmz";
+	private final String DOMAINADMIN_DN = "CN=Domain Admins,CN=Users,DC=orion,DC=dmz";
+	private final String LDAPUSERS_DN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_USER);
+	private final String LDAPCLIENTS_DN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_CLIENT);
+	private final String[] CONCERTO_ADMIN_LIST = new String[] { "Administrators", "Support Tracker Administrators", 
+																"Administrators [Migration]", "Records Administrators" };
+	private final List<String> ORION_ROLES_LIST = LdapTool.readGroupsAndPermissionLevelFromConfigureFile();
+	private final String ORION_HIGHEST_ROLE_DN = "CN=" + ORION_ROLES_LIST.get(0)+",OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+	private final String ORION_LOWEST_ROLE_DN = "CN=" + ORION_ROLES_LIST.get(ORION_ROLES_LIST.size()-1) + ",OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+	private final String CONCERTO_CLIENT = "Clients";
+	
+	
+	
 	/**
-	 * a helper method that convert the list of results of the issues that have been fixed and the issues that could not be fixed.
-	 * @param fixedRslts : results of the issues that have been fixed.
-	 * @param failedToFixRslts : issues that could not be fixed.
-	 * @return a String that contains: 
-	 * First part: it starts with "passed: " + " all the issues that have been fixed" (if there are issues that have been fixed). (if there is no issue that has been fixed, this part will be empty). each issue is delimited by RETURN_CHAR
-	 * Middle part: contains "&&". this "&&" is used as the separator between issues that have been fixed and issues that couldn't bee fixed. (there will be always a separator here regardless of the first part (issues have been fixed) and second part (issues that couldn't be fixed)
-	 * Second part: it starts with "failed: " + " all the issues that could not be fixed"  (if there are issues that have been fixed). (if there is no issue that has been fixed, this part will be empty). each issue is delimited by RETURN_CHAR
+	 * Constructor
+	 * @param attrsList : a list of Attributes object, where each Attributes object represent an Ldap account.
 	 */
-	private String convertFixedResultsListAndFailedToFixedResultsListToResultString(ArrayList<String> fixedRslts, ArrayList<String> failedToFixRslts){
-		String result = "";
-		if(fixedRslts.size() > 0){
-			result += "passed:";
-			for(String rslt : fixedRslts){
-				result += rslt + RETURN_CHAR;
-			}
-		}
-		result += "&&";
-		if(failedToFixRslts.size() > 0){
-			result += "failed:";
-			for(String rslt : failedToFixRslts){
-				result += rslt + RETURN_CHAR;
-			}
-		}
-		return result;
+	public ThreadProcessingAttribute(List<Attributes> attrsList){
+		this();
+		
+		attrsListForThisThread = attrsList;
 	}
+	
+	
+	public ThreadProcessingAttribute(){
+		attrsListForThisThread = new ArrayList<Attributes>();
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException | NamingException e) {
+			// we are not doing anything because we no that it would not happened
+			// if it would happen, it should already happened before this method is called 
+		}
+		
+		try{
+			concerto = new ConcertoAPI();
+		} catch (MalformedURLException e){
+			// we are not doing anything because we no that it would not happened
+			// if it would happen, it should already happened before this method is called 
+		}
+	}
+	
+	
+	/**
+	 * @return the String result of the accounts statuses of all the accounts that this thread processing.
+	 * Each result (for each account) is given as an XML branch which contains the <branchName>innerValue</branchName>.
+	 * Those branches can be:
+	 * <brokenInDisabling><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenInDisabling>
+	 * <disabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn> <solution>proposingSolutions</solution></disabled>
+	 * <brokenCantBeFixed><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenCantBeFixed>
+	 * <broken><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></broken>
+	 * <limited><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></limited>
+	 * <enabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn></enabled>
+	 */
+	public String getThisThreadXMLResult(){
+		return sfxmlOfThisThread.toString();
+	}
+	
+	/**
+	 * Invoke the thread to run and process all the accounts that stored as Attributes object attrsListForThisThread. Each result of each account is attached to sfxmlOfThisThread
+	 * The status of each account can be: 
+	 * <brokenInDisabling><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenInDisabling>
+	 * <disabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn> <solution>proposingSolutions</solution></disabled>
+	 * <brokenCantBeFixed><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenCantBeFixed>
+	 * <broken><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></broken>
+	 * <limited><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></limited>
+	 * <enabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn></enabled>
+	 */
+	public void run(){
+		// iterate through each account
+		for(Attributes attrs : attrsListForThisThread){
+			String unescapedUserDN;  // the userDN (that doesn't have escaped char for sepcial chars) of this account
+			String displayName;		 // the display name of this account
+			try {
+				unescapedUserDN = (String)Rdn.unescapeValue((String)attrs.get("distinguishedname").get());
+				displayName = (String) attrs.get("cn").get();
+			} catch (NamingException e1) {
+				// we are not doing anything because if there's no "CN" then this attr cannot be processed anyway
+				continue;
+			}
+			
+			// checking whether this account has been disbaled
+			String proposingSolution = checkingAndFixingForDisabledLdapAccount(false, attrs);
+			
+			// if this account has been disabled and not a broken account, the proposingSolution must be an empty StringBuffer
+			// if this account has not been disabled (account is enabled), the proposingSolution must be also an empty StringBuffer
+			
+			// so, if this proposingSolution is not empty, means this account is a disabled but broken 
+			// (either support tracker account has not been disabled or concerto portal account has not been disabled, or both have not been disabled) 
+			if(!proposingSolution.isEmpty()){
+				String value = String.format("<brokenInDisabling><name>%s</name><dn>%s</dn><solution>%s</solution></brokenInDisabling>",
+						StringEscapeUtils.escapeXml10(displayName),
+						StringEscapeUtils.escapeXml10(unescapedUserDN), 
+						StringEscapeUtils.escapeXml10(proposingSolution));
+				sfxmlOfThisThread.append(value);
+			
+
+			} else { // if this account a disabled and not broken  or  this account is enabled (we need to do further check)
+
+				// if this account has been disabled, and the proposingSolution (so far) is an empty String buffer
+				// means it is a disabled and good account (no issues).
+				if(lt.isAccountDisabled(unescapedUserDN)){ 
+					// account has been disabled properly 
+					//(no other broken in disabling, 
+					// but there can be other broken if it is re-activated, 
+					// due to the broken status that have not been fixed, before it is disabled)
+					String value = String.format("<disabled><name>%s</name><dn>%s</dn> <solution>%s</solution></disabled>",
+							StringEscapeUtils.escapeXml10(displayName),
+							StringEscapeUtils.escapeXml10(unescapedUserDN), 
+							StringEscapeUtils.escapeXml10(proposingSolution) );
+					sfxmlOfThisThread.append(value);
+					
+				
+				// if this account is enabled and proposingSolution is empty, 
+				// then we need to look for other issues that related to enabled account
+				} else {
+					
+					proposingSolution += checkingAndFixingForBrokenAccount(false, attrs);
+					
+					// if proposingSolution is not empty, it means there are some broken issues
+					if(!proposingSolution.isEmpty()){
+						
+						// If this account is broken, then we dont' care about the status of 'limited user'. 
+						// It means that those limited users has to be counted as broken as well.
+						proposingSolution += checkingAndFixingForLimitedUser(false, attrs);
+						
+						if(proposingSolution.contains("DO NOTHING") || proposingSolution.contains("cannot be fixed")){
+							String value = String.format("<brokenCantBeFixed><name>%s</name><dn>%s</dn><solution>%s</solution></brokenCantBeFixed>",
+									StringEscapeUtils.escapeXml10(displayName),
+									StringEscapeUtils.escapeXml10(unescapedUserDN), 
+									StringEscapeUtils.escapeXml10(proposingSolution));
+							sfxmlOfThisThread.append(value);
+							
+						} else {
+							String value = String.format("<broken><name>%s</name><dn>%s</dn><solution>%s</solution></broken>",
+									StringEscapeUtils.escapeXml10(displayName),
+									StringEscapeUtils.escapeXml10(unescapedUserDN), 
+									StringEscapeUtils.escapeXml10(proposingSolution));
+							sfxmlOfThisThread.append(value);
+						}
+						
+						
+						
+					// if proposingSolution is empty means, there's no broken issues. 
+					}else {
+						// so, we distinguish this account to be either: <limited> account or <enabled> account
+						proposingSolution = checkingAndFixingForLimitedUser(false, attrs);
+						
+						// if proposingSolution is not empty here, means this account his a <limtied> account
+						if(!proposingSolution.isEmpty()){
+							String value = String.format("<limited><name>%s</name><dn>%s</dn><solution>%s</solution></limited>",
+													StringEscapeUtils.escapeXml10(displayName),
+													StringEscapeUtils.escapeXml10(unescapedUserDN), 
+													StringEscapeUtils.escapeXml10(proposingSolution));
+							sfxmlOfThisThread.append(value);
+							
+						// otherwise, its a good account (no broken or limited)
+						} else {
+							String value = String.format("<enabled><name>%s</name><dn>%s</dn></enabled>", 
+													StringEscapeUtils.escapeXml10(displayName),
+													StringEscapeUtils.escapeXml10(unescapedUserDN));
+							sfxmlOfThisThread.append(value);
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	
 	
 	
 	/**
@@ -381,7 +678,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * If fixing==false, return what need to be fixed. Each issue in the return result is delimited by RETURN_CHAR defined in this class. 
 	 *  
 	 */
-	String checkingAndFixingForDisabledLdapAccount(boolean fixing, Attributes attrs) {
+	public String checkingAndFixingForDisabledLdapAccount(boolean fixing, Attributes attrs) {
 		//All conditions to defined the account type (broken, limited or disabled) are described at: 
 		// http://woki/display/~jordans/User+Account+Management+Pseudo+Code+for+SPT-1272
 		
@@ -436,13 +733,13 @@ public class OrganisationDetailsServlet extends HttpServlet{
  * Solution: we disable the Concerto account that matches this username
  */
 				try{
-					if(ConcertoAPI.isAccountEnabled(username)){
+					if(concerto.isAccountEnabled(username)){
 						proposingSolution.append("1-b: Need to disable the account in Concerto." + RETURN_CHAR);
 						
 						if(fixing){
 						// disable account in concerto
 							try{
-								if(ConcertoAPI.deleteAccountOfGivenUser(username)){
+								if(concerto.deleteAccountOfGivenUser(username)){
 									fixedRslts.add("1-b: Disabled Concerto accounts.");
 								} else {
 									failedToFixRslts.add("1-b: Failed to disabled Concerto accounts.");
@@ -498,7 +795,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * If fixing==false, return what need to be fixed. Each issue in the return result is delimited by RETURN_CHAR defined in this class. 
 	 *  
 	 */
-	String checkingAndFixingForBrokenAccount(boolean fixing, Attributes attrs){
+	public String checkingAndFixingForBrokenAccount(boolean fixing, Attributes attrs){
 		//All conditions to defined the account type (broken, limited or disabled) are described at: 
 		// http://woki/display/~jordans/User+Account+Management+Pseudo+Code+for+SPT-1272
 		
@@ -713,7 +1010,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
  * Check Concerto Account (So, we check only if this username does exist in Concerto)
   * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-			if (ConcertoAPI.doesUserExist(username)) {
+			if (concerto.doesUserExist(username)) {
 
 				
 	/**
@@ -728,13 +1025,13 @@ public class OrganisationDetailsServlet extends HttpServlet{
 				if (  (!isGivenAttrsStoredInOrionHealth(attrs) 
 						|| !isGivenAttrsHasMemberOf(attrs,ORION_HIGHEST_ROLE_DN))
 							&& !isGivenAttrsNameAdminOrAdministrators(attrs)
-							&& ConcertoAPI.isUserMemberOfAtLeastOneGroupInGivenGroupsList(username, CONCERTO_ADMIN_LIST)) {
+							&& concerto.isUserMemberOfAtLeastOneGroupInGivenGroupsList(username, CONCERTO_ADMIN_LIST)) {
 					
 					proposingSolution.append("9: remove all Concerto admin groups." + RETURN_CHAR);
 					
 					if(fixing){
 						try{
-							 if(ConcertoAPI.removeAllGivenGroupsFromGivenUser(username, CONCERTO_ADMIN_LIST)){
+							 if(concerto.removeAllGivenGroupsFromGivenUser(username, CONCERTO_ADMIN_LIST)){
 								 fixedRslts.add("9: Removed all Concerto Admin Groups.");
 							 } else {
 								 failedToFixRslts.add("9: Couldn't remove all Concerto Admin Groups.");
@@ -754,7 +1051,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * Solution: DO NOTHING: advise admin to contact user and ask them to change their password.
 	 */
 				logger.debug("start checking/fixing condition 10 for account: " + username);
-				if (!ConcertoAPI.isUserUsingLdapPassword(username)) {
+				if (!concerto.isUserUsingLdapPassword(username)) {
 
 					proposingSolution.append("10: DO NOTHING: advise admin to contact user and ask them to change their password."  + RETURN_CHAR);
 
@@ -771,7 +1068,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * 11
 	 */
 				logger.debug("start checking/fixing condition 11-a, 11-b for account: " + username);
-				if (ConcertoAPI.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT)
+				if (concerto.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT)
 						&& !isGivenAttrsStoredInOrionHealth(attrs)) {
 					
 	
@@ -806,7 +1103,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 					
 					if(fixing){
 						// remove 'Clients' (concerto)
-						if(ConcertoAPI.removeGroupFromUser(username, CONCERTO_CLIENT)){
+						if(concerto.removeGroupFromUser(username, CONCERTO_CLIENT)){
 							fixedRslts.add("11-b: Removed Clients from Concerto Group Membership.");
 						} else {
 							failedToFixRslts.add("11-b: Couldn't remove Clients from Concerto Group Membership.");
@@ -825,14 +1122,14 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * Solution: remove Cleints membership from Concerto account and remove LdapClients membership from Ldap account
 	 */
 				logger.debug("start checking/fixing condition 12 for account: " + username);
-				if (ConcertoAPI.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT)
+				if (concerto.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT)
 							&& isGivenAttrsStoredInOrionHealth(attrs)) {
 					
 					proposingSolution.append("12: Remove Clients (from Concerto Membership) and LdapClients (from Ldap Membership)." + RETURN_CHAR);
 
 					if(fixing){
 						// remove 'Clients' (concerto)
-						if(ConcertoAPI.removeGroupFromUser(username, CONCERTO_CLIENT)){
+						if(concerto.removeGroupFromUser(username, CONCERTO_CLIENT)){
 							fixedRslts.add("12: Removed Clients from Concerto Group Membership.");
 						} else {
 							failedToFixRslts.add("12: Couldn't remove Clients from Concerto Group Membership.");
@@ -868,7 +1165,7 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			logger.debug("start checking/fixing condition 13 for account: " + username);
 			// if u memberof 'ldapclients' && no ST client account)
 			if (    (!isGivenAttrsStoredInOrionHealth(attrs) && !SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username))
-			     && (isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN) || ConcertoAPI.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT))) {
+			     && (isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN) || concerto.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT))) {
 				
 				proposingSolution.append("13: add this user into clientAccount of Support Tracker DB  and update info field of this user's Ldap account based on returned clientAccountId."  + RETURN_CHAR);
 
@@ -1157,12 +1454,12 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * Solution: active this Concerto account
 	 */
 				logger.debug("start checking/fixing condition 17-c for account: " + username);
-				if (ConcertoAPI.doesUserExist(username)
-						&& ConcertoAPI.isAccountDisabled(username)) {
+				if (concerto.doesUserExist(username)
+						&& concerto.isAccountDisabled(username)) {
 						proposingSolution.append("17-c: Activate Concerto account for this user." + RETURN_CHAR);
 						
 					if(fixing){
-						if(ConcertoAPI.setAccountEnabledForGivenUser(true, username)){
+						if(concerto.setAccountEnabledForGivenUser(true, username)){
 							fixedRslts.add("17-c: Activated Concerto account.");
 						} else {
 							failedToFixRslts.add("17-c: Couldn't activate Concerto account.");
@@ -1266,14 +1563,14 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	 * 
 	 * Solution: create a Concerto account
 	 */
-				if(!ConcertoAPI.doesUserExist(username)){
+				if(!concerto.doesUserExist(username)){
 					proposingSolution.append("(18-b- Limited User) create a Concerto account.");
 					
 					if(fixing){
 						// if u doesn't exist in concerto => add u into concerto
 						Map<String, String[]> maps = convertAttributesToMapObject(attrs);
 						try{
-							ConcertoAPI.addClientUser(maps);
+							concerto.addClientUser(maps);
 							fixedRslts.add("(18-b- Limited User) Created a Concerto account.");
 						} catch (Exception e){
 							failedToFixRslts.add("(18-b- Limited User) Couldn't create a Concerto account.");
@@ -1307,6 +1604,32 @@ public class OrganisationDetailsServlet extends HttpServlet{
 	
 	
 	
+	/**
+	 * a helper method that convert the list of results of the issues that have been fixed and the issues that could not be fixed.
+	 * @param fixedRslts : results of the issues that have been fixed.
+	 * @param failedToFixRslts : issues that could not be fixed.
+	 * @return a String that contains: 
+	 * First part: it starts with "passed: " + " all the issues that have been fixed" (if there are issues that have been fixed). (if there is no issue that has been fixed, this part will be empty). each issue is delimited by RETURN_CHAR
+	 * Middle part: contains "&&". this "&&" is used as the separator between issues that have been fixed and issues that couldn't bee fixed. (there will be always a separator here regardless of the first part (issues have been fixed) and second part (issues that couldn't be fixed)
+	 * Second part: it starts with "failed: " + " all the issues that could not be fixed"  (if there are issues that have been fixed). (if there is no issue that has been fixed, this part will be empty). each issue is delimited by RETURN_CHAR
+	 */
+	private String convertFixedResultsListAndFailedToFixedResultsListToResultString(ArrayList<String> fixedRslts, ArrayList<String> failedToFixRslts){
+		String result = "";
+		if(fixedRslts.size() > 0){
+			result += "passed:";
+			for(String rslt : fixedRslts){
+				result += rslt + RETURN_CHAR;
+			}
+		}
+		result += "&&";
+		if(failedToFixRslts.size() > 0){
+			result += "failed:";
+			for(String rslt : failedToFixRslts){
+				result += rslt + RETURN_CHAR;
+			}
+		}
+		return result;
+	}
 	
 	
 	
@@ -1608,198 +1931,6 @@ public class OrganisationDetailsServlet extends HttpServlet{
 			} else {
 				return new String[]{"true",
 						"a Staff account has been created in Support Tracker, and Info field of Ldap account has been updated."};
-			}
-		}
-	}
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * this class is a helper thread that process all the object in the given Attributes list (passed through the Constructor param).
- * Each Attributes object represent a Ldap account. This thread try to determine the account status of each account and its result
- * is stored into its own "sfxmlOfThisThread" object (StringBuffer object). it also provides a method that return this result as a String.
- */
-class ThreadProcessingAttribute extends Thread{
-	// a list of Attributes object, where each Attributes object represent an Ldap account.
-	List<Attributes> attrsListForThisThread = null;
-	// the pointer to the OrganisationDetailsServlet who is the caller of this thread.
-	OrganisationDetailsServlet whereThisThreadBelongTo = null;
-	// result of the accounts statuses of all the accounts that are stored as Attributes(es) in the attrsListForThisThread 
-	StringBuffer sfxmlOfThisThread = new StringBuffer();
-	
-	LdapTool lt = null;
-	
-	/**
-	 * Constructor
-	 * @param attrsList : a list of Attributes object, where each Attributes object represent an Ldap account.
-	 * @param ods : is the pointer to the OrganisationDetailsServlet who is the caller of this thread.
-	 */
-	public ThreadProcessingAttribute(List<Attributes> attrsList, OrganisationDetailsServlet ods){
-		attrsListForThisThread = attrsList;
-		whereThisThreadBelongTo = ods;
-		try {
-			lt = new LdapTool();
-		} catch (FileNotFoundException | NamingException e) {
-			// we are not doing anything because we no that it would not happened
-			// if it would happen, it should already happened before this method is called 
-		}
-	}
-	
-	/**
-	 * @return the String result of the accounts statuses of all the accounts that this thread processing.
-	 * Each result (for each account) is given as an XML branch which contains the <branchName>innerValue</branchName>.
-	 * Those branches can be:
-	 * <brokenInDisabling><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenInDisabling>
-	 * <disabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn> <solution>proposingSolutions</solution></disabled>
-	 * <brokenCantBeFixed><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenCantBeFixed>
-	 * <broken><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></broken>
-	 * <limited><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></limited>
-	 * <enabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn></enabled>
-	 */
-	public String getThisThreadXMLResult(){
-		return sfxmlOfThisThread.toString();
-	}
-	
-	/**
-	 * Invoke the thread to run and process all the accounts that stored as Attributes object attrsListForThisThread. Each result of each account is attached to sfxmlOfThisThread
-	 * The status of each account can be: 
-	 * <brokenInDisabling><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenInDisabling>
-	 * <disabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn> <solution>proposingSolutions</solution></disabled>
-	 * <brokenCantBeFixed><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></brokenCantBeFixed>
-	 * <broken><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></broken>
-	 * <limited><name>accountDisplayName</name><dn>unescapedAccountDN</dn><solution>proposingSolutions</solution></limited>
-	 * <enabled><name>accountDisplayName</name><dn>unescapedAccountDN</dn></enabled>
-	 */
-	public void run(){
-		// iterate through each account
-		for(Attributes attrs : attrsListForThisThread){
-			String unescapedUserDN;  // the userDN (that doesn't have escaped char for sepcial chars) of this account
-			String displayName;		 // the display name of this account
-			try {
-				unescapedUserDN = (String)Rdn.unescapeValue((String)attrs.get("distinguishedname").get());
-				displayName = (String) attrs.get("cn").get();
-			} catch (NamingException e1) {
-				// we are not doing anything because if there's no "CN" then this attr cannot be processed anyway
-				continue;
-			}
-			
-			// checking whether this account has been disbaled
-			String proposingSolution = whereThisThreadBelongTo.checkingAndFixingForDisabledLdapAccount(false, attrs);
-			
-			// if this account has been disabled and not a broken account, the proposingSolution must be an empty StringBuffer
-			// if this account has not been disabled (account is enabled), the proposingSolution must be also an empty StringBuffer
-			
-			// so, if this proposingSolution is not empty, means this account is a disabled but broken 
-			// (either support tracker account has not been disabled or concerto portal account has not been disabled, or both have not been disabled) 
-			if(!proposingSolution.isEmpty()){
-				String value = String.format("<brokenInDisabling><name>%s</name><dn>%s</dn><solution>%s</solution></brokenInDisabling>",
-						StringEscapeUtils.escapeXml10(displayName),
-						StringEscapeUtils.escapeXml10(unescapedUserDN), 
-						StringEscapeUtils.escapeXml10(proposingSolution));
-				sfxmlOfThisThread.append(value);
-			
-
-			} else { // if this account a disabled and not broken  or  this account is enabled (we need to do further check)
-
-				// if this account has been disabled, and the proposingSolution (so far) is an empty String buffer
-				// means it is a disabled and good account (no issues).
-				if(lt.isAccountDisabled(unescapedUserDN)){ 
-					// account has been disabled properly 
-					//(no other broken in disabling, 
-					// but there can be other broken if it is re-activated, 
-					// due to the broken status that have not been fixed, before it is disabled)
-					String value = String.format("<disabled><name>%s</name><dn>%s</dn> <solution>%s</solution></disabled>",
-							StringEscapeUtils.escapeXml10(displayName),
-							StringEscapeUtils.escapeXml10(unescapedUserDN), 
-							StringEscapeUtils.escapeXml10(proposingSolution) );
-					sfxmlOfThisThread.append(value);
-					
-				
-				// if this account is enabled and proposingSolution is empty, 
-				// then we need to look for other issues that related to enabled account
-				} else {
-					
-					proposingSolution += whereThisThreadBelongTo.checkingAndFixingForBrokenAccount(false, attrs);
-					
-					// if proposingSolution is not empty, it means there are some broken issues
-					if(!proposingSolution.isEmpty()){
-						
-						// If this account is broken, then we dont' care about the status of 'limited user'. 
-						// It means that those limited users has to be counted as broken as well.
-						proposingSolution += whereThisThreadBelongTo.checkingAndFixingForLimitedUser(false, attrs);
-						
-						if(proposingSolution.contains("DO NOTHING") || proposingSolution.contains("cannot be fixed")){
-							String value = String.format("<brokenCantBeFixed><name>%s</name><dn>%s</dn><solution>%s</solution></brokenCantBeFixed>",
-									StringEscapeUtils.escapeXml10(displayName),
-									StringEscapeUtils.escapeXml10(unescapedUserDN), 
-									StringEscapeUtils.escapeXml10(proposingSolution));
-							sfxmlOfThisThread.append(value);
-							
-						} else {
-							String value = String.format("<broken><name>%s</name><dn>%s</dn><solution>%s</solution></broken>",
-									StringEscapeUtils.escapeXml10(displayName),
-									StringEscapeUtils.escapeXml10(unescapedUserDN), 
-									StringEscapeUtils.escapeXml10(proposingSolution));
-							sfxmlOfThisThread.append(value);
-						}
-						
-						
-						
-					// if proposingSolution is empty means, there's no broken issues. 
-					}else {
-						// so, we distinguish this account to be either: <limited> account or <enabled> account
-						proposingSolution = whereThisThreadBelongTo.checkingAndFixingForLimitedUser(false, attrs);
-						
-						// if proposingSolution is not empty here, means this account his a <limtied> account
-						if(!proposingSolution.isEmpty()){
-							String value = String.format("<limited><name>%s</name><dn>%s</dn><solution>%s</solution></limited>",
-													StringEscapeUtils.escapeXml10(displayName),
-													StringEscapeUtils.escapeXml10(unescapedUserDN), 
-													StringEscapeUtils.escapeXml10(proposingSolution));
-							sfxmlOfThisThread.append(value);
-							
-						// otherwise, its a good account (no broken or limited)
-						} else {
-							String value = String.format("<enabled><name>%s</name><dn>%s</dn></enabled>", 
-													StringEscapeUtils.escapeXml10(displayName),
-													StringEscapeUtils.escapeXml10(unescapedUserDN));
-							sfxmlOfThisThread.append(value);
-						}
-					}
-				}
 			}
 		}
 	}

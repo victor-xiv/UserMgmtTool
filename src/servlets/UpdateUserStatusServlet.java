@@ -84,8 +84,8 @@ public class UpdateUserStatusServlet extends HttpServlet {
 					SupportTrackerJDBC.toggleUserStatus(username, id, enabled);
 				}
 				
-				if(enabled) ConcertoAPI.undeleteAccountOfGivenUser(username);
-				else ConcertoAPI.deleteAccountOfGivenUser(username);
+				if(enabled) new ConcertoAPI().undeleteAccountOfGivenUser(username);
+				else new ConcertoAPI().deleteAccountOfGivenUser(username);
 			} catch (Exception e1) {
 				response.getWriter().write("false|" + e1.getMessage());
 				return;

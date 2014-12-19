@@ -172,8 +172,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		try {
 			result = updatePassword(userDN, newPsw, isPswGenerated);
 		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			response.getWriter().write("Couldn't update Ldap Account's password due to: " + e.getMessage());
 		}
 		response.getWriter().write(result);
 	}
@@ -198,8 +197,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		try {
 			result = updatePassword(userDN, newPsw, isPswGenerated);
 		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-//			e.printStackTrace();
+			response.getWriter().write("Couldn't update Ldap Account's password due to: " + e.getMessage());
 		}
 		response.getWriter().write(result);
 	}
@@ -224,8 +222,6 @@ public class ChangePasswordServlet extends HttpServlet {
 		try {
 			mobile = getMobilePhoneForUser(userDN);
 		} catch (NamingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		if(mobile == null){
 			response.getWriter().write("false");
@@ -280,7 +276,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		}
 		
 		try {
-			ConcertoAPI.enableNT(username);
+			new ConcertoAPI().enableNT(username);
 		} catch (Exception e) {
 			lt.close();
 			// we are not logging there because it has been logged in enableNT() method

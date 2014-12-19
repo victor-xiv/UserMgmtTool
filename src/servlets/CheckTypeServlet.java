@@ -112,7 +112,7 @@ public class CheckTypeServlet extends HttpServlet {
 			// Get the locator for the web service
 			try {
 				
-				if(ConcertoAPI.doesUserExist(username)){
+				if(new ConcertoAPI().doesUserExist(username)){
 					//If successful, user is a Concerto user. Redirect to concerto password utility
 					response.sendRedirect(conserver+"/password/ForgotPassword.action");
 					return;

@@ -347,7 +347,7 @@ public class TestServlet extends HttpServlet {
 			// if the connection was done successful, it will only return true or false.
 			// so, we don't care.
 			// we care only if it's throwing an except, which means that the connection is failed.
-			boolean result = ConcertoAPI.testGetClientUser(LdapProperty.getProperty("portal.searchFor.user"));
+			boolean result = new ConcertoAPI().testGetClientUser(LdapProperty.getProperty("portal.searchFor.user"));
 			return "Portal has been connected successfully.";
 
 		} catch (Exception e) {

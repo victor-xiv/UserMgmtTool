@@ -25,7 +25,7 @@ A.Left{background-image:url(buttons/left.gif);}
 A.Right{background-image:url(buttons/right.gif);}
 P.Spacer{display:inline!important;width:16px;}
 A.Add,A.Fix,A.CantBeFixed,A.Delete,A.DeleteDisabled,A.Edit,A.Rename,A.Search,A.Select{background:none 0 0 no-repeat;padding-left:12px;width:16px;}
-A.Add:hover,A.Fix:hover,A.Delete:hover,A.Edit:hover,A.Rename:hover,A.Search:hover,A.Select:hover{background-position:0 -16px;text-decoration:none;}
+A.Edit:hover,A.Rename:hover,A.Search:hover,A.Select:hover{background-position:0 -16px;text-decoration:none;}
 A.Add SPAN,A.Fix SPAN, A.CantBeFixed SPAN,A.Delete SPAN{padding-left:7px;white-space:nowrap;}
 A.Add:hover SPAN,A.Fix:hover SPAN, A.CantBeFixed:hover SPAN,A.Delete:hover SPAN{text-decoration:underline;}
 A.Add{background-image:url(buttons/add.gif);}

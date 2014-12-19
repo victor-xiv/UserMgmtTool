@@ -23,6 +23,8 @@
   
     <title>Person: <%=userDN %></title>
     <script type="text/javascript" language="javascript" src="./js/ajaxgen.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+     
     <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
     <link rel="stylesheet" href="./css/general.css" type="text/css" />
     <jsp:useBean id="user" class="beans.LdapUser" scope="page" />
@@ -417,6 +419,84 @@
     	    }
         }
     }
+    
+    
+    
+    function getAcctStatusDetails(encodedUserDN){
+    	var param = "rqst=getAUserStatusDetails&unescapedUserDN=" + encodedUserDN; 
+    	
+    	var jqxhr = $.post("AccountStatusDetails", param, function(result){
+    		try{
+				var xmlRslt = $.parseXML(result);
+				var result = '<a id="fixActStsLink" style="background-size:20px; padding-left:20px" href="#"' +
+							'onclick=\'fixUserAccount("' + encodedUserDN + '")\''
+
+				if($(xmlRslt).find('limited').length > 0){
+					var solution = $(xmlRslt).find('limited').find("solution")[0].firstChild.data;
+	       			result += ' title="' +solution+ '" class="Add" ></a>';
+	       			
+	       		} else if($(xmlRslt).find('brokenCantBeFixed').length > 0){
+					var solution = $(xmlRslt).find('brokenCantBeFixed').find("solution")[0].firstChild.data;
+	       			result += ' title="' +solution+ '" class="CantBeFixed" ></a>';
+	       			
+	       		} else if($(xmlRslt).find('brokenInDisabling').length > 0){
+					var solution = $(xmlRslt).find('brokenInDisabling').find("solution")[0].firstChild.data;
+	       			result += ' title="' +solution+ '" class="Fix" ></a>';
+	       			
+	       		} else if($(xmlRslt).find('broken').length > 0){
+					var solution = $(xmlRslt).find('broken').find("solution")[0].firstChild.data;
+	       			result += ' title="' +solution+ '" class="Fix" ></a>';
+
+	       		// for the case this user is disabled or enabled
+	       		} else { //if($(xmlRslt).find('disabled').length > 1 || $(xmlRslt).find('enabled').length > 1)
+					result = "";
+				}
+				
+				$('#fixActStatus').html(result);
+			
+								
+			} catch (e) {
+				$("#add-removeGroupFailed").html("Server failed to process the account status request. Here's the message: " + result);
+			}
+    	})
+    	.fail(function() {
+    		$("#add-removeGroupFailed").html("Could not get a response from server while checking this account status.");
+		 });
+    }
+    
+    
+    function fixUserAccount(encodedUserDN){
+    	var params = "rqst=fixUser&userDN=" + encodedUserDN;
+    	$("#add-removeGroupPassed").html("Processing request...");
+    	var jqxhr = $.post( "AccountStatusDetails", params, function(result) {
+    		try{
+    			var xmlRslt = $.parseXML(result);
+				
+				// all broken has been fixed (no any failed to fix in the XML result)
+				if($(xmlRslt).find("failedToFix").length < 1){
+					$('#fixActStatus').html(""); // remove the broken link
+					$("#add-removeGroupPassed").html("Account has been successfully fixed.");
+				
+				// some issues have not been fixed
+				} else {
+					var fixedRslt = '';
+					if($(xmlRslt).find("fixed").length > 0){
+						fixedRslt = $(xmlRslt).find("fixed")[0].firstChild.data;
+					}
+					var failedToFix = $(xmlRslt).find("failedToFix")[0].firstChild.data;
+					$("#fixActStsLink").prop('title', fixedRslt + failedToFix);
+					
+					$("#add-removeGroupPassed").html(fixedRslt);
+					$("#add-removeGroupFailed").html(failedToFix);
+				}
+    		} catch (e) {
+				$("#add-removeGroupFailed").html("Server failed to process fixing account status request. Here's the message: " + result);
+			}
+    	})
+    	.fail(function() {
+    		$("#add-removeGroupFailed").html("Could not get a response from server while fixing this account status.");
+		 });
+    }
     </script>
     <style type="text/css">
       #sAMAccountName             {width: 200px;}
@@ -437,7 +517,7 @@
       #company                    {width: 205px;}
     </style>
   </head>
-  <body>
+  <body onload='getAcctStatusDetails("<%=java.net.URLEncoder.encode(userDN)%>")'>
     <table align="center" border="0" style="border-color: #ef7224" cellspacing="1">
       <tr>
         <td bgcolor="#ef7224">
@@ -445,8 +525,14 @@
             <tr align="center">
               <td align="center">
                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
-                <h1><%=user.getDisplayName() %></h1>
-                <span><a href="ChangePassword?rqstFrom=userDetail">Change Password</a></span>
+                
+                
+                
+                <h1><%=user.getDisplayName() %>  <span id="fixActStatus"></span> </h1>
+
+		
+				
+                <div><a href="ChangePassword?rqstFrom=userDetail">Change Password</a></div>
                 <img src="./css/images/swish.gif" alt="There should be an image here...." />
 <%  if(session.getAttribute("error") != null){ %>
                 <div class="row">

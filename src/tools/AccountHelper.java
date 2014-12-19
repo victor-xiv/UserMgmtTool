@@ -1,6 +1,7 @@
 package tools;
 
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -100,9 +101,20 @@ mobile
 			return "false|Could not connect to LDAP server due to: "+ e.getMessage();
 			//no need to log, the error has been logged in LdapTool()
 		}
-		
 		if( lt == null){
 			return "false|Unknown Error while connecting to LDAP server";
+		}
+		
+		
+		ConcertoAPI concerto = null;
+		try{
+			concerto = new ConcertoAPI();
+		} catch (MalformedURLException e){
+			logger.error("Couldn't create Concerto Portal Webservice.", e);
+			return "false|Could not connect to Concerto Portal Webservice due to: "+ e.getMessage();
+		}
+		if(concerto == null){
+			return "false|Could not connect to Concerto Portal Webservice.";
 		}
 		
 		// if company doesn't exist in LDAP's "Client" => add the company into "Client"
@@ -138,7 +150,7 @@ mobile
 		boolean usrExistsInLDAP = lt.usernameExists(fullname, maps.get("company")[0]);
 		boolean usrExistsInConcerto = false;
 		try {
-			usrExistsInConcerto = ConcertoAPI.doesUserExist(userName);
+			usrExistsInConcerto = concerto.doesUserExist(userName);
 		} catch (Exception e) {
 			return "false|Cannot connect to Concerto server. Reason: " + e.getMessage();
 		}
@@ -189,7 +201,7 @@ mobile
 			
 			if( addStatus ){ // add a user into Ldap successfully
 				try {
-					ConcertoAPI.addClientUser(maps);
+					concerto.addClientUser(maps);
 				} catch (Exception e) {
 					// remove the previous added user from Support Tracker DB
 					lt.deleteUser(maps.get("displayName")[0], maps.get("company")[0]);

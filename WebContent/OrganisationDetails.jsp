@@ -5,6 +5,7 @@
 <head>
   <title>Organisation: <%=request.getParameter("name") %></title>
   <script type="text/javascript" language="javascript" src="./js/ajaxgen.js"></script>
+ 
   <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
   <link rel="stylesheet" href="./css/general.css" type="text/css" />
@@ -54,8 +55,9 @@ a.showingAcctSt {
     border:1px solid #7CBAFF;
     background-color:#7CBAFF;
     text-decoration:none;
+    text-align: center;
     color:#666;
-    padding:5px 5px 5px 25px;"
+    padding:5px 5px 5px 5px;"
 }
 
 a.showingAcctSt:hover{
@@ -71,8 +73,9 @@ a.loadingAcctSt{
     border:1px solid #ddd;
     background-color:#ddd;
     text-decoration:none;
+    text-align: center;
     color:#aaa;
-    padding:5px 5px 5px 25px;"
+    padding:5px 5px 5px 5px;"
 }
 </style>
 
@@ -275,8 +278,9 @@ function getIdIndex(encodedUserDN){
 		cleanUpThePage();
 		
 		var param = "rqst=getAllUsersOfOrganisation&orgSimpleName=" + encodedClientSimpleName;
+		$("#acctStsLink").html('<a class="loadingAcctSt" id="accountStatus" href="#">Loading Account Status...</a>');
 		
-		var jqxhr = $.post("OrganisationDetails", param, function(result){
+		var jqxhr = $.post("AccountStatusDetails", param, function(result){
 			try{
 				xmlRslt = $.parseXML(result);
 				$("#acctStsLink").html('<a class="showingAcctSt" href="#" id="accountStatus" onclick="javascript: updateAccountStatus()">Show Accounts Status</a>');
@@ -295,6 +299,13 @@ function getIdIndex(encodedUserDN){
 	function updateAccountStatus(){
 		if(xmlRslt){
 
+			// clean up first, before update
+			$('#DisabledUsers').html("");
+			$('#EnbaledUsers').html("");
+			$('#LimitedUsers').html("");
+			$('#BrokenUsers').html("");
+			
+			
 			// add all the disabled accounts into the "#Disabledusers" element
 			var disabledUsersText = "";
 			$(xmlRslt).find("disabled").each(
@@ -393,7 +404,7 @@ function getIdIndex(encodedUserDN){
 				$('#BrokenUsers').html(brokenUsersText);
 			}
 			
-			$("#acctStsLink").html('');
+			$("#acctStsLink").html('<a class="showingAcctSt" id="accountStatus" onclick=\'javascript: getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")\' href=\'#\'>Load Accounts Status</a>');
 		}
 	}
 	
@@ -406,7 +417,7 @@ function getIdIndex(encodedUserDN){
 		
 		var params = "rqst=fixUser&userDN=" + uriEncodedUserDN;
 		
-		var jqxhr = $.post( "OrganisationDetails", params, function(result) {
+		var jqxhr = $.post( "AccountStatusDetails", params, function(result) {
 			
 			try{
 				var xmlRslt = $.parseXML(result);
@@ -476,7 +487,7 @@ function getIdIndex(encodedUserDN){
 
 
 </head>
-  <body onload='getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")'>
+  <body>
   
   
 
@@ -534,7 +545,7 @@ function getIdIndex(encodedUserDN){
 				<!-- showing the button of "Lodaing Account Status..." and "Show Account Status" -->
 				<br/>
 				<div class="row"> <div id="acctStsLink"  >
-						<a class="loadingAcctSt" id="accountStatus" >Loading Account Status...</a>
+						<a class="showingAcctSt" id="accountStatus" onclick='javascript: getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")' href='#'>Load Accounts Status</a>
   				</div></div>
 				
 				<br />

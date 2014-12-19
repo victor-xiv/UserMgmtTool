@@ -16,7 +16,7 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.xml.namespace.QName;
-import javax.xml.rpc.soap.SOAPFaultException;
+import javax.xml.ws.soap.SOAPFaultException;
 
 import ldap.LdapProperty;
 import ldap.UserMgmtConstants;
@@ -32,7 +32,7 @@ import com.orionhealth.com_orchestral_portal_webservice_api_7_2_user.UserManagem
 
 public class ConcertoAPI {
 
-	public static ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
+	public ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 	
 	
 	/**
@@ -72,14 +72,16 @@ public class ConcertoAPI {
 	    }
 	}
 	
-	
+	public ConcertoAPI() throws MalformedURLException{
+		getConcertoServicePort();
+	}
 	
 	/**
 	 * Connect to stpreprod with webservice 7.2 and return the port object
 	 * @return the Port object that represent the connection with the web service server
 	 * @throws MalformedURLException
 	 */
-	public static ComOrchestralPortalWebserviceApi72UserUserManagementService getConcertoServicePort() throws MalformedURLException{
+	public ComOrchestralPortalWebserviceApi72UserUserManagementService getConcertoServicePort() throws MalformedURLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		if(port == null){
@@ -122,7 +124,7 @@ public class ConcertoAPI {
 	 * @return a user object if there is a user that match to this username, null otherwise
 	 * @throws Exception if it failed to connect or retrieve a user
 	 */
-	public static User getUser(String username) throws Exception {
+	public User getUser(String username) throws Exception {
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
@@ -149,14 +151,14 @@ public class ConcertoAPI {
 		User user = null;
 		try{
 			user = port.getUser(username);
-			logger.debug("started working with user: " + username);
+			logger.debug("(Concerto) started working with user: " + username);
 		} catch (Exception e){
 			// if username doesn't exist, just return false (don't need to throw an exception)
 			if(e.getMessage().contains("No user")){
 				return null;
 			}
 			
-			logger.error("Failed to retrieve a user" + username + " from webserivce server.", e);
+			logger.error("(Concerto) Failed to retrieve a user" + username + " from webserivce server.", e);
 			throw new Exception("Failed to retrieve a user from webserivce server.");
 		}
 		
@@ -174,7 +176,7 @@ public class ConcertoAPI {
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
-	public static boolean testGetClientUser(String username) throws Exception, MalformedURLException{
+	public boolean testGetClientUser(String username) throws Exception, MalformedURLException{
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		// not logging, because it logged in getUser() method
@@ -185,7 +187,7 @@ public class ConcertoAPI {
 			else return true;
 			
 		} catch (Exception e) {
-			Logger.getRootLogger().error("Failed to create services", e);
+			Logger.getRootLogger().error("(Concerto) Failed to create services", e);
 			throw new Exception("Failed to retrieve a user from webserivce server.");
 		}
 	}
@@ -199,7 +201,7 @@ public class ConcertoAPI {
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
-	public static boolean doesUserExist(String username) throws MalformedURLException, Exception{
+	public boolean doesUserExist(String username) throws MalformedURLException, Exception{
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		return testGetClientUser(username);
@@ -215,7 +217,7 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException if wsdl url is not correct. 
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 */
-	public static boolean enableNT(String username) throws MalformedURLException, Exception{
+	public boolean enableNT(String username) throws MalformedURLException, Exception{
 		return setUserToUsePasswordStoredInLdap(username);
 	}
 	
@@ -228,7 +230,7 @@ public class ConcertoAPI {
 	 * @return true if process has been completed successfully
 	 * @throws Exception
 	 */
-	public static boolean setAccountTypeForGivenUser(String username, String accountType) throws Exception{
+	public boolean setAccountTypeForGivenUser(String username, String accountType) throws Exception{
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
@@ -246,7 +248,7 @@ public class ConcertoAPI {
 		try {
 			port = getConcertoServicePort();
 		} catch (MalformedURLException e) {
-			logger.error("Failed ot retreive the endpoint object.",e);
+			logger.error("(Concerto) Failed ot retreive the endpoint object.",e);
 			throw new MalformedURLException("Given wsdl url is not correct.");
 		}
 		
@@ -270,7 +272,7 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException if wsdl url is not correct. 
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 */
-	public static boolean setUserToUsePasswordStoredInLdap(String username) throws MalformedURLException, Exception{
+	public boolean setUserToUsePasswordStoredInLdap(String username) throws MalformedURLException, Exception{
 		return setAccountTypeForGivenUser(username, "LDAP");
 	}
 	
@@ -284,7 +286,7 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException if wsdl url is not correct. 
 	 * @throws Exception if there is an exception during the connection or during the updating.
 	 */
-	public static boolean setUserToUsePasswordStoredInConcerto(String username) throws MalformedURLException, Exception{
+	public boolean setUserToUsePasswordStoredInConcerto(String username) throws MalformedURLException, Exception{
 		return setAccountTypeForGivenUser(username, "Concerto");
 	}
 	
@@ -294,7 +296,9 @@ public class ConcertoAPI {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean isAccountEnabled(String username) throws Exception{
+	public boolean isAccountEnabled(String username) throws Exception{
+		Logger.getRootLogger().debug("check whether this concerto user is enabled or not");
+		
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		try{
@@ -302,7 +306,7 @@ public class ConcertoAPI {
 			return user.isAccountEnabled().booleanValue() && !user.isDeleted().booleanValue();
 		} catch (NullPointerException e) {
 			// NullPointerException thrown when there's no username in the concerto
-			throw new NullPointerException("User doesn't exist in Concerto.");
+			throw new NullPointerException("User:" + username + " doesn't exist in Concerto." );
 		}
 	}
 	
@@ -312,7 +316,7 @@ public class ConcertoAPI {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean isAccountDisabled(String username) throws Exception{
+	public boolean isAccountDisabled(String username) throws Exception{
 		return !isAccountEnabled(username);
 	}
 	
@@ -322,7 +326,9 @@ public class ConcertoAPI {
 	 * @return true if the username account is using Ldap password. false, if it is using other password that is not Ldap password
 	 * @throws Exception
 	 */
-	public static boolean isUserUsingLdapPassword(String username) throws Exception{
+	public boolean isUserUsingLdapPassword(String username) throws Exception{
+		Logger.getRootLogger().debug("Check whether or not this concerto user: " + username + " is using Ldap Password");
+		
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		try{
@@ -341,7 +347,9 @@ public class ConcertoAPI {
 	 * @return
 	 * @throws Exception
 	 */
-	public static boolean isUserMemberOfGivenGroup(String username, String groupname) throws Exception{
+	public boolean isUserMemberOfGivenGroup(String username, String groupname) throws Exception{
+		Logger.getRootLogger().debug("Check whether this concerto user: " + username + " is a member of this concerto group: " + groupname);
+		
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		if(groupname==null || groupname.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
@@ -365,7 +373,7 @@ public class ConcertoAPI {
 	 * @return true if username is a memberOf at least one group from the given groupsList, false otherwise
 	 * @throws Exception
 	 */
-	public static boolean isUserMemberOfAtLeastOneGroupInGivenGroupsList(String username, String[] groupsList) throws Exception{
+	public boolean isUserMemberOfAtLeastOneGroupInGivenGroupsList(String username, String[] groupsList) throws Exception{
 		for(String group : groupsList){
 			if(isUserMemberOfGivenGroup(username, group))
 				return true;
@@ -380,7 +388,7 @@ public class ConcertoAPI {
 	 * @return true if username is a memberOf all the groups in the groupsList, if the username is a memberOf only one or two groups from the groupsList => it will return false
 	 * @throws Exception
 	 */
-	public static boolean isUserMemberOfAllGroupsInGivenGroupsList(String username, String[] groupsList) throws Exception{
+	public boolean isUserMemberOfAllGroupsInGivenGroupsList(String username, String[] groupsList) throws Exception{
 		boolean result = true;
 		for(String group : groupsList){
 			result = result && isUserMemberOfGivenGroup(username, group);
@@ -395,12 +403,13 @@ public class ConcertoAPI {
 	 * @return true if that groupname has been deleted from the account of the given username
 	 * @throws Exception
 	 */
-	public static boolean removeGroupFromUser(String username, String groupname) throws Exception{
+	public boolean removeGroupFromUser(String username, String groupname) throws Exception{
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		if(groupname==null || groupname.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		logger.debug("(Concerto) start removing user: " + username + " from group: " + groupname);
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = getConcertoServicePort();
 		User user = getUser(username);
@@ -434,7 +443,8 @@ public class ConcertoAPI {
 		try{
 			port.updateUser(updatedUser);
 		} catch (SOAPFaultException e){
-			throw new Exception("Couldn't remove the group " + groupname + 
+			logger.debug("(Concerto) couldn't remove user: " + username + " from group: " + groupname);
+			throw new Exception("(Concerto) Couldn't remove the group " + groupname + 
 					" from this user: " + username + " because: " + e.getMessage());
 		}
 		
@@ -449,7 +459,7 @@ public class ConcertoAPI {
 	 * @return true if all accounts have been deleted. false, if there's one or more account couldnot be deleted.
 	 * @throws Exception
 	 */
-	public static boolean removeAllGivenGroupsFromGivenUser(String username, String[] groupsList) throws Exception{
+	public boolean removeAllGivenGroupsFromGivenUser(String username, String[] groupsList) throws Exception{
 		boolean result = true;
 		for(String groupname : groupsList){
 			result = result && removeGroupFromUser(username, groupname);
@@ -466,11 +476,12 @@ public class ConcertoAPI {
 	 * @return true if the process has been done successfully
 	 * @throws Exception
 	 */
-	public static boolean setAccountEnabledForGivenUser(boolean enabled, String username) throws Exception{
+	public boolean setAccountEnabledForGivenUser(boolean enabled, String username) throws Exception{
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		logger.debug("(Concerto) set account enable/disable: " + username + " from concerto portal.");
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = getConcertoServicePort();
 		
@@ -479,7 +490,8 @@ public class ConcertoAPI {
 			else port.disableUser(username);
 			return true;
 		} catch (SOAPFaultException e){
-			throw new Exception("Couldnot update user: " + username + " on the webservice.");
+			logger.error("(Concerto) Couldn't set account enable/disable in concerto portal for " + username, e);
+			throw new Exception("(Concerto) Couldnot update user: " + username + " on the webservice.");
 		}
 	}
 	
@@ -491,11 +503,12 @@ public class ConcertoAPI {
 	 * @return true if the process has been done successfully
 	 * @throws Exception
 	 */
-	private static boolean setAccountDeletionForGivenUser(boolean deletion, String username) throws Exception{
+	private boolean setAccountDeletionForGivenUser(boolean deletion, String username) throws Exception{
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		logger.debug("(Concerto) set account deletion: " + username + " from concerto portal.");
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = getConcertoServicePort();
 		
@@ -504,7 +517,8 @@ public class ConcertoAPI {
 			else port.enableUser(username);
 			return true;
 		} catch (SOAPFaultException e){
-			throw new Exception("Couldnot update user: " + username + " on the webservice.");
+			logger.error("(Concerto) Couldn't set account deletion in concerto portal for " + username, e);
+			throw new Exception("(Concerto) Couldnot update user: " + username + " on the webservice, because: " + e.getMessage());
 		}
 	}
 	
@@ -514,7 +528,7 @@ public class ConcertoAPI {
 	 * @return true if it has been deleted successfully
 	 * @throws Exception
 	 */
-	public static boolean deleteAccountOfGivenUser(String username) throws Exception{
+	public boolean deleteAccountOfGivenUser(String username) throws Exception{
 		return setAccountDeletionForGivenUser(true, username);
 	}
 	/**
@@ -523,7 +537,7 @@ public class ConcertoAPI {
 	 * @return true if it has been undeleted successfully
 	 * @throws Exception
 	 */
-	public static boolean undeleteAccountOfGivenUser(String username) throws Exception{
+	public boolean undeleteAccountOfGivenUser(String username) throws Exception{
 		return setAccountDeletionForGivenUser(false, username);
 	}
 	
@@ -556,7 +570,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
 					   
-	public static void addClientUser(Map<String, String[]> maps) throws Exception, MalformedURLException{
+	public void addClientUser(Map<String, String[]> maps) throws Exception, MalformedURLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		/**
@@ -605,7 +619,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 		user.setUserAttributes(new UserAttributesExt(usrAttrList));
 		user.setAccountType("LDAP");
 		
-		logger.debug("About to create a user " + userName + " on webservice server.");
+		logger.debug("(Concerto) About to create a user " + userName + " on webservice server.");
 		try {
 			port.createUser(user);
 		} catch (Exception e) {

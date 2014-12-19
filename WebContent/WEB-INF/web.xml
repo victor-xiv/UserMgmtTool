@@ -104,8 +104,8 @@
   	<servlet-class>servlets.AdditionalFunctionsServlet</servlet-class>
   </servlet>
   <servlet>
-  	<servlet-name>OrganisationDetails</servlet-name>
-  	<servlet-class>servlets.OrganisationDetailsServlet</servlet-class>
+  	<servlet-name>AccountStatusDetails</servlet-name>
+  	<servlet-class>servlets.AccountStatusDetailsServlet</servlet-class>
   </servlet>
   
   
@@ -189,8 +189,8 @@
     <url-pattern>/AdditionalFunctions</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
-  	<servlet-name>OrganisationDetails</servlet-name>
-  	<url-pattern>/OrganisationDetails</url-pattern>
+  	<servlet-name>AccountStatusDetails</servlet-name>
+  	<url-pattern>/AccountStatusDetails</url-pattern>
   </servlet-mapping>
   
 </web-app>
