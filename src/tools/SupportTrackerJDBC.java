@@ -8,6 +8,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,7 +45,7 @@ public class SupportTrackerJDBC {
 		if(username==null || username.trim().isEmpty()) return null;
 		
 		Logger logger = Logger.getRootLogger();
-		logger.debug("Started querying for a mobile number of a user: " + username);
+		logger.debug("(SupportTrackerDB) Started querying for a mobile number of a user: " + username);
 		
 		String query = "SELECT contactPersonMobile " +
 							"FROM ClientAccount " +
@@ -70,7 +71,7 @@ public class SupportTrackerJDBC {
 			}
 		}
 		
-		logger.debug("mobile number of " + username + " is: " + result);
+		logger.debug("(SupportTrackerDB) mobile number of " + username + " is: " + result);
 		return result;
 	}
 	
@@ -135,7 +136,7 @@ The valid mobile phone should look like one of the below forms:
 			// 2). after replacing those unused chars, 
 			// the valid mobile number should be at least 8 digits and it should not be more than 18 digits
 			if(mobile.length() < 8 || mobile.length() > 18){
-				logger.error("This is an invalid mobile phone (its length either < 8 digits or > 18 digits): " + mobile);
+				logger.error("This is an invalid mobile phone (it contains non-number chars or its length either < 8 digits or > 18 digits): " + mobile);
 				return null;
 			}
 			
@@ -196,7 +197,7 @@ The valid mobile phone should look like one of the below forms:
 	 * @throws SQLException if DB connection failed during the process.
 	 */
 	public static ResultSet runGivenStatementWithParamsOnSupportTrackerDB(String query, String[] params) throws SQLException {
-		Logger.getRootLogger().debug("run query: " + query + " with params: " + params);
+		Logger.getRootLogger().debug("(SupportTrackerDB) run query: " + query + " with params: " + Arrays.toString(params));
 		
 		
 		Connection con = getConnection();
@@ -232,7 +233,7 @@ The valid mobile phone should look like one of the below forms:
 	 * @throws SQLException if DB connection failed during the process.
 	 */
 	public static int runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(String updateQuery, String[] params) throws SQLException{
-		Logger.getRootLogger().debug("run query: " + updateQuery + " with params: " + params);
+		Logger.getRootLogger().debug("(SupportTrackerDB) run query: " + updateQuery + " with params: " + Arrays.toString(params));
 		
 		Connection con = getConnection();
 		PreparedStatement qryStm = con.prepareStatement(updateQuery);
@@ -256,7 +257,7 @@ The valid mobile phone should look like one of the below forms:
 	
 	
 	public static int runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(String updateQuery, String[] params) throws SQLException{
-		Logger.getRootLogger().debug("run query: " + updateQuery + " with params: " + params);
+		Logger.getRootLogger().debug("(SupportTrackerDB) run query: " + updateQuery + " with params: " + Arrays.toString(params));
 		
 		Connection con = getConnection();
 		PreparedStatement qryStm = con.prepareStatement(updateQuery);
@@ -283,7 +284,7 @@ The valid mobile phone should look like one of the below forms:
 		if(companyName == null || companyName.trim().isEmpty()) return null;
 		
 		Logger logger = Logger.getRootLogger();
-		logger.debug("selecting resposible staff for company: " + companyName);
+		logger.debug("(SupportTrackerDB) selecting resposible staff for company: " + companyName);
 		
 
 		String gnLabel = "givenname";
@@ -313,7 +314,7 @@ The valid mobile phone should look like one of the below forms:
 			result = rs.getString(gnLabel) + " " +rs.getString(fnLabel);
 		}
 
-		logger.debug("finished selecting resposible staff for company: " + companyName);
+		logger.debug("(SupportTrackerDB) finished selecting resposible staff for company: " + companyName);
 		return result;
 	}
 	
@@ -328,7 +329,7 @@ The valid mobile phone should look like one of the below forms:
 	public static Map<String,String> getUserDetails(String username, String clientAccountId) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("about to get the details of user from Support Tracker DB " + username);
+		logger.debug("(SupportTrackerDB) about to get the details of user from Support Tracker DB " + username);
 		
 		// building query
 		StringBuffer query = new StringBuffer();
@@ -371,20 +372,20 @@ The valid mobile phone should look like one of the below forms:
 			ResultSetMetaData meta = rs.getMetaData();
 			meta.getColumnCount();
 			while (rs != null && rs.next()) {
-				logger.debug("Found user details: " + username);
+				logger.debug("(SupportTrackerDB) Found user details: " + username);
 				// put user info (from the query results) into a Map object (usd)
 				for (int i = 1; i <= meta.getColumnCount(); i++) {
 					String value = rs.getString(i) == null ? "" : rs.getString(i).trim();
 					userDetails.put(meta.getColumnName(i), value);
-					logger.debug(meta.getColumnName(i) + "|" + rs.getString(i));
+					logger.debug("(SupportTrackerDB) " + meta.getColumnName(i) + "|" + rs.getString(i));
 				}
 			}
 		} catch (SQLException e) {
-			logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
-			throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
+			logger.error("(SupportTrackerDB) " + ErrorConstants.FAIL_QUERYING_DB, e);
+			throw new SQLException("(SupportTrackerDB) " + ErrorConstants.FAIL_QUERYING_DB);
 		}
 		
-		logger.debug("finished getting the details of user from Support Tracker DB " + username);
+		logger.debug("(SupportTrackerDB) finished getting the details of user: " + username + " from Support Tracker DB.");
 		
 		return userDetails;
 	}
@@ -402,7 +403,7 @@ The valid mobile phone should look like one of the below forms:
 		if(username == null || username.trim().isEmpty()) return null;
 		
 		Logger logger = Logger.getRootLogger();
-		logger.debug("selecting the details of a staff: " + username);
+		logger.debug("(SupportTrackerDB) selecting the details of a staff: " + username);
 		
 		String query = "SELECT  " +
 							" staffId, " +
@@ -431,7 +432,7 @@ The valid mobile phone should look like one of the below forms:
 			}
 		}
 
-		logger.debug("finished selecting resposible staff for company: " + username);
+		logger.debug("(SupportTrackerDB) finished selecting detail of staff: " + username);
 		return staffDetails;
 	}
 	
@@ -444,7 +445,7 @@ The valid mobile phone should look like one of the below forms:
 	public static List<String> getOrganisations() throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("about to get all the organisations from Support Tracker DB ");
+		logger.debug("(SupportTrackerDB) about to get all the organisations from Support Tracker DB ");
 		
 		// building query
 		List<String> orgs = new ArrayList<String>();
@@ -456,11 +457,10 @@ The valid mobile phone should look like one of the below forms:
 		while(rs!=null && rs.next()){
 			orgs.add(rs.getString(1));
 		}
-		logger.debug("query successfully completed");
 			
 		Collections.sort(orgs);
 		
-		logger.debug("finished getting all the organisations from Support Tracker DB ");
+		logger.debug("(SupportTrackerDB) finished getting all the organisations from Support Tracker DB ");
 		
 		return orgs;
 	}
@@ -474,7 +474,7 @@ The valid mobile phone should look like one of the below forms:
 	public static List<String> getEmails() throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("about to get all the emails from Support Tracker DB ");
+		logger.debug("(SupportTrackerDB) about to get all the emails from Support Tracker DB ");
 		
 		// building query
 		List<String> orgs = new ArrayList<String>();
@@ -489,7 +489,7 @@ The valid mobile phone should look like one of the below forms:
 				
 		Collections.sort(orgs);
 		
-		logger.debug("fnished getting all the organisations from Support Tracker DB ");
+		logger.debug("(SupportTrackerDB) finished getting all emails from Support Tracker DB ");
 		
 		return orgs;
 	}
@@ -505,7 +505,7 @@ The valid mobile phone should look like one of the below forms:
 	public static int addClient(Map<String, String[]> maps) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("about to add client to Support Tracker DB: ");
+		logger.debug("(SupportTrackerDB) about to add client to Support Tracker DB: ");
 		for(Map.Entry<String, String[]> es : maps.entrySet()){
 			logger.debug(es.getKey() + " : " + es.getValue()[0]);
 		}
@@ -563,11 +563,11 @@ The valid mobile phone should look like one of the below forms:
 			try{
 				status = SupportTrackerJDBC.runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query.toString(), params);
 //				status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query.toString(), params);
-				logger.debug(String.format("Added user with name: %s and clientId %d successfully",
+				logger.debug(String.format("(SupportTrackerDB) Added user with name: %s and clientId %d successfully",
 									maps.get("displayName")[0], clientId));
 			} catch (SQLException e){
-				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
+				logger.error("(SupportTrackerDB) " + ErrorConstants.FAIL_CONNECTING_DB, e);
+				throw new SQLException("(SupportTrackerDB) " + ErrorConstants.FAIL_CONNECTING_DB);
 			}
 
 		} else {
@@ -584,7 +584,7 @@ The valid mobile phone should look like one of the below forms:
 			clientAccountId = SupportTrackerJDBC.getClientAccountId(maps.get("sAMAccountName")[0]);
 		}
 
-		logger.debug("finished adding client to Support Tracker DB");
+		logger.debug("(SupportTrackerDB) finished adding client to Support Tracker DB");
 
 		return clientAccountId;
 	}
@@ -617,7 +617,7 @@ The valid mobile phone should look like one of the below forms:
 	public static boolean updateClientAccount(String username, String clientAccountId, Map<String,String[]> maps){
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("about to update client to Support Tracker DB: " + username);
+		logger.debug("(SupportTrackerDB) about to update client to Support Tracker DB: " + username);
 		
 		String query = "UPDATE ClientAccount SET contactPersonName = ? , contactPersonDepartment = ? , "
 						+ " contactPersonPosition = ? , contactPersonPhone = ? , contactPersonFax = ? , "
@@ -634,10 +634,10 @@ The valid mobile phone should look like one of the below forms:
 		
 		try{
 			int status = runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query, params);
-			logger.debug(String.format("Update user with name: %s successfully", username));
+			logger.debug(String.format("(SupportTrackerDB) Updated user with name: %s successfully", username));
 			return status > 0;
 		} catch (SQLException e){
-			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+			logger.error("(SupportTrackerDB) "+ErrorConstants.FAIL_CONNECTING_DB, e);
 			return false;
 		}
 	}
@@ -656,7 +656,7 @@ The valid mobile phone should look like one of the below forms:
 	 */
 	public static int addStaffAccount(Map<String, String[]> maps) throws SQLException {
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
-		logger.debug("about to add staff to Support Tracker DB: ");
+		logger.debug("(SupportTrackerDB) about to add staff to Support Tracker DB: ");
 
 		// we are not allowing to have the same username in the database 
 		String username = maps.get("sAMAccountName")[0];
@@ -689,7 +689,7 @@ The valid mobile phone should look like one of the below forms:
 		try{
 			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query, params);
 //			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, params);
-			logger.debug(String.format("Added user with name: %s successfully", maps.get("displayName")[0]));
+			logger.debug(String.format("(SupportTrackerDB) Added user with name: %s successfully", maps.get("displayName")[0]));
 			
 		} catch (SQLException e) {
 			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
@@ -703,7 +703,7 @@ The valid mobile phone should look like one of the below forms:
 			staffId = SupportTrackerJDBC.getStaffId(maps.get("sAMAccountName")[0]);
 		}
 		
-		logger.debug("finished adding staff to Support Tracker DB: ");
+		logger.debug("(SupportTrackerDB) finished adding staff to Support Tracker DB: ");
 
 		return staffId;
 	}
@@ -734,7 +734,7 @@ The valid mobile phone should look like one of the below forms:
 	 */
 	public static boolean updateStaffAccount(String username, Map<String,String[]> paramMaps){
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
-		logger.debug("about to update staff to Support Tracker DB: " + username);
+		logger.debug("(SupportTrackerDB) about to update staff to Support Tracker DB: " + username);
 
 		int status = 0;
 		String query = "UPDATE Staff SET familyName = ? , givenName= ? , "
@@ -751,13 +751,13 @@ The valid mobile phone should look like one of the below forms:
 		
 		try{
 			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query, params);
-			logger.debug(String.format("Update user with name: %s successfully", username));
+			logger.debug(String.format("(SupportTrackerDB) Update staff with name: %s successfully", username));
 			
 		} catch (SQLException e) {
-			logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
+			logger.error("(SupportTrackerDB) "+ErrorConstants.FAIL_CONNECTING_DB, e);
 		}
 		
-		logger.debug("finished adding staff to Support Tracker DB: ");
+		logger.debug("(SupportTrackerDB) finished adding staff to Support Tracker DB: ");
 
 		return status > 0;
 	}
@@ -774,17 +774,17 @@ The valid mobile phone should look like one of the below forms:
 	public static boolean deleteClient(int clientAccountId) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("deleting client that has ID from support tracker DB " + clientAccountId);
+		logger.debug("(SupportTrackerDB) deleting client that has ID from support tracker DB " + clientAccountId);
 		
 		String query = "DELETE ClientAccount WHERE clientAccountId = ?";
 		
 		int st = runUpdateOfGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{""+clientAccountId});
 		
 		if(st > 0){
-			logger.debug(String.format("Deleted clientAccountId: %d successfully", clientAccountId));
+			logger.debug(String.format("(SupportTrackerDB) Deleted clientAccountId: %d successfully", clientAccountId));
 			return true;
 		} else {
-			logger.debug(String.format("There's no row affected when attampted to delete clientAccountId: %d.", clientAccountId));
+			logger.debug(String.format("(SupportTrackerDB) There's no row affected when attampted to delete clientAccountId: %d.", clientAccountId));
 			return false;
 		}
 	}
@@ -801,7 +801,7 @@ The valid mobile phone should look like one of the below forms:
 	public static boolean toggleUserStatus(String username, String clientAccountId, boolean enabled) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("toggling user in support tracker DB " + username + " to: " + enabled);
+		logger.debug("(SupportTrackerDB) toggling user in support tracker DB " + username + " to: " + enabled);
 		
 		if(enabled){
 			return enableClientAccount(username, clientAccountId) > 0;
@@ -933,7 +933,7 @@ The valid mobile phone should look like one of the below forms:
 	public static String[] getAvailableUsernames(String firstname, String surname) throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("getting all available username for: " + firstname + ", " + surname );
+		logger.debug("(SupportTrackerDB) getting all available username for: " + firstname + ", " + surname );
 		
 		// remove any special characters that are not allowed to be in user name.
 		// those characters are: " ' , < > : = * [ ] | : ! # + & % { } ? \
@@ -962,11 +962,11 @@ The valid mobile phone should look like one of the below forms:
 				while(rs!=null && rs.next()){
 					String str = rs.getString(1);
 					names.remove(str);
-					logger.debug("Found: "+str);
+					logger.debug("(SupportTrackerDB) Found: "+str);
 				}
 			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_QUERYING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_QUERYING_DB);
+				logger.error("(SupportTrackerDB) "+ErrorConstants.FAIL_QUERYING_DB, e);
+				throw new SQLException("(SupportTrackerDB) "+ErrorConstants.FAIL_QUERYING_DB);
 			}
 			//MODIFIED CODE - NEEDS TO BE INSIDE IF - SPT-448
 			//Close connection (IF CONNECTION IS NOT NULL)
@@ -980,7 +980,7 @@ The valid mobile phone should look like one of the below forms:
 		String[] strNames = new String[names.size()];
 		strNames = names.toArray(strNames);
 		
-		logger.debug("finished getting all available username for: " + firstname + ", " + surname );
+		logger.debug("(SupportTrackerDB) finished getting all available username for: " + firstname + ", " + surname );
 		
 		// return all possible names that have not been stored in the database
 		return strNames;
@@ -997,7 +997,7 @@ The valid mobile phone should look like one of the below forms:
 		if(con == null || con.isClosed()){
 			Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 			
-			logger.debug("About to connect to Support Tracker Database");
+			logger.debug("(SupportTrackerDB) About to connect to Support Tracker Database");
 			
 			jdbcUrl = LdapProperty.getProperty(DBConstants.ST_JDBC_URL);
 			jdbcUser = LdapProperty.getProperty(DBConstants.ST_JDBC_USER);
@@ -1006,26 +1006,26 @@ The valid mobile phone should look like one of the below forms:
 				Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 				con = DriverManager.getConnection(jdbcUrl, jdbcUser, jdbcPassword);
 				
-				if(con != null) logger.debug("Successfully connected to Support Tracker Database");
-				else logger.error("Fail in connecting to Support Tracker Database. Fail to define the failture reason.");
+				if(con != null) logger.debug("(SupportTrackerDB) Successfully connected to Support Tracker Database");
+				else logger.error("(SupportTrackerDB) Fail in connecting to Support Tracker Database. Fail to define the failture reason.");
 				
 				return con;
 				
 			} catch (ClassNotFoundException e) {
-				logger.error(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND, e);
-				throw new SQLException(ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND);
+				logger.error("(SupportTrackerDB) "+ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND, e);
+				throw new SQLException("(SupportTrackerDB) "+ErrorConstants.FAIL_CONNECT_DB_CLASSNOTFOUND);
 				
 			} catch (ExceptionInInitializerError e){
-				logger.error(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB);
+				logger.error("(SupportTrackerDB) "+ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB, e);
+				throw new SQLException("(SupportTrackerDB) "+ErrorConstants.FAIL_INITIALIZATION_CONNECT_DB);
 				
 			} catch (LinkageError e){
-				logger.error(ErrorConstants.FAIL_LINKAGE_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_LINKAGE_DB);
+				logger.error("(SupportTrackerDB) "+ErrorConstants.FAIL_LINKAGE_DB, e);
+				throw new SQLException("(SupportTrackerDB) "+ErrorConstants.FAIL_LINKAGE_DB);
 				
 			} catch (SQLException e) {
-				logger.error(ErrorConstants.FAIL_CONNECTING_DB, e);
-				throw new SQLException(ErrorConstants.FAIL_CONNECTING_DB);
+				logger.error("(SupportTrackerDB) "+ErrorConstants.FAIL_CONNECTING_DB, e);
+				throw new SQLException("(SupportTrackerDB) "+ErrorConstants.FAIL_CONNECTING_DB);
 				
 			}
 		}

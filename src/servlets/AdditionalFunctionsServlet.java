@@ -31,7 +31,7 @@ public class AdditionalFunctionsServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
-		logger.debug("AdditionalFunctionsServlet about to process Get request" + request.getQueryString());
+		logger.debug("AdditionalFunctionsServlet about to process Get request" + request.getParameterMap());
 		
 		String rqst = request.getParameter("rqst");
 		String rslt = "";

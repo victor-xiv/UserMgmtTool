@@ -40,7 +40,7 @@ public class RemoveAGroupFromGroupServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		logger.debug("RemvoeAGroupFromGroupServlet about to process Post request: " + request.getQueryString());
+		logger.debug("RemvoeAGroupFromGroupServlet about to process Post request: " + request.getParameterMap());
 		
 		//Get groupDN that need to be removed
 		String thisGroupDN = request.getParameter("removedGroupDN").trim(); 

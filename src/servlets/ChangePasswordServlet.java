@@ -49,7 +49,7 @@ public class ChangePasswordServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
-		logger.debug("ChangePasswordServlet about to process GET request: " + request.getQueryString());
+		logger.debug("ChangePasswordServlet about to process GET request: " + request.getParameterMap());
 		
 		String userDN = "";
 		HttpSession session = request.getSession(true);
@@ -115,7 +115,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		
 		
 		
-		logger.debug("Redirect request to: " + "ChangeUserPassword.jsp");
+		logger.debug("Redirect request to: ChangeUserPassword.jsp");
 		session.setAttribute("userDN", userDN);
 		String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
 		response.sendRedirect(redirectURL);

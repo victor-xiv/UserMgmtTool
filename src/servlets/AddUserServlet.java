@@ -39,7 +39,7 @@ public class AddUserServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
-		logger.debug("AddUserServlet about to process Post request: " + request.getQueryString());
+		logger.debug("AddUserServlet about to process Post request: " + request.getParameterMap());
 		
 		HttpSession session = request.getSession(true);
 		Map<String,String[]> paramMaps = (Map<String,String[]>)request.getParameterMap();

@@ -87,7 +87,7 @@ public class LdapTool {
 	 * 3). then this ArrayList<String> is assigned to the static field orionHealthGroupsOrderedByPermissionLevel for the later use.
 	 */
 	public static List<String> readGroupsAndPermissionLevelFromConfigureFile(){
-		Logger.getRootLogger().debug("About to read the groups with permission level from ldap.properties file");
+		Logger.getRootLogger().debug("(LdapTool) About to read the groups with permission level from ldap.properties file");
 		
 		if(orionHealthGroupsOrderedByPermissionLevel != null){
 			return orionHealthGroupsOrderedByPermissionLevel;
@@ -120,7 +120,7 @@ public class LdapTool {
 			orionHealthGroupsOrderedByPermissionLevel.add(groupName);
 		}
 		
-		Logger.getRootLogger().debug("Finished reading the groups with permission level.");
+		Logger.getRootLogger().debug("(LdapTool) Finished reading the groups with permission level.");
 		return orionHealthGroupsOrderedByPermissionLevel;
 	}
 	
@@ -154,7 +154,7 @@ public class LdapTool {
 	 * @return
 	 */
 	public List<String> getOrionHealthGroupsThisUserAllowToAccess(String unescappedUserDN){
-		logger.debug("about to process the groups that this user: " + unescappedUserDN + " has the access right on.");
+		logger.debug("(LdapTool) about to process the groups that this user: " + unescappedUserDN + " has the access right on.");
 		if (unescappedUserDN != null && !unescappedUserDN.trim().isEmpty()) {
 			try {
 				// get all the attributes of the given unescappedUserDN
@@ -192,11 +192,11 @@ public class LdapTool {
 				return groupsThisUserAllowedToAccess;
 				
 			} catch (Exception e) {
-				logger.error("Error while processing Orion Health Groups that the user " + unescappedUserDN + " has access right on", e);
+				logger.error("(LdapTool) Error while processing Orion Health Groups that the user " + unescappedUserDN + " has access right on", e);
 			}
 		}
 		
-		logger.debug("finished the process of the groups that the given user has access rigth.");
+		logger.debug("(LdapTool) finished the process of the groups that the given user has access rigth.");
 		return new ArrayList<String>();
 	}
 	
@@ -219,7 +219,7 @@ public class LdapTool {
 	 * 			+ those Orion Health groups that have lower power than those in the given list
 	 */
 	public Set<String> getBaseGroupsWithGivenOHGroupsAllowedToBeAccessed(List<String> ohGroupsAllowedToBeAccessed){
-		logger.debug("about to get the base groups and the Orion Health groups");
+		logger.debug("(LdapTool) about to get the base groups and the Orion Health groups");
 		// get all groups that are stored in Groups folder (of LDAP server)
 		ArrayList<String> allGroups = new ArrayList<String>(getBaseGroups());
 		
@@ -229,7 +229,7 @@ public class LdapTool {
 		ArrayList<String> ohGroupsNotAllowedToBeAccessed = ohGroupsHaveHigherPower;
 		allGroups.removeAll(ohGroupsNotAllowedToBeAccessed);
 
-		logger.debug("finished getting the base groups and the Orion Health groups");
+		logger.debug("(LdapTool) finished getting the base groups and the Orion Health groups");
 		return new LinkedHashSet<String>(allGroups);
 	}
 	
@@ -261,11 +261,11 @@ public class LdapTool {
 		readGroupsAndPermissionLevelFromConfigureFile();
 		
 		
-		logger.debug("About to connect to LDAP server");
+		logger.debug("(LdapTool) About to connect to LDAP server");
 		// if LDAP config file is not found
 		// the props will contain an "error" key
 		if(LdapProperty.getProperty("error") != null){
-			logger.error("ldap.properties file is not found.");
+			logger.error("(LdapTool) ldap.properties file is not found.");
 			throw new FileNotFoundException("LDAP " + ErrorConstants.CONFIG_FILE_NOTFOUND);
 			// don't need to log, because it has been logged in LdapProperty.getConfiguration()
 		}
@@ -285,19 +285,19 @@ public class LdapTool {
 			System.setProperty("javax.net.debug", "ssl");
 			System.setProperty("javax.net.ssl.trustStore", LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
 			System.setProperty( "javax.net.ssl.trustStorePassword", LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
-			logger.debug("Connecting Ldap on SSL, using keystore: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
+			logger.debug("(LdapTool) Connecting Ldap on SSL, using keystore: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
 		}
 		
 		try{
 			ctx = new InitialDirContext(env);
-			logger.debug("Connecting to Ldap server successfully");
+			logger.debug("(LdapTool) Connecting to Ldap server successfully");
 		}catch(ServiceUnavailableException se){
-			logger.error("Connecting to LDAP server", se);
+			logger.error("(LdapTool) Connecting to LDAP server", se);
 			throw new ServiceUnavailableException(ErrorConstants.LDAP_PORT_CLOSED);
 			
 		}catch(CommunicationException ce){
 			String errorMessage = ErrorConstants.FAIL_CONNECTING_LDAP;
-			logger.error("Connecting to LDAP server", ce);
+			logger.error("(LdapTool) Connecting to LDAP server", ce);
 
 			// Fail because the configured port in ldap.properties is incorrect
 			if (ce.getRootCause().getMessage().contains("Connection reset")){
@@ -311,7 +311,7 @@ public class LdapTool {
 			throw new CommunicationException(errorMessage);
 			
 		}catch(NamingException ex){
-			logger.error("Connecting to LDAP server", ex);
+			logger.error("(LdapTool) Connecting to LDAP server", ex);
 			throw new NamingException(ErrorConstants.FAIL_CONNECTING_LDAP);
 		}
 	}
@@ -334,7 +334,7 @@ public class LdapTool {
 	 *          {"true", userDN} or {"true", newUserDN} otherwise.
 	 */
 	public String[] updateUser(Map<String,String[]> paramMaps){
-		logger.debug("About to update user with the value: ");
+		logger.debug("(LdapTool) About to update user with the value: ");
 		for(Map.Entry<String, String[]> es : paramMaps.entrySet()){
 			logger.debug(es.getKey() + " : " + es.getValue()[0]);
 		}
@@ -372,11 +372,11 @@ public class LdapTool {
 						replaceMap.put(entry.getKey(), entry.getValue());
 					}
 				} catch (NullPointerException e){
-					logger.error("Null result from the given updating attributes.", e);
+					logger.error("(LdapTool) Null result from the given updating attributes.", e);
 				}
 			}
 		}catch(NamingException ex){
-			logger.error("Exception while iterating the given updating attributes.", ex);
+			logger.error("(LdapTool) Exception while iterating the given updating attributes.", ex);
 			return new String[]{"false","Failed to extract information from the given attributes."};
 		}
 		
@@ -442,16 +442,16 @@ public class LdapTool {
 			}else{
 				ctx.modifyAttributes(new LdapName(userDN), mods);
 			}
-			logger.debug("Updated details for user: "+userDN);
+			logger.debug("(LdapTool) Updated details for user: "+userDN);
 		} catch (NamingException e) {
-			logger.error("Exception while updating the Ldap user's attribute", e);
+			logger.error("(LdapTool) Exception while updating the Ldap user's attribute", e);
 			return new String[]{"false","Failed to update details for user: "+userDN + " into Ldap Server."};
 		}
 		
 		// updating password => this.changePassword() will handle this
 		if(!password.equals("")){
 			if(!changePassword((String)Rdn.unescapeValue(userDN), password)){
-				logger.debug("Failed to update password for user: "+userDN);
+				logger.debug("(LdapTool) Failed to update password for user: "+userDN);
 				return new String[]{"false","Failed to update password for user: "+userDN};
 			}
 		}
@@ -493,7 +493,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 */
 	public boolean addUser(Map<String,String[]> paramMaps) throws Exception{		
 		try{
-			logger.debug("About to add a user with the value: ");
+			logger.debug("(LdapTool) About to add a user with the value: ");
 			for(Map.Entry<String, String[]> es : paramMaps.entrySet()){
 				logger.debug(es.getKey() + " : " + es.getValue()[0]);
 			}
@@ -594,7 +594,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			attributes.put("userAccountControl",Integer.toString(UF_NORMAL_ACCOUNT +
 												UF_PASSWD_NOTREQD + UF_DONT_EXPIRE_PASSWD));
 			
-			logger.debug("About to create User: " + escapedValueUserDN);
+			logger.debug("(LdapTool) About to create User: " + escapedValueUserDN);
 
 			// add userDN into LDAP
 			// we need to escape reserved chars for the ldap name that we put in .createSubcontext() method.
@@ -670,7 +670,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 		
 			
 			//update the password for this user
-			logger.debug("Successfully created User: " + escapedValueUserDN);
+			logger.debug("(LdapTool) Successfully created User: " + escapedValueUserDN);
 			String password = paramMaps.get("password01")[0];
 			if(!changePassword(unescapedValueUserDN, password)){
 				deleteUser(unescapedValueUserDN);
@@ -680,7 +680,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 			return true;
 		} catch(NamingException ex){
 			//ADDED LINE: print stack trace, not just error string
-			logger.error(ex);
+			logger.error("(LdapTool) Exception while adding a user into Ldap",ex);
 			throw ex;
 		}
 	}
@@ -699,7 +699,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @throws NamingException if an exception thrown during the process
 	 */
 	public boolean addUserToGroup(String userDN, String groupDN) throws NamingException{
-		logger.debug("about to add user: " + userDN + " to group: " + groupDN);
+		logger.debug("(LdapTool) about to add user: " + userDN + " to group: " + groupDN);
 		
 		String companyName = getCNValueFromDN(groupDN);
 		if (!companyExistsAsGroup(companyName)) {
@@ -716,11 +716,11 @@ info							: is the unique ID that get from clientAccountID column of the client
 			ModificationItem member[] = new ModificationItem[1];
 			member[0]= new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("member", userDN)); 
 			ctx.modifyAttributes(new LdapName(groupDN),member);
-			logger.debug("Added user "+userDN+" to group: " + groupDN);
+			logger.debug("(LdapTool) Added user "+userDN+" to group: " + groupDN);
 			return true;
 		}
 		catch (NamingException e) {
-			 logger.error("Problem adding user: "+userDN+" to group: " + groupDN, e);
+			 logger.error("(LdapTool) Problem adding user: "+userDN+" to group: " + groupDN, e);
 			 throw new NamingException("Adding user: " + userDN + " to a group: " + groupDN + ": " + ErrorConstants.FAIL_UPDATE_LDAP);
 		}
 	}
@@ -739,7 +739,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @throws NamingException if an exception thrown during the process
 	 */
 	public boolean addGroup1InToGroup2(String groupDN1, String groupDN2) throws NamingException{
-		logger.debug("about to add group "+groupDN1+" to group: " + groupDN2);
+		logger.debug("(LdapTool) about to add group "+groupDN1+" to group: " + groupDN2);
 		groupDN1 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN1);
 		groupDN2 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN2);
 
@@ -747,11 +747,11 @@ info							: is the unique ID that get from clientAccountID column of the client
 			ModificationItem member[] = new ModificationItem[1];
 			member[0]= new ModificationItem(DirContext.ADD_ATTRIBUTE, new BasicAttribute("member", groupDN1)); 
 			ctx.modifyAttributes(new LdapName(groupDN2),member);
-			logger.debug("Added group "+groupDN1+" to group: " + groupDN2);
+			logger.debug("(LdapTool) Added group "+groupDN1+" to group: " + groupDN2);
 			return true;
 		}
 		catch (NamingException e) {
-			 logger.error("Problem adding group: "+groupDN1+" to group: " + groupDN2, e);
+			 logger.error("(LdapTool) Problem adding group: "+groupDN1+" to group: " + groupDN2, e);
 			 throw new NamingException("Adding a group to another group: " + ErrorConstants.FAIL_UPDATE_LDAP);
 		}
 	}
@@ -768,7 +768,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @throws NamingException if it cannot remove this userDN from the groupDN
 	 */
 	public boolean removeUserFromAGroup(String userDN, String groupDN) throws NamingException{
-		logger.debug("about to remove user "+userDN+" from group: " + groupDN);
+		logger.debug("(LdapTool) about to remove user "+userDN+" from group: " + groupDN);
 		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		groupDN = LdapTool.escapedCharsOnCompleteGroupDN(groupDN);
@@ -778,11 +778,11 @@ info							: is the unique ID that get from clientAccountID column of the client
 			member[0]= new ModificationItem(DirContext.REMOVE_ATTRIBUTE, new BasicAttribute("member", userDN)); 
 			// apply the remove attribute
 			ctx.modifyAttributes(new LdapName(groupDN),member);
-			logger.debug("Removed user "+userDN+" from group: " + groupDN);
+			logger.debug("(LdapTool) Removed user "+userDN+" from group: " + groupDN);
 			return true;
 		}
 		catch (NamingException e) {
-			 logger.error("Problem in removing user: "+userDN+" from group: " + groupDN, e);
+			 logger.error("(LdapTool) Problem in removing user: "+userDN+" from group: " + groupDN, e);
 			 throw new NamingException("Removing user from a group: " + ErrorConstants.FAIL_UPDATE_LDAP);
 		}
 	}
@@ -801,7 +801,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 */
 	public boolean removeGroup1FromGroup2(String groupDN1, String groupDN2)
 			throws NamingException {
-		logger.debug("about to remove group " + groupDN1 + " from group: " + groupDN2);
+		logger.debug("(LdapTool) about to remove group " + groupDN1 + " from group: " + groupDN2);
 		
 		groupDN1 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN1);
 		groupDN2 = LdapTool.escapedCharsOnCompleteGroupDN(groupDN2);
@@ -812,10 +812,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 					new BasicAttribute("member", groupDN1));
 			// apply the remove attribute
 			ctx.modifyAttributes(new LdapName(groupDN2), member);
-			logger.debug("removed group " + groupDN1 + " from group: " + groupDN2);
+			logger.debug("(LdapTool) removed group " + groupDN1 + " from group: " + groupDN2);
 			return true;
 		} catch (NamingException e) {
-			logger.error("Problem in removing group: " + groupDN1 + " from group: " + groupDN2, e);
+			logger.error("(LdapTool) Problem in removing group: " + groupDN1 + " from group: " + groupDN2, e);
 			throw new NamingException("Removing a group from another group: " + ErrorConstants.FAIL_UPDATE_LDAP);
 		}
 	}
@@ -836,7 +836,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 */
 	public boolean changePassword(String userDN, String password){
 		
-		logger.debug("about to update password for user: " + userDN + " with new psw: " + password);
+		logger.debug("(LdapTool) about to update password for user: " + userDN);
 		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
@@ -853,12 +853,12 @@ info							: is the unique ID that get from clientAccountID column of the client
 
 			// this method must be performed on SSL or TSL connection
 			ctx.modifyAttributes(new LdapName(userDN), mods);
-			logger.debug("Updated password for user: "+userDN);
+			logger.debug("(LdapTool) Updated password for user: "+userDN);
 			return true;
 		}catch(NamingException ex){
-			logger.error(String.format("Exception while modifying user's password, (userDN, psw) = (%s, %s)", userDN, password), ex);
+			logger.error(String.format("(LdapTool) Exception while modifying user's password, (userDN, psw) = (%s, %s)", userDN, password), ex);
 		}catch(UnsupportedEncodingException ex){
-			logger.error("Exception while encoding the given password: " + userDN,ex);
+			logger.error("(LdapTool) Exception while encoding the given password: " + password,ex);
 		}
 		return false;
 	}
@@ -873,15 +873,15 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true, if the deletion successful, false otherwise.
 	 */
 	public boolean deleteUser(String userDN){
-		logger.debug("about to delete user: " + userDN);
+		logger.debug("(LdapTool) about to delete user: " + userDN);
 		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
 			ctx.destroySubcontext(new LdapName(userDN));
-			logger.debug("Deleted user: " + userDN + "successfully");
+			logger.debug("(LdapTool) Deleted user: " + userDN + "successfully");
 			return true;
 		}catch(NamingException ex){
-			logger.error("Exception while deleting a give userDN: " + userDN, ex);
+			logger.error("(LdapTool) Exception while deleting a give userDN: " + userDN, ex);
 			return false;
 		}
 	}
@@ -896,7 +896,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true deleted successfully, false otherwise
 	 */
 	public boolean deleteUser(String fullname, String companyName){
-		logger.debug("about to delete user: " + fullname + " who works for client: " + companyName);
+		logger.debug("(LdapTool) about to delete user: " + fullname + " who works for client: " + companyName);
 		
 		String baseDN = "OU="+companyName+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String userDN = "CN=" + fullname + "," + baseDN;
@@ -954,7 +954,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @throws InvalidNameException
 	 */
 	public List<Attributes> getAllUsersAsAttributesListFromClient(String clientDN) throws InvalidNameException{
-		logger.debug("about to search for all users who are stored in: " + clientDN);
+		logger.debug("(LdapTool) about to search for all users who are stored in: " + clientDN);
 		List<Attributes> attrsList = new ArrayList<Attributes>();
 		LdapName basedDN = new LdapName(clientDN);
 		String filter = "(CN=*)";
@@ -962,7 +962,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 		try {
 			NamingEnumeration<SearchResult> e = ctx.search(basedDN, filter, null);
 			while (e.hasMore()) {
-				logger.debug("search strated");
+				logger.debug("(LdapTool) search strated");
 				SearchResult results = (SearchResult) e.next();
 				Attributes attributes = results.getAttributes();
 				
@@ -972,9 +972,9 @@ info							: is the unique ID that get from clientAccountID column of the client
 				attrsList.add(attributes);
 
 			}
-			logger.debug("search finished");
+			logger.debug("(LdapTool) search finished");
 		} catch (NamingException e1) {
-			logger.debug("search for users in client: " + clientDN + " encountered a problem.", e1);
+			logger.debug("(LdapTool) search for users in client: " + clientDN + " encountered a problem.", e1);
 		}
 		return attrsList;
 	}
@@ -990,22 +990,22 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return
 	 */
 	public Set<String> getAllClientsDNs(){
-		logger.debug("about to search for DNs of all the organisations that are stored in Clients folder");
+		logger.debug("(LdapTool) about to search for DNs of all the organisations that are stored in Clients folder");
 		
 		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR);
 		String filter = "("+groupAttr+"=*)";
 		SortedSet<String> output = new TreeSet<String>();
 		try{
-			logger.debug("LdapTool is about searching for groups of: " + baseDN);
+			logger.debug("(LdapTool) LdapTool is about searching for groups of: " + baseDN);
 			NamingEnumeration<SearchResult> e = ctx.search(baseDN, filter, null);
 			while(e.hasMore()){
 				SearchResult results = (SearchResult)e.next();
 				output.add(results.getNameInNamespace());
 			}
-			logger.debug("searching is completed successfully.");
+			logger.debug("(LdapTool) searching is completed successfully.");
 		}catch(NamingException | NullPointerException ex){
-			logger.error(ex);
+			logger.error("(LdapTool) exception while getting all clients' DNs", ex);
 		}
 		return output; 
 	}
@@ -1020,23 +1020,23 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return
 	 */
 	public SortedSet<String> getAllClientsDisplayNames(){
-		logger.debug("about to search for all the organisations that are stored in Clients folder");
+		logger.debug("(LdapTool) about to search for all the organisations that are stored in Clients folder");
 		
 		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String groupAttr = LdapProperty.getProperty(LdapConstants.GROUP_ATTR); // it should be "cn"
 		String filter = "("+groupAttr+"=*)"; // it should be "cn"
 		SortedSet<String> output = new TreeSet<String>();
 		try{
-			logger.debug("LdapTool is about searching for groups of: " + baseDN);
+			logger.debug("(LdapTool) LdapTool is about searching for groups of: " + baseDN);
 			NamingEnumeration<SearchResult> e = ctx.search(baseDN, filter, null);
 			while(e.hasMore()){
 				SearchResult results = (SearchResult)e.next();
 				Attributes attributes = results.getAttributes();
 				output.add((String)attributes.get(groupAttr).get());
 			}
-			logger.debug("searching is completed successfully.");
+			logger.debug("(LdapTool) searching is completed successfully.");
 		}catch(NamingException | NullPointerException ex){
-			logger.error(ex);
+			logger.error("(LdapTool) exception while getting all Clients' display names",ex);
 		}
 		
 		return output; 
@@ -1052,7 +1052,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return
 	 */
 	public Set<String> getBaseGroups(){
-		logger.debug("about to search for all groups that are stored in Orion Health group");
+		logger.debug("(LdapTool) about to search for all groups that are stored in Orion Health group");
 		Set<String> output = new LinkedHashSet<String>();
 		try {
 			// query all the groups that are stored in "Orion Health"
@@ -1080,9 +1080,9 @@ info							: is the unique ID that get from clientAccountID column of the client
 					orionHealthGroups.add((String) attributes.get("cn").get());
 				}
 			}
-			logger.debug("Finished searching for groups that are stored in Orion Health groups");
+			logger.debug("(LdapTool) Finished searching for groups that are stored in Orion Health groups");
 
-			logger.debug("about to search for all groups that are stored in Clients folder");
+			logger.debug("(LdapTool) about to search for all groups that are stored in Clients folder");
 			// query all the groups that are stored in "Groups" folder
 			SortedSet<String> generalGroups = new TreeSet<String>();
 			String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
@@ -1102,10 +1102,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 			
 			output.addAll(orionHealthGroups);
 			output.addAll(generalGroups);
-			logger.debug("finished searching for all groups that are stored in Clients folder");
+			logger.debug("(LdapTool) finished searching for all groups that are stored in Clients folder");
 
 		}catch(NamingException |NullPointerException ex){
-			logger.error(ex);
+			logger.error("(LdapTool) exception while get all the groups available in Ldap.",ex);
 		}
 		return output; 
 	}
@@ -1119,7 +1119,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return: all the dn in the Map were unescaped the reserved ldap chars (e.g. dn="CN=Mike+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz" not dn="CN=Mike\+Jr,OU=Group, I,OU=Clients,DC=orion,DC=dmz")
 	 */
 	public TreeMap<String,String[]> getClientUsers(String clientName){
-		logger.debug("about to search for the DN of the group: " + clientName);
+		logger.debug("(LdapTool) about to search for the DN of the group: " + clientName);
 		
 		// escape all the reserve key words.
 		clientName = Rdn.escapeValue(clientName);
@@ -1144,14 +1144,14 @@ info							: is the unique ID that get from clientAccountID column of the client
 					}
 					users.put(cn, new String[]{unescapedDN, disabled});
 					
-					logger.debug("search for the DN of the group " + clientName + " finished");
+					logger.debug("(LdapTool) search for the DN of the group " + clientName + " finished");
 				} catch (NullPointerException ne){
 					// null pointer occured when given clientName is a group (not a company/organisation stored in "Clients" folder) 
-//					logger.error("Exception while querying dn: "+ unescapedDN + " from " + baseDN, ne);
+//					logger.error("(LdapTool) Exception while querying dn: "+ unescapedDN + " from " + baseDN, ne);
 				}
 			}
 		}catch(NamingException ex){
-			logger.error("Exception while querying for: " + baseDN + " from Ldap server.", ex);
+			logger.error("(LdapTool) Exception while querying for: " + baseDN + " from Ldap server.", ex);
 		}
 		return users;
 	}
@@ -1165,7 +1165,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return
 	 */
 	public Attributes getOrganisationAttributes(String name){
-		logger.debug("about to search for the attributes of the organisation: " + name);
+		logger.debug("(LdapTool) about to search for the attributes of the organisation: " + name);
 		// escape all the reserve key words.
 		name = Rdn.escapeValue(name);
 		
@@ -1173,11 +1173,11 @@ info							: is the unique ID that get from clientAccountID column of the client
 			String baseDN = "OU="+name+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 			Attributes attrs = ctx.getAttributes(new LdapName(baseDN));
 			
-			logger.debug("finished searching for the attributes of the organisation: " + name);
+			logger.debug("(LdapTool) finished searching for the attributes of the organisation: " + name);
 			
 			return attrs;
 		}catch(NamingException ex){
-			logger.error(ex);
+			logger.error("(LdapTool) exception while geting Attributes object for: " + name,ex);
 		}
 		return null;
 	}
@@ -1194,17 +1194,17 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 *         null otherwise.
 	 */
 	public Attributes getUserAttributes(String userDN){
-		logger.debug("about to search for the attributes of the user: " + userDN);
+		logger.debug("(LdapTool) about to search for the attributes of the user: " + userDN);
 		
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try{
 			LdapName ldapUserDN = new LdapName(userDN);
 			Attributes attrs = ctx.getAttributes(ldapUserDN);
 			
-			logger.debug("finished searching for the attributes of the user: " + userDN);
+			logger.debug("(LdapTool) finished searching for the attributes of the user: " + userDN);
 			return attrs;
 		}catch(NamingException ex){
-			logger.error("Exception while querying all attribtues of a user: " + userDN, ex);
+			logger.error("(LdapTool) Exception while querying all attribtues of a user: " + userDN, ex);
 		}
 		return null;
 	}
@@ -1217,19 +1217,19 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 *         null otherwise
 	 */
 	public Attributes getUserAttributesWhoBelongsToClientAndHasLoginName(String clientDN, String sAMAccountName){
-		logger.debug("getting attributes for the given username: " + sAMAccountName + " from: " + clientDN);
+		logger.debug("(LdapTool) getting attributes for the given username: " + sAMAccountName + " from: " + clientDN);
 		clientDN = escapedCharsOnCompleteCompanyDN(clientDN);
 		List<Attributes> usersAttrsList;
 		try {
 			usersAttrsList = getAllUsersAsAttributesListFromClient(clientDN);
 			for(Attributes attrs : usersAttrsList){
 				if(attrs.get("sAMAccountName").get().toString().equalsIgnoreCase(sAMAccountName)){
-					logger.debug("finished getting for the attributes of the user: " + sAMAccountName);
+					logger.debug("(LdapTool) finished getting for the attributes of the user: " + sAMAccountName);
 					return attrs;
 				}
 			}
 		} catch (NamingException e) {
-			logger.error("Exception occured while getting Attributes for username: " + sAMAccountName, e);
+			logger.error("(LdapTool) Exception occured while getting Attributes for username: " + sAMAccountName, e);
 		} 
 		return null;
 	}
@@ -1244,7 +1244,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return
 	 */
 	public Attributes getGroupAttributes(String companyName){
-		logger.debug("about to search for the attributes of the group: " + companyName);
+		logger.debug("(LdapTool) about to search for the attributes of the group: " + companyName);
 		
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		if (baseDN==null)
@@ -1253,10 +1253,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 			
 		try{
 			Attributes attrs = ctx.getAttributes(new LdapName(companyDN));
-			logger.debug("fnished searching for the attributes of the group: " + companyName);
+			logger.debug("(LdapTool) finished searching for the attributes of the group: " + companyName);
 			return attrs;
 		}catch(NamingException ex){
-			logger.error(ex);
+			logger.error("(LdapTool) exception while getting Attribtues object for: " + companyName,ex);
 		}
 		return null;
 	}
@@ -1270,7 +1270,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return company simple name (unescaped special chars name. e.g. comapnyname="Amicas, Ins" not "Amica\, Ins" in String (not the DN name) or null if it cannot get one
 	 */
 	public String getUserCompany(String userDN){
-		logger.debug("about to search for the company name of user: " + userDN);
+		logger.debug("(LdapTool) about to search for the company name of user: " + userDN);
 		String company = null;
 		try{
 			company = getOUvalueFromDNThasHasTwoOU(userDN);
@@ -1282,7 +1282,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 				Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 				company = attrs.get("company").get().toString();
 			}catch(NamingException | NullPointerException ex){
-				logger.error("Exception while trying to get attribute " + userDN + "\t", ex);
+				logger.error("(LdapTool) Exception while trying to get attribute " + userDN + "\t", ex);
 			}
 		}
 		return company;
@@ -1296,13 +1296,13 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if the given companyName is in Ldap Server, false otherwise
 	 */
 	public boolean companyExists(String companyName){
-		logger.debug("about to search for the company: " + companyName);
+		logger.debug("(LdapTool) about to search for the company: " + companyName);
 		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		String filter = "("+LdapProperty.getProperty(LdapConstants.GROUP_ATTR)+"="+Rdn.escapeValue(companyName)+")";
 		NamingEnumeration<SearchResult> e;
 		try {
 			e = ctx.search(new LdapName(baseDN), filter, null);
-			logger.debug("finished searching for the company: " + companyName);
+			logger.debug("(LdapTool) finished searching for the company: " + companyName);
 			if(e.hasMore()){
 				return true;
 			}
@@ -1319,7 +1319,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if more than zero search matches. false otherwise
 	 */
 	public boolean companyExistsAsGroup(String companyName){
-		logger.debug("about to search for the company group: " + companyName);
+		logger.debug("(LdapTool) about to search for the company group: " + companyName);
 		
 		companyName = Rdn.escapeValue(companyName);
 		//Get DN for 'Groups'
@@ -1330,13 +1330,13 @@ info							: is the unique ID that get from clientAccountID column of the client
 		try {
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
-			logger.debug("finished searching for the company group: " + companyName);
+			logger.debug("(LdapTool) finished searching for the company group: " + companyName);
 			if(e.hasMore()){
 				return true;
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex);
+			logger.error("(LdapTool) exception while checking whether this company: " +companyName + " exist in Groups folder.",ex);
 		}
 		//Otherwise return false
 		return false;
@@ -1351,7 +1351,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if more than zero search matches.
 	 */
 	public boolean usernameExists(String username, String company){
-		logger.debug("about to search for user: " + username + " from company: " + company);
+		logger.debug("(LdapTool) about to search for user: " + username + " from company: " + company);
 		username = Rdn.escapeValue(username);
 		company = Rdn.escapeValue(company);
 		
@@ -1363,13 +1363,13 @@ info							: is the unique ID that get from clientAccountID column of the client
 		try {
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
-			logger.debug("finished searching for user: " + username + " from company: " + company);
+			logger.debug("(LdapTool) finished searching for user: " + username + " from company: " + company);
 			if(e.hasMore()){
 				return true;
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex);
+			logger.error("(LdapTool) exception while checking whether this user: " + username +" exist in this company: " +company, ex);
 		}
 		//Otherwise return false
 		return false;
@@ -1385,7 +1385,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if more than zero search matches.
 	 */
 	public boolean emailExists(String email, String company){
-		logger.debug("about to search for email: " + email + " from company: " + company);
+		logger.debug("(LdapTool) about to search for email: " + email + " from company: " + company);
 		
 		company = Rdn.escapeValue(company);
 		//Search user's company
@@ -1397,14 +1397,14 @@ info							: is the unique ID that get from clientAccountID column of the client
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
 			
-			logger.debug("finished searching for email: " + email + " from company: " + company);
+			logger.debug("(LdapTool) finished searching for email: " + email + " from company: " + company);
 			
 			if(e.hasMore()){
 				return true;
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error("Exception while searching for " + baseDN, ex);
+			logger.error("(LdapTool) Exception while searching for " + baseDN, ex);
 		}
 		//Otherwise return false
 		return false;
@@ -1419,7 +1419,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if more than zero search matches (means userDN exists).
 	 */
 	public boolean userDNExists(String fullname, String company){
-		logger.debug("about to search for user: " + fullname + " from company: " + company);
+		logger.debug("(LdapTool) about to search for user: " + fullname + " from company: " + company);
 		
 		//Search user's company
 		String baseDN = "OU="+Rdn.escapeValue(company)+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
@@ -1430,14 +1430,14 @@ info							: is the unique ID that get from clientAccountID column of the client
 			//Run search. If more than zero matches, return true
 			e = ctx.search(new LdapName(baseDN), filter, null);
 			
-			logger.debug("finished searching for user: " + fullname + " from company: " + company);
+			logger.debug("(LdapTool) finished searching for user: " + fullname + " from company: " + company);
 			
 			if(e.hasMore()){
 				return true;
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error("Exception while searching for " + baseDN, ex);
+			logger.error("(LdapTool) Exception while searching for " + baseDN, ex);
 		}
 		//Otherwise return false
 		return false;
@@ -1453,7 +1453,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return the first matching email, if there is a match, else returns null
 	 */
 	public String getEmail(String username, String company){
-		logger.debug("about to search for email of user: " + username + " from company: " + company);
+		logger.debug("(LdapTool) about to search for email of user: " + username + " from company: " + company);
 		
 		company = Rdn.escapeValue(company);
 		username = Rdn.escapeValue(username);
@@ -1468,12 +1468,12 @@ info							: is the unique ID that get from clientAccountID column of the client
 			if(e.hasMore()){
 				SearchResult ne = e.next();
 				String mail = (String) ne.getAttributes().get("mail").get();
-				logger.debug("finished searching for email of user: " + username + " from company: " + company);
+				logger.debug("(LdapTool) finished searching for email of user: " + username + " from company: " + company);
 				return mail;
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex);
+			logger.error("(LdapTool) get email of: " +username + " who's working for: " +company,ex);
 		}
 		//Otherwise return false
 		return null;
@@ -1489,7 +1489,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return the first matching name, if there is a match, else returns null.
 	 */
 	public String getName(String username, String company){
-		logger.debug("about to search for fullname of user: " + username + " from : " + company);
+		logger.debug("(LdapTool) about to search for fullname of user: " + username + " from : " + company);
 		username = Rdn.escapeValue(username);
 		company = Rdn.escapeValue(company);
 		//Search user's company
@@ -1503,12 +1503,12 @@ info							: is the unique ID that get from clientAccountID column of the client
 			if(e.hasMore()){
 				SearchResult ne = e.next();
 				String cn = (String) ne.getAttributes().get("cn").get();
-				logger.debug("about to search for fullname of user: " + username + " from : " + company);
+				logger.debug("(LdapTool) about to search for fullname of user: " + username + " from : " + company);
 				return cn;
 			}
 		} catch (NamingException ex) {
 			//If error, log detail and stack trace
-			logger.error(ex);
+			logger.error("(LdapTool) exception while get full name of : " + username + " from company: " + company,ex);
 		}
 		//Otherwise return false
 		return null;
@@ -1546,7 +1546,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	public boolean addCompany(String companyName) throws NamingException{
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
 		
-		logger.debug("about to add company: " + companyName + "into Clients folder (of Ldap Server)");
+		logger.debug("(LdapTool) about to add company: " + companyName + "into Clients folder (of Ldap Server)");
 		
 		// get baseDN for the user (it should be: OU=Clients,DC=orion,DC=dmz)
 		String baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
@@ -1567,19 +1567,19 @@ info							: is the unique ID that get from clientAccountID column of the client
 		try {
 			ldapCompanyDN = new LdapName(companyDN);
 		} catch (InvalidNameException e1) {
-			String failureReason = "Can not create LdapName for company: " + companyDN + ". It can be caused by company name contains reserved chars.";
+			String failureReason = "(LdapTool) Can not create LdapName for company: " + companyDN + ". It can be caused by company name contains reserved chars.";
 			logger.error(failureReason, e1);
 			throw new InvalidNameException(failureReason);
 		}
 		
 		try {
 			if (ctx == null)
-				logger.debug("ctx uninitialised");
+				logger.debug("(LdapTool) ctx uninitialised");
 			ctx.createSubcontext(ldapCompanyDN, attributes);
-			logger.debug("Company with DN: "+companyDN+" was added successfully");
+			logger.debug("(LdapTool) Company with DN: "+companyDN+" was added successfully");
 			return true;
 		} catch (NamingException e) {
-			logger.error(String.format("Exception while adding %s into Ldap server as a user.", companyName), e);
+			logger.error(String.format("(LdapTool) Exception while adding %s into Ldap server as a user.", companyName), e);
 			if(e instanceof NameAlreadyBoundException){
 				throw new NameAlreadyBoundException("This group already exist in Clients");
 			}
@@ -1604,7 +1604,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	public boolean addCompanyAsGroup(String companyName) throws NamingException{
 		// e.g. if companyName is "AMICAS, Inc (Now Merge)"
 		
-		logger.debug("about to add company: " + companyName + "into Groups folder (of Ldap Server)");
+		logger.debug("(LdapTool) about to add company: " + companyName + "into Groups folder (of Ldap Server)");
 				
 		//Get base DN for 'Groups'
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
@@ -1628,21 +1628,21 @@ info							: is the unique ID that get from clientAccountID column of the client
 		try {
 			ldapCompanyDN = new LdapName(companyDN);
 		} catch (InvalidNameException e1) {
-			String failureReason = "Can not create LdapName for company: " + companyDN + ". It can be caused by company name contains reserved chars.";
+			String failureReason = "(LdapTool) Can not create LdapName for company: " + companyDN + ". It can be caused by company name contains reserved chars.";
 			logger.error(failureReason, e1);
 			throw new InvalidNameException(failureReason);
 		}
 				
 		try {
 			if (ctx == null)
-				logger.debug("ctx uninitialised");
+				logger.debug("(LdapTool) ctx uninitialised");
 			//Create company group and log success
 			ctx.createSubcontext(ldapCompanyDN, attributes);
-			logger.debug("Organisation with DN: "+companyDN+" was added as group successfully");
+			logger.debug("(LdapTool) Organisation with DN: "+companyDN+" was added as group successfully");
 			return true;
 		//If error, log detail and stack trace	
 		} catch (NamingException e) {
-			logger.error(String.format("Failed to add organisation: %s, as a Ldap Group", companyName), e);
+			logger.error(String.format("(LdapTool) Failed to add organisation: %s, as a Ldap Group", companyName), e);
 			if(e instanceof NameAlreadyBoundException){
 				throw new NameAlreadyBoundException("This group already exist in Clients");
 			}
@@ -1659,14 +1659,14 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true, if the deletion successful, false otherwise.
 	 */
 	public boolean deleteGroupCompany(String groupDN){
-		logger.debug("about to delete group: " + groupDN);
+		logger.debug("(LdapTool) about to delete group: " + groupDN);
 		groupDN = LdapTool.escapedCharsOnCompleteGroupDN(groupDN);
 		try{
 			ctx.destroySubcontext(new LdapName(groupDN));
-			logger.debug("finished deleting groupDN");
+			logger.debug("(LdapTool) fnished deleting groupDN");
 			return true;
 		}catch(NamingException ex){
-			logger.error("Exception while deleting a give userDN: " + groupDN, ex);
+			logger.error("(LdapTool) Exception while deleting a give userDN: " + groupDN, ex);
 			return false;
 		}
 	}
@@ -1680,14 +1680,14 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true, if the deletion successful, false otherwise.
 	 */
 	public boolean deleteCompany(String groupDN){
-		logger.debug("about to delete Client: " + groupDN);
+		logger.debug("(LdapTool) about to delete Client: " + groupDN);
 		groupDN = LdapTool.escapedCharsOnCompleteCompanyDN(groupDN);
 		try{
 			ctx.destroySubcontext(new LdapName(groupDN));
-			logger.debug("finished deleting Client: " + groupDN);
+			logger.debug("(LdapTool) finished deleting Client: " + groupDN);
 			return true;
 		}catch(NamingException ex){
-			logger.error("Exception while deleting a give userDN: " + groupDN, ex);
+			logger.error("(LdapTool) Exception while deleting a give userDN: " + groupDN, ex);
 			return false;
 		}
 	}
@@ -1702,7 +1702,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 */
 	public String getDNFromGroup(String groupName) {
 
-		logger.debug("about to search for the DN of the group: " + groupName);
+		logger.debug("(LdapTool) about to search for the DN of the group: " + groupName);
 		// generally, the dn is the combination of CN=groupName and basedDN
 		//normally, basedDN is OU=Groups,DC=orion,DC=dmz
 		//so, dn should be CN=groupName,OU=Groups,DC=orion,DC=dmz
@@ -1737,7 +1737,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 				return dn; // return the dn we found
 			}
 		}catch(NamingException | NullPointerException ex){
-			logger.error(ex);
+			logger.error("(LdapTool) exception while getting DN from group: " + groupName,ex);
 		}
 		
 		// 2). if we can't find groupName in the OU=Orion Health,OU=Clients,DC=orion,DC=dmz
@@ -1745,7 +1745,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		String attrName = LdapProperty.getProperty(LdapConstants.BASEGROUP_ATTR);
 		String dn = attrName+"="+groupName+","+baseDN;
-		logger.debug("finished searching for the DN of the group: " + groupName);
+		logger.debug("(LdapTool) finished searching for the DN of the group: " + groupName);
 		return dn;
 	}
 	
@@ -1794,15 +1794,15 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if account is disabled
 	 */
 	public boolean isAccountDisabled(String userDN){
-		logger.debug("about to search whether this user is disabled or enabled: " + userDN);
+		logger.debug("(LdapTool) about to search whether this user is disabled or enabled: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try {
 			Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 			int userAccountControl = Integer.parseInt(attrs.get("userAccountControl").get().toString());
-			logger.debug("finished searching whether this user is disabled or enabled: " + userDN);
+			logger.debug("(LdapTool) finished searching whether this user is disabled or enabled: " + userDN);
 			return (userAccountControl & 2) > 0;
 		} catch (NamingException e) {
-			logger.error(e);
+			logger.error("(LdapTool) exception while checking the disability of user: " + userDN,e);
 		}
 		return false;
 	}
@@ -1812,7 +1812,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if account has been disabled successfully
 	 */
 	public boolean disableUser(String userDN){
-		logger.debug("about to disable user: " + userDN);
+		logger.debug("(LdapTool) about to disable user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		int UF_PASSWD_NOTREQD = 0x0020;
 		int UF_DONT_EXPIRE_PASSWD = 0x10000;
@@ -1823,10 +1823,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 				UF_ACCOUNTDISABLE + UF_PASSWD_NOTREQD + UF_DONT_EXPIRE_PASSWD));
 		try {
 			ctx.modifyAttributes(new LdapName(userDN), DirContext.REPLACE_ATTRIBUTE, attributes);
-			logger.debug("Disabled user: "+userDN);
+			logger.debug("(LdapTool) Disabled user: "+userDN);
 			return true;
 		} catch (NamingException e) {
-			logger.error(e);
+			logger.error("(LdapTool) exception while disabling user: " + userDN,e);
 		}
 		return false;
 	}
@@ -1836,7 +1836,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return true if account has been enabled successfully
 	 */
 	public boolean enableUser(String userDN){
-		logger.debug("about to enable user: " + userDN);
+		logger.debug("(LdapTool) about to enable user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		int UF_PASSWD_NOTREQD = 0x0020;
 		int UF_DONT_EXPIRE_PASSWD = 0x10000;
@@ -1846,10 +1846,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 				UF_PASSWD_NOTREQD + UF_DONT_EXPIRE_PASSWD));
 		try {
 			ctx.modifyAttributes(new LdapName(userDN), DirContext.REPLACE_ATTRIBUTE, attributes);
-			logger.debug("Enabled user: "+userDN);
+			logger.debug("(LdapTool) Enabled user: "+userDN);
 			return true;
 		} catch (NamingException e) {
-			logger.error(e);
+			logger.error("(LdapTool) exception while enabling user: " + userDN, e);
 		}
 		return false;
 	}
@@ -1875,15 +1875,15 @@ info							: is the unique ID that get from clientAccountID column of the client
 	 * @return the sAMAccountName of userDN in String if there is. Otherwise return an empty String.
 	 */
 	public String getUsername(String userDN){
-		logger.debug("about to search for the username of user: " + userDN);
+		logger.debug("(LdapTool) about to search for the username of user: " + userDN);
 		userDN = LdapTool.escapedCharsOnCompleteUserDN(userDN);
 		try {
 			Attributes attrs = ctx.getAttributes(new LdapName(userDN));
 			String username = attrs.get("sAMAccountName") == null ? "" : attrs.get("sAMAccountName").get().toString();
-			logger.debug("finished searching for the username of user: " + userDN);
+			logger.debug("(LdapTool) finished searching for the username of user: " + userDN);
 			return username;
 		} catch (NamingException e) {
-			logger.error(e);
+			logger.error("(LdapTool) exception while get loginname (or sAMAccountName) of user: " + userDN,e);
 		}
 		return "";
 	}

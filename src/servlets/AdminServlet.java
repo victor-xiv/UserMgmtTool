@@ -34,7 +34,7 @@ public class AdminServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{	
-		logger.debug("AdminServlet about to process Get request: " + request.getQueryString());
+		logger.debug("AdminServlet about to process Get request: " + request.getParameterMap());
 		
 		response.setHeader("Cache-Control", "no-cache");
 		response.setHeader("Pragma","no-cache");

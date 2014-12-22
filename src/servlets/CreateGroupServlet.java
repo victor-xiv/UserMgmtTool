@@ -43,7 +43,7 @@ public class CreateGroupServlet extends HttpServlet {
 	 * Serve the Post request to add Organisation as a group into Ldap Server
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		logger.debug("CreateGroupServlet about to process Post request: " + request.getQueryString());
+		logger.debug("CreateGroupServlet about to process Post request: " + request.getParameterMap());
 		
 		HttpSession session = request.getSession(true);
 		//Get organisation name

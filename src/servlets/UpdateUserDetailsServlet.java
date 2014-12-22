@@ -38,7 +38,7 @@ public class UpdateUserDetailsServlet extends HttpServlet {
 	public void doPost(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {
-		logger.debug("UpdateUserDetailsServlet about to process Post request: " + request.getQueryString());
+		logger.debug("UpdateUserDetailsServlet about to process Post request: " + request.getParameterMap());
 		
 		HttpSession session = request.getSession(true);
 		Map<String,String[]> paramMaps = new HashMap<>((Map<String,String[]>)request.getParameterMap());

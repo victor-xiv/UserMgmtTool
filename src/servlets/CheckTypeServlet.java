@@ -54,7 +54,7 @@ public class CheckTypeServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		logger.debug("CheckTypeServlet about to process Post request: " + request.getQueryString());
+		logger.debug("CheckTypeServlet about to process Post request: " + request.getParameterMap());
 		
 		//Initialise constants
 		//String conserver = "supporttracker.orionhealth.com";

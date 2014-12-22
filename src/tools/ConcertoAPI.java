@@ -90,7 +90,7 @@ public class ConcertoAPI {
 			 * please find the cxf configuration at /WET-INF/classes/cxf.xml
 			 */
 			
-			logger.debug("Connecting to concerto portal.");
+			logger.debug("(Concerto) Connecting to portal.");
 			
 			final QName SERVICE_NAME = new QName(
 					"http://www.orionhealth.com/com.orchestral.portal.webservice.api_7_2.user/",
@@ -99,15 +99,15 @@ public class ConcertoAPI {
 			// get the content of wsdl from web url
 			URL wsdlURL = new URL(LdapProperty.getProperty(UserMgmtConstants.CONCERTO_WSDL_URL));
 			
-			logger.debug("Trying to connect to web service with wsdl at: " + wsdlURL);
+			logger.debug("(Concerto) Trying to connect to web service with wsdl at: " + wsdlURL);
 			try{
 				UserManagementService ss = new UserManagementService(wsdlURL,
 						SERVICE_NAME);
 				port = ss.getComOrchestralPortalWebserviceApi72UserUserManagementServicePort();
 				
-				logger.debug("connection to concerto portal established");
+				logger.debug("(Concerto) connection to concerto portal established");
 			} catch (Exception e){
-				logger.error("Failed to created Portal Webservice", e);
+				logger.error("(Concerto) Failed to created Portal Webservice", e);
 				port = null;
 			}
 		}
@@ -125,7 +125,7 @@ public class ConcertoAPI {
 	 * @throws Exception if it failed to connect or retrieve a user
 	 */
 	public User getUser(String username) throws Exception {
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
@@ -137,16 +137,14 @@ public class ConcertoAPI {
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
-		logger.debug("About to get endpoint object from portal's webservice");
+		logger.debug("(Concerto) About to get user: " + username + " from Concerto Portal.");
 		
 		try {
 			port = getConcertoServicePort();
 		} catch (MalformedURLException e) {
-			logger.error("Failed ot retreive the endpoint object.",e);
-			throw new MalformedURLException("Given wsdl url is not correct.");
+			logger.error("(Concerto) Failed ot retreive the endpoint object.",e);
+			throw new MalformedURLException("(Concerto) Given wsdl url is not correct.");
 		}
-		
-		logger.debug("Endpoint object is successfully retrieved from webservice");
 		
 		User user = null;
 		try{
@@ -159,7 +157,7 @@ public class ConcertoAPI {
 			}
 			
 			logger.error("(Concerto) Failed to retrieve a user" + username + " from webserivce server.", e);
-			throw new Exception("Failed to retrieve a user from webserivce server.");
+			throw new Exception("(Concerto) Failed to retrieve a user from webserivce server.");
 		}
 		
 		return user;
@@ -177,7 +175,7 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
 	public boolean testGetClientUser(String username) throws Exception, MalformedURLException{
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		// not logging, because it logged in getUser() method
 		try{
@@ -187,8 +185,8 @@ public class ConcertoAPI {
 			else return true;
 			
 		} catch (Exception e) {
-			Logger.getRootLogger().error("(Concerto) Failed to create services", e);
-			throw new Exception("Failed to retrieve a user from webserivce server.");
+			Logger.getRootLogger().error("(Concerto) Failed to get user: " + username, e);
+			throw new Exception("(Concerto) Failed to retrieve a user from webserivce server.");
 		}
 	}
 	
@@ -202,7 +200,7 @@ public class ConcertoAPI {
 	 * @throws MalformedURLException if wsdl url is not correct.
 	 */
 	public boolean doesUserExist(String username) throws MalformedURLException, Exception{
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		return testGetClientUser(username);
 	}
@@ -231,7 +229,7 @@ public class ConcertoAPI {
 	 * @throws Exception
 	 */
 	public boolean setAccountTypeForGivenUser(String username, String accountType) throws Exception{
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
@@ -243,21 +241,21 @@ public class ConcertoAPI {
 		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = null;
 		
-		logger.debug("About to get endpoint object from portal's webservice");
+		logger.debug("(Concerto) About to update account type for: " + username);
 		
 		try {
 			port = getConcertoServicePort();
 		} catch (MalformedURLException e) {
 			logger.error("(Concerto) Failed ot retreive the endpoint object.",e);
-			throw new MalformedURLException("Given wsdl url is not correct.");
+			throw new MalformedURLException("(Concerto) Given wsdl url is not correct.");
 		}
-		
-		logger.debug("Endpoint object is successfully retrieved from webservice");
 	
 		User user = new User();
 		user.setUserId(username);
 		user.setAccountType(accountType);
 		port.updateUser(user);
+		
+		logger.debug("(Concerto) finished updating account for: " + username);
 		
 		return true;
 	}
@@ -297,7 +295,7 @@ public class ConcertoAPI {
 	 * @throws Exception
 	 */
 	public boolean isAccountEnabled(String username) throws Exception{
-		Logger.getRootLogger().debug("check whether this concerto user is enabled or not");
+		Logger.getRootLogger().debug("(Concerto) check whether this concerto user "+username+" is enabled or not");
 		
 		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
 		
@@ -306,7 +304,7 @@ public class ConcertoAPI {
 			return user.isAccountEnabled().booleanValue() && !user.isDeleted().booleanValue();
 		} catch (NullPointerException e) {
 			// NullPointerException thrown when there's no username in the concerto
-			throw new NullPointerException("User:" + username + " doesn't exist in Concerto." );
+			throw new NullPointerException("(Concerto) User:" + username + " doesn't exist in Concerto." );
 		}
 	}
 	
@@ -327,16 +325,16 @@ public class ConcertoAPI {
 	 * @throws Exception
 	 */
 	public boolean isUserUsingLdapPassword(String username) throws Exception{
-		Logger.getRootLogger().debug("Check whether or not this concerto user: " + username + " is using Ldap Password");
+		Logger.getRootLogger().debug("(Concerto) Check whether or not this concerto user: " + username + " is using Ldap Password");
 		
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		try{
 			User user = getUser(username.trim());
 			return user.getAccountType().equalsIgnoreCase("LDAP");
 		} catch (NullPointerException e) {
 			// NullPointerException thrown when there's no username in the concerto
-			throw new NullPointerException("User doesn't exist in Concerto.");
+			throw new NullPointerException("(Concerto) User doesn't exist in Concerto.");
 		}
 	}
 	
@@ -348,10 +346,10 @@ public class ConcertoAPI {
 	 * @throws Exception
 	 */
 	public boolean isUserMemberOfGivenGroup(String username, String groupname) throws Exception{
-		Logger.getRootLogger().debug("Check whether this concerto user: " + username + " is a member of this concerto group: " + groupname);
+		Logger.getRootLogger().debug("(Concerto) Check whether this concerto user: " + username + " is a member of this concerto group: " + groupname);
 		
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
-		if(groupname==null || groupname.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
+		if(groupname==null || groupname.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		try{
 			User user = getUser(username.trim());
@@ -404,8 +402,8 @@ public class ConcertoAPI {
 	 * @throws Exception
 	 */
 	public boolean removeGroupFromUser(String username, String groupname) throws Exception{
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
-		if(groupname==null || groupname.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
+		if(groupname==null || groupname.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
@@ -477,7 +475,7 @@ public class ConcertoAPI {
 	 * @throws Exception
 	 */
 	public boolean setAccountEnabledForGivenUser(boolean enabled, String username) throws Exception{
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
@@ -504,7 +502,7 @@ public class ConcertoAPI {
 	 * @throws Exception
 	 */
 	private boolean setAccountDeletionForGivenUser(boolean deletion, String username) throws Exception{
-		if(username==null || username.trim().isEmpty()) throw new Exception("Given username is null or empty");
+		if(username==null || username.trim().isEmpty()) throw new Exception("(Concerto) Given username is null or empty");
 		
 		
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
@@ -577,6 +575,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 		 * if you receive SSLHandShakeException or any exception related to SSL connection.
 		 * please find the cxf configuration at /WET-INF/classes/cxf.xml
 		 */
+		logger.debug("(Concerto) preparing a user object for portal.");
 		
 		String firstName = maps.get("givenName")[0];
 		String lastName = maps.get("sn")[0];
@@ -585,10 +584,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 		String description = maps.get("description")[0];
 		String mail = maps.get("mail")[0];
 		
-		
 		ComOrchestralPortalWebserviceApi72UserUserManagementService port = getConcertoServicePort();
-				
-		logger.debug("Endpoint object is successfully retrieved from webservice");
 		
 		User user = new User();
 		user.setUserId(userName);
@@ -623,11 +619,11 @@ info							: is the unique ID that get from clientAccountID column of the client
 		try {
 			port.createUser(user);
 		} catch (Exception e) {
-			logger.error("User " + userName + " cannot be added to Concerto Portal. An exception is thrown from webservice server.", e);
-			throw new Exception("User " + userName + " cannot be added to Concerto Portal. An exception is thrown from webservice server."); 
+			logger.error("(Concerto) User " + userName + " cannot be added to Concerto Portal. An exception is thrown from webservice server.", e);
+			throw new Exception("(Concerto) User " + userName + " cannot be added to Concerto Portal. An exception is thrown from webservice server."); 
 		}
 		
-		logger.debug("Creating user: " + userName + " on webservice server has been done.");
+		logger.debug("(Concerto) Creating user: " + userName + " on webservice server has been done.");
 	}
 }
 

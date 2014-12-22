@@ -47,8 +47,6 @@ public class TestServlet extends HttpServlet {
 		String rqst = request.getParameter("rqst");
 		String rslt = "";
 		
-		logger.debug("TestServlet about to process Post request: rqst=" + rqst);
-		
 		logger.debug("Session: " + request.getSession(true) + " is about to test: " + rqst);
 		
 		// switch the request according to what the user wants to do
@@ -132,7 +130,7 @@ public class TestServlet extends HttpServlet {
 	 * @return "Passed message" if the sending is successfull, "Failed message" otherwise
 	 */
 	public String testSendingEmailTo(String mailTo){
-		logger.debug("about to test sending email");
+		logger.debug("about to test sending email to: " + mailTo);
 		try{
 			EmailClient.sendEmailForApprovedRequestWithManualPsw(mailTo, "Test Reception Name", "Test User Name");
 		} catch (Exception e){
@@ -244,6 +242,27 @@ public class TestServlet extends HttpServlet {
 			return result;
 		}
 		
+		
+		
+		String userDN = "CN=" + maps.get("displayName")[0] + ",OU=" + maps.get("company")[0] + ",OU=Clients,DC=orion,DC=dmz";
+		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
+		if (baseDN==null) baseDN = "OU=Groups,DN=orion,DN=dmz";
+		String companyGroupDN = "CN="+ maps.get("company")[0] +","+baseDN;
+		baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
+		if (baseDN==null) baseDN = "OU=Clients,DC=orion,DC=dmz";
+		String companyDN = "ou="+ maps.get("company")[0] +","+baseDN;
+		
+		
+		try{// try to delete everything before start testing
+			
+			lt.deleteUser(userDN);
+			lt.deleteGroupCompany(companyGroupDN);
+			lt.deleteCompany(companyDN);
+		} catch (Exception e){
+			// we are not testing the deletion. so, we are not doing anything with this exception
+		}
+			
+		
 		result += " Ldap is connected successfully.";
 		
 		// try to check company exist and add it (if it doesn't exist)
@@ -294,7 +313,6 @@ public class TestServlet extends HttpServlet {
 		// If adding user and company processes were successful.
 		
 		// delete the user
-		String userDN = "CN=" + maps.get("sAMAccountName")[0] + ",OU=" + maps.get("company")[0] + ",OU=Clients,DC=orion,DC=dmz";
 		if(!lt.deleteUser(userDN)){
 			result = "Ldap is succesfully connected. But, the tested user and company cannot be deleted. Please delete them manually (for next time test). "
 					+ "Username is: \"" + maps.get("sAMAccountName")[0] + "\" and company name is: \"" + maps.get("company")[0] + "\"";
@@ -303,19 +321,13 @@ public class TestServlet extends HttpServlet {
 		}
 		
 		// delete the company from the Groups folder
-		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
-		if (baseDN==null) baseDN = "OU=Groups,DN=orion,DN=dmz";
-		String companyDN = "CN="+ maps.get("company")[0] +","+baseDN;
-		if(!lt.deleteGroupCompany(companyDN)){
+		if(!lt.deleteGroupCompany(companyGroupDN)){
 			result = "Ldap is sucessfully connected. But, the tested group cannot be deleted. Please delete it manually (for next time test). That group name is: \"" + maps.get("company")[0] + "\"";
 			if(lt!=null) lt.close();
 			return result;
 		}
 		
 		// delete the company from the Clients folder
-		baseDN = LdapProperty.getProperty(LdapConstants.CLIENT_DN);
-		companyDN = "ou="+ maps.get("company")[0] +","+baseDN;
-		if (baseDN==null) baseDN = "OU=Clients,DC=orion,DC=dmz";
 		if(!lt.deleteCompany(companyDN)){
 			result = "Ldap is sucessfully connected. But, the tested group cannot be deleted. Please delete it manually (for next time test). That group name is: \"" + maps.get("company")[0] + "\"";
 			if(lt!=null) lt.close();
@@ -371,7 +383,7 @@ public class TestServlet extends HttpServlet {
 			manifest = new Manifest(inputStream);
 			Attributes attributes = manifest.getMainAttributes();
 	        String version = attributes.getValue("UserMgmt-Version");
-	        logger.debug("finished reading User Mgmt Version from MANIFEST file");
+	        logger.debug("finished reading User Mgmt Version from MANIFEST file. This version is: " + version);
 	        return version;
 		} catch (IOException e) {
 			return "Version is not found.";

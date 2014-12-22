@@ -43,7 +43,7 @@ public class AcceptRequestServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
 	{
-		logger.debug("AcceptRequestServlet processing Get request: " + request.getQueryString());
+		logger.debug("AcceptRequestServlet processing Get request: " + request.getParameterMap());
 		
 		// reading the account request file
 		String filename = request.getParameter("filename");

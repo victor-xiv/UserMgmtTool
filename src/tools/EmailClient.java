@@ -67,7 +67,7 @@ public class EmailClient {
 		init();
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
-		logger.debug("Preparing to send an SMS to: " + recipientName + " who has: " + mobile + " with the content: " + smsBody);
+		logger.debug("Preparing to send an SMS to: " + recipientName + " who has: " + mobile);
 		
 		// validate mobile number
 		mobile = SupportTrackerJDBC.cleanUpAndValidateMobilePhone(mobile);
@@ -90,10 +90,10 @@ public class EmailClient {
 			Transport.send(message);
 
 		} catch (MessagingException e) {
-			logger.error("Could not send out an email", e);
+			logger.error("Could not send out an sms", e);
 			throw e;
 		}
-		logger.debug("finished sending email");
+		logger.debug("finished sending sms");
 	}
 	
 	
@@ -130,7 +130,7 @@ public class EmailClient {
 				mailBody += s;
 			}
 		} catch (IOException e) {
-			logger.error("Couldn't read mail body content file " + mailBodyFilePath, e);
+			logger.error("Couldn't read the template of mail body content file " + mailBodyFilePath, e);
 		} finally {
 			try {
 				if(br!=null) br.close();
@@ -181,7 +181,7 @@ public class EmailClient {
 				mailBody += s;
 			}
 		} catch (IOException e) {
-			logger.error("Couldn't read mail body content file " + mailBodyFilePath, e);
+			logger.error("Couldn't read the template of mail body content file " + mailBodyFilePath, e);
 		} finally {
 			try {
 				if(br!=null) br.close();
@@ -281,6 +281,6 @@ public class EmailClient {
 			logger.error("Could not send out an email",e);
 			throw e;
 		}
-		logger.debug("finished sending approved email.");
+		logger.debug("finished sending email.");
 	}
 }

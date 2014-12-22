@@ -36,7 +36,7 @@ public class RegisterUserServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response)
 		throws ServletException, IOException
     {	
-		logger.debug("RegisterUserServlet about to process Get request: " + request.getQueryString());
+		logger.debug("RegisterUserServlet about to process Get request: " + request.getParameterMap());
 
 		String username = "";
 		HttpSession session = request.getSession(true);

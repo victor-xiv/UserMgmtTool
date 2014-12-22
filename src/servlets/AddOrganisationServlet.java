@@ -42,7 +42,7 @@ public class AddOrganisationServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		logger.debug("AddOrganisationServlet processing the post request.: " + request.getQueryString());
+		logger.debug("AddOrganisationServlet processing the post request.: " + request.getParameterMap());
 		
 		HttpSession session = request.getSession(true);
 		//Get organisation

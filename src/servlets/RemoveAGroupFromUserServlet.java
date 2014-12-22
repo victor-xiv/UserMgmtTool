@@ -40,7 +40,7 @@ public class RemoveAGroupFromUserServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		logger.debug("RemoveAGroupFromUserServlet about to process Post request: " + request.getQueryString());
+		logger.debug("RemoveAGroupFromUserServlet about to process Post request: " + request.getParameterMap());
 		
 		//Get user DN 
 		String userDN = request.getParameter("userDN").trim(); 

@@ -49,7 +49,7 @@ public class AddGroupUserServlet extends HttpServlet {
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		logger.debug("AddGroupUserServlet about to process Post request: " + request.getQueryString());
+		logger.debug("AddGroupUserServlet about to process Post request: " + request.getParameterMap());
 		
 		//Get dn name of this user
 		String dn = request.getParameter("dn").trim(); 

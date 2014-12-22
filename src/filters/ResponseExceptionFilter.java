@@ -2,7 +2,9 @@ package filters;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.Map;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -34,12 +36,24 @@ public class ResponseExceptionFilter implements Filter{
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response,
 			FilterChain filterChain) throws IOException, ServletException {
+		Logger logger = Logger.getRootLogger();
 		
 		
+		logger.debug("Request parameters: ");
+		Map<String, String[]> rqstMap = request.getParameterMap();
+		for(Map.Entry<String, String[]> entry : rqstMap.entrySet()){
+			logger.debug(entry.getValue() + "=" + Arrays.toString(entry.getValue()));
+		}
+		
+		
+		/**
+		 * catch any exceptions that didn't catch during the processing of the request
+		 * and covert the response of that cases into INTERNAL_SERVER_ERROR 
+		 */
 		try{
 			filterChain.doFilter(request, response);
 		} catch (Exception e){
-			Logger.getRootLogger().error("Unknown exception.", e);
+			logger.error("Unknown exception.", e);
 			HttpSession session = ((HttpServletRequest)request).getSession(true);
 			Enumeration<String> sessionAttrs = session.getAttributeNames();
 			while(sessionAttrs.hasMoreElements()){
@@ -49,7 +63,7 @@ public class ResponseExceptionFilter implements Filter{
 			
 			((HttpServletResponse)response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			PrintWriter output = response.getWriter();
-			output.write("There's an error occured while processing your request. Please contact Orion Health Support Team.");
+			output.write("There's an unpredictable error occured while processing your request. Please contact Orion Health Support Team.");
 		}
 	}
 	
