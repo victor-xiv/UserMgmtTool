@@ -6,7 +6,7 @@
   <title>Organisation: <%=request.getParameter("name") %></title>
   <script type="text/javascript" language="javascript" src="./js/ajaxgen.js"></script>
  
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+  <script type="text/javascript" language="javascript" src="./js/jquery.js"></script>
   <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
   <link rel="stylesheet" href="./css/general.css" type="text/css" />
   <jsp:useBean id="org" class="beans.LdapOrganisation" scope="page" />

@@ -23,7 +23,7 @@
   
     <title>Person: <%=userDN %></title>
     <script type="text/javascript" language="javascript" src="./js/ajaxgen.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="text/javascript" language="javascript" src="./js/jquery.js"></script>
      
     <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
     <link rel="stylesheet" href="./css/general.css" type="text/css" />
@@ -90,6 +90,11 @@
 	%>
 	
     <script type="text/javascript" language="javascript">
+    
+    //used to stored the content of the form before the "Update" button is clicked
+    // then this content will be used to replace the content of the form (that user has chagned)
+    // when the "Cancel" button is clicked
+    var usrDtlsForm = "";
     
 	Element.prototype.remove = function(){
 		this.parentElement.removeChild(this);
@@ -204,6 +209,7 @@
     /* Enable each input of the form to allow user to modify and submit the update
     */
     function UpdateForm() {
+    	usrDtlsForm = $('#usrDtlsForm').html();
     	cleanUpThePage();
     	document.getElementById('givenName').disabled = false;
     	document.getElementById('sn').disabled = false;
@@ -225,19 +231,19 @@
         document.getElementById('buttonGrp2').style.display = 'block';
     }
     function CancelForm() {
-    	location.reload(true);
+    	$('#usrDtlsForm').html(usrDtlsForm);
     }
     function BackForm() {
     	history.back();
     }
     function SubmitForm() {
-        if (validateEntries()) {
-            document.form.submit();
-            document.getElementById("submitButton").removeAttribute('onclick');
-            document.getElementById("cancelButton").removeAttribute('onclick');
-            return true;
-        }
-        return false;
+		if (validateEntries()) {
+			document.form.submit();
+			document.getElementById("submitButton").removeAttribute('onclick');
+			document.getElementById("cancelButton").removeAttribute('onclick');
+			return true;
+		}
+    	return false;
     }
     function deleteGroup(encodedGroupDN){
     	cleanUpThePage();
@@ -560,7 +566,7 @@
                   <span class="error" id="validation_msg" style="float:left; width=100%; text-align: left"></span>
                 </div>
                 <div style="width: 500px; padding: 5px; margin: 5px auto ";>
-                  <form name="form" method="post" action="UpdateUserDetails" onsubmit="return validateEntries();">
+                  <form id="usrDtlsForm" name="form" method="post" action="UpdateUserDetails" onsubmit="return validateEntries();">
                     <div class="row">
                       <span class="label2">Username:</span>
                       <span class="formw">
