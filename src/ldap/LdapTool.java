@@ -282,7 +282,7 @@ public class LdapTool {
 		boolean sslEnabled = LdapProperty.getProperty(LdapConstants.SSL_ENABLED).equals("true");
 		if( sslEnabled ){
 			env.put(Context.SECURITY_PROTOCOL, "ssl" ); // SSL
-			System.setProperty("javax.net.debug", "ssl");
+			//System.setProperty("javax.net.debug", "ssl");
 			System.setProperty("javax.net.ssl.trustStore", LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
 			System.setProperty( "javax.net.ssl.trustStorePassword", LdapProperty.getProperty(LdapConstants.SSL_CERT_PWD));
 			logger.debug("(LdapTool) Connecting Ldap on SSL, using keystore: " + LdapProperty.getProperty(LdapConstants.SSL_CERT_LOC));
@@ -1249,16 +1249,21 @@ info							: is the unique ID that get from clientAccountID column of the client
 		String baseDN = LdapProperty.getProperty(LdapConstants.BASEGROUP_DN);
 		if (baseDN==null)
 			baseDN = "OU=Groups,DN=orion,DN=dmz";
-			String companyDN = "CN="+Rdn.escapeValue(companyName)+","+baseDN;
+		String companyDN = "CN="+Rdn.escapeValue(companyName)+","+baseDN;
 			
+		Attributes attrs = getGroupAttributesOfGivenGroupDN(companyDN);
+		
+		return attrs;
+	}
+	public Attributes getGroupAttributesOfGivenGroupDN(String escapedGroupDN){
 		try{
-			Attributes attrs = ctx.getAttributes(new LdapName(companyDN));
-			logger.debug("(LdapTool) finished searching for the attributes of the group: " + companyName);
+			Attributes attrs = ctx.getAttributes(new LdapName(escapedGroupDN));
+			logger.debug("(LdapTool) finished searching for the attributes of the group: " + escapedGroupDN);
 			return attrs;
 		}catch(NamingException ex){
-			logger.error("(LdapTool) exception while getting Attribtues object for: " + companyName,ex);
+			logger.error("(LdapTool) exception while getting Attribtues object for: " + escapedGroupDN,ex);
+			return null;
 		}
-		return null;
 	}
 	
 	

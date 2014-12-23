@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,7 +21,6 @@ import javax.naming.ldap.Rdn;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.smartcardio.ATR;
 
 import ldap.LdapConstants;
 import ldap.LdapProperty;
@@ -848,15 +848,16 @@ class ThreadProcessingAttribute extends Thread{
 	 * Solution: we add the membership of LdapUsers to this account
 	 */
 			logger.debug("start checking/fixing condition 3 for account: " + username);
-			if (!isGivenAttrsHasMemberOf(attrs, LDAPUSERS_DN)) {
-				proposingSolution.append("3: Add LdapUsers from Ldap Membership."  + RETURN_CHAR);
+			if (!isGivenAttrsHasMemberOf_checkNestedly(attrs, LDAPUSERS_DN)) {
+				proposingSolution.append("3: Add LdapUsers as a memberOf this account's group."  + RETURN_CHAR);
 
 				if(fixing){
 				// add 'LdapUsers
-					if(lt.addUserToGroup(unescapedUserDN, LDAPUSERS_DN)){
-						fixedRslts.add("3: Added LdapUsers from Ldap Membership.");
+					String companyGroupDN = lt.getDNFromGroup(company);
+					if(lt.addGroup1InToGroup2(companyGroupDN, LDAPUSERS_DN)){
+						fixedRslts.add("3: Added LdapUsers as a memberOf this account's group.");
 					} else {
-						failedToFixRslts.add("3: Couldn't added LdapUsers from Ldap Membership.");
+						failedToFixRslts.add("3: Couldn't add LdapUsers as a memberOf this account's group.");
 					}
 				}
 			}
@@ -1641,18 +1642,54 @@ class ThreadProcessingAttribute extends Thread{
 	
 	
 	
-	
+	/**
+	 * check if the Ldap account that is represented by the given Attribtues object, is a memberOf the given escapedGroupDN
+	 * @param attributes object that represetns a Ldap account
+	 * @param escapedGroupDN: an escaped (special chars) group DN that used to check
+	 * @return true if the given Attributes object is a memberOf the given escapedGroupDN. false otherwise
+	 * @throws NamingException
+	 */
+	private boolean isGivenAttrsHasMemberOf(Attributes attributes, String escapedGroupDN) throws NamingException {
+		try {
+			ArrayList<String> listMemberOf = (ArrayList<String>) Collections.list(attributes.get("memberOf").getAll());
+			return listMemberOf.contains(escapedGroupDN);
+		} catch (NullPointerException e) {
+			// NullPointerException thrown when there's no memberOf property
+			return false;
+		}
+	}
 	
 	/**
-	 * check if the Ldap account that is represented by the given Attribtues object, is a memberOf the given escapedGroupDN  
+	 * check if the Ldap account that is represented by the given Attribtues object, is a memberOf the given escapedGroupDN
+	 * it will check all the nested groups up to 3 level (e.g. this given acct is a memberOf group {A, B, C} then it will check the groups that A, B, C belongs to and so on).  
 	 * @param attributes object that represetns a Ldap account
 	 * @param escapedGroupDN: an escaped (special chars) group DN that used to check 
 	 * @return true if the given Attributes object is a memberOf the given escapedGroupDN. false otherwise
 	 * @throws NamingException
 	 */
-	private boolean isGivenAttrsHasMemberOf(Attributes attributes, String escapedGroupDN) throws NamingException{
-		try{
-			ArrayList<String> listMemberOf = (ArrayList<String>) Collections.list(attributes.get("memberOf").getAll());
+	private boolean isGivenAttrsHasMemberOf_checkNestedly(Attributes attributes, String escapedGroupDN) throws NamingException{
+		try{ 
+			ArrayList<String> firstLevelListMemberOf = (ArrayList<String>) Collections.list(attributes.get("memberOf").getAll());
+			HashSet<String> listMemberOf = new HashSet<>(firstLevelListMemberOf);
+			
+			HashSet<String> secondLevelListMemberOf = new HashSet<>();
+			for(String escapedGrDN : firstLevelListMemberOf){
+				try{ // if there's this group has no nested groups, then NullPointerException will thrown. then move on to the next one
+					Attributes thisGroupAttrs = lt.getGroupAttributesOfGivenGroupDN(escapedGrDN);
+					ArrayList<String> thisListMemberOf = (ArrayList<String>) Collections.list(thisGroupAttrs.get("memberOf").getAll());
+					secondLevelListMemberOf.addAll(thisListMemberOf);
+					listMemberOf.addAll(thisListMemberOf);
+				} catch (NullPointerException e){}
+			}
+			
+			for(String escapedGrDN : secondLevelListMemberOf){
+				try{ // if there's this group has no nested groups, then NullPointerException will thrown. then move on to the next one
+					Attributes thisGroupAttrs = lt.getGroupAttributesOfGivenGroupDN(escapedGrDN);
+					ArrayList<String> thisListMemberOf = (ArrayList<String>) Collections.list(thisGroupAttrs.get("memberOf").getAll());
+					listMemberOf.addAll(thisListMemberOf);
+				} catch (NullPointerException e){}
+			}
+			
 			return listMemberOf.contains(escapedGroupDN);
 		}catch (NullPointerException e){
 			// NullPointerException thrown when there's no memberOf property
