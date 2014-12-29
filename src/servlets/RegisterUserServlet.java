@@ -170,7 +170,7 @@ public class RegisterUserServlet extends HttpServlet {
 		}
 		
 		// check if username contains any prohibited chars
-		String temp = username.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+		String temp = username.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?\\'\\\"]", "");
 		if(temp.length() < username.length()){
 			session.setAttribute("error", "Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
 			String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");

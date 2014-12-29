@@ -2,9 +2,12 @@ package tools;
 
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
+import javax.naming.InvalidNameException;
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.naming.ldap.Rdn;
@@ -13,7 +16,6 @@ import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
 
-import antlr.collections.List;
 
 public class SyncAccountDetails {
 	
@@ -66,6 +68,76 @@ public class SyncAccountDetails {
 		}
 		
 		return newUserDN;
+	}
+	
+	
+	/**
+	 * Sync all the details of all the accounts that stored in the given client name.
+	 * The method is neither returning any results of the process nor any exceptions/erros.
+	 * So, if there are any problems with any account. it will simply go on to the next one.
+	 * @param client (must not be unescaped) is just client/company/organisation name (not DN)
+	 */
+	public static void syncAllUsersThatBelongsToClient(String client){
+		Logger logger = Logger.getRootLogger();
+		logger.debug("start syncing all the accounts details from ST DB to Ldap for: " + client);
+		
+		LdapTool lt;
+		try {
+			lt = new LdapTool();
+		} catch (FileNotFoundException | NamingException e1) {
+			logger.error("Couldn't connect to Ldap server.", e1);
+			return;
+			// we are not doing anything if there's an error.
+		} 
+		
+		// get all the accounts that stored under (member of) this client as a list of userDN and enabling status object 
+		TreeMap<String, String[]> usersList = lt.getClientUsers(client);
+
+		
+		/**
+		 * because the whole process for each account is very time consuming
+		 * so, we do multi threading here, where we create the number of threads equals to number of processors
+		 * and each thread processing an equal number of accounts.
+		 */
+		int numbCPUs = Runtime.getRuntime().availableProcessors();
+		int temp = 0;
+		
+		// prepare a list of accounts for each thread
+		ArrayList<String>[] userDNListForAllThreads = new ArrayList[numbCPUs];
+		for(Map.Entry<String, String[]> aUserL : usersList.entrySet()){
+			if(userDNListForAllThreads[temp]==null) userDNListForAllThreads[temp] = new ArrayList();
+			String unescapedUserDN = aUserL.getValue()[0];
+			if(unescapedUserDN != null && !unescapedUserDN.trim().isEmpty()) userDNListForAllThreads[temp].add(unescapedUserDN);
+			temp = ++temp % numbCPUs;
+		}
+		
+		// a list that store all the threads that are processing the accounts
+		ArrayList<Thread> allThreads = new ArrayList<>();
+		// create each thread and pass the list of accounts that it need to handle to its constructor.
+		for(final ArrayList<String> userDNListForAThread : userDNListForAllThreads){
+			if(userDNListForAThread!=null && userDNListForAThread.size()>0){
+				Thread t = new Thread(){
+					public void run(){
+						for(final String unescapedUserDN : userDNListForAThread){
+							syncUserDetailsFromSupportTrackerDBtoLdapForTheGivenUserDN(unescapedUserDN);
+						}
+					}
+				};
+				t.start();
+				allThreads.add(t);
+				
+				logger.debug("Thread " + t.getId() + " is syncing accounts: " + userDNListForAThread);
+			}
+		}
+		
+		// waiting for all threads to finish together
+		for(Thread t : allThreads){
+			try {
+				t.join();
+			} catch (InterruptedException e) {
+				// we are not doing anything, because we just want to get only any successful threads
+			}
+		}
 	}
 	
 	

@@ -291,7 +291,7 @@ mobile
 		//MODIFIED CODE ENDS
 		
 		// check if sAMAccountName contains any prohibited chars
-		String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+		String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?\\'\\\"]", "");
 		if(temp.length() < sAMAccountName.length()){
 			return "false|Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^";
 		}

@@ -539,7 +539,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 	// sAMAccountName attribute allowed to have only these chars:  ( ) . - _ ` ~ @ $ ^
 			// check if sAMAccountName contains any prohibited chars\
 			String sAMAccountName = paramMaps.get("sAMAccountName")[0];
-			String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]", "");
+			String temp = sAMAccountName.replaceAll("[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?\\'\\\"]", "");
 			if(temp.length() < sAMAccountName.length()){
 				throw new NamingException("Username contains some forbid speical characters. The special characters allowed to have in username are: ( ) . - _ ` ~ @ $ ^");
 			}

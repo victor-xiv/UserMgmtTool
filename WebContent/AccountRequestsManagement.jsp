@@ -143,7 +143,7 @@ function validateUsername(idx) {
       }
   	  
       // check if the username contains any special chars that ldap server doens't allow
-  	  var regex = new RegExp('[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]', 'g');
+  	  var regex = new RegExp('[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?\\\'\\"]', 'g');
   	  var temp = username.replace(regex, "");
   	  if(temp.length < username.length){
   		  alert('Username contains some forbid speical characters.\n' + 

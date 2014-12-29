@@ -24,6 +24,8 @@
     <title>Person: <%=userDN %></title>
     <script type="text/javascript" language="javascript" src="./js/ajaxgen.js"></script>
     <script type="text/javascript" language="javascript" src="./js/jquery.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+  	<script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
      
     <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
     <link rel="stylesheet" href="./css/general.css" type="text/css" />
@@ -35,16 +37,19 @@
     <%@ page import="java.util.TreeMap" %>
     <%@ page import="java.util.Map" %>
     <%@ page import="java.util.Set" %>
-    <%@ page import="ldap.LdapTool" %>
+    <%@ page import="java.io.FileNotFoundException" %>
+  	<%@ page import="java.net.ConnectException" %>
+	<%@ page import="java.util.List" %>
 	<%@ page import="javax.naming.directory.Attribute" %>
 	<%@ page import="javax.naming.directory.Attributes" %>
 	<%@ page import="javax.naming.NamingEnumeration" %>
-	<%@ page import="java.io.FileNotFoundException" %>
-  	<%@ page import="javax.naming.NamingException" %>
-  	<%@ page import="java.net.ConnectException" %>
+	<%@ page import="javax.naming.NamingException" %>
+	<%@ page import="javax.naming.ldap.Rdn" %>
+	
+  	<%@ page import="ldap.LdapTool" %>
   	<%@ page import="ldap.ErrorConstants" %>
-  	<%@ page import="javax.naming.ldap.Rdn" %>
-  	<%@ page import="java.util.List" %>
+  	<%@ page import="ldap.LdapProperty" %>
+  	<%@ page import="ldap.LdapConstants" %>
   	<%@ page import="servlets.AdminServlet" %>
   	<%@ page import="tools.SyncAccountDetails" %>
   	
@@ -110,7 +115,7 @@
 	}
     
     function cleanUpThePage(){
-    	var idsNeededToBeCleanedUp = new Array("validation_msg", "add-removeGroupFailed", "add-removeGroupPassed");
+    	var idsNeededToBeCleanedUp = new Array("validation_msg", "add-removeGroupFailed", "add-removeGroupPassed", "fixAcctFailed", "fixAcctPassed");
     	for(var i=0; i<idsNeededToBeCleanedUp.length; i++){
     		document.getElementById(idsNeededToBeCleanedUp[i]).innerHTML = "";
     	}
@@ -231,12 +236,14 @@
         document.getElementById('buttonGrp2').style.display = 'block';
     }
     function CancelForm() {
+    	cleanUpThePage();
     	$('#usrDtlsForm').html(usrDtlsForm);
     }
     function BackForm() {
     	history.back();
     }
     function SubmitForm() {
+    	cleanUpThePage();
 		if (validateEntries()) {
 			document.form.submit();
 			document.getElementById("submitButton").removeAttribute('onclick');
@@ -429,13 +436,15 @@
     
     
     function getAcctStatusDetails(encodedUserDN){
+    	cleanUpThePage();
+    	
     	var param = "rqst=getAUserStatusDetails&unescapedUserDN=" + encodedUserDN; 
     	
     	var jqxhr = $.post("AccountStatusDetails", param, function(result){
     		try{
 				var xmlRslt = $.parseXML(result);
 				var result = '<a id="fixActStsLink" style="background-size:20px; padding-left:20px" href="#"' +
-							'onclick=\'fixUserAccount("' + encodedUserDN + '")\''
+							'onclick=\'dialogPop(event,"' + encodedUserDN + '")\''
 
 				if($(xmlRslt).find('limited').length > 0){
 					var solution = $(xmlRslt).find('limited').find("solution")[0].firstChild.data;
@@ -468,12 +477,62 @@
     	.fail(function() {
     		$("#add-removeGroupFailed").html("Could not get a response from server while checking this account status.");
 		 });
+    	
     }
     
     
+    
+    // show the dialog that give user 3 choices:
+    // 1). fix the broken accoutn
+    // 2). link to the issues details page
+    // 3). cancel
+    function dialogPop(event, encodedUserDN){
+    	event.preventDefault();
+    	if($('#popedupDialog').length < 1){ // avoid to have multiple dialogs (so, it poped up only, if there's no dialog has been poped up)
+    		var text = '<div id="popedupDialog">'+
+			'<p><a onclick="openExplanation()">Open issues details page...</a></p>'+
+			'<p><a onclick="fixUserAccount(\''+encodedUserDN+'\')">Fix the account...</a></p>' +
+			'<p><a class="Button" onclick="closeDialog()" href="#">Cancel</a>' +
+			'</div>';
+			$(text).dialog({
+				model:true,
+				height: 110, 
+				width: 200, 
+				resizable: false, 
+				dialogClass:'noTitleStuff', 
+				position:{my:'left top', of:event}
+			});
+			
+    	} else { // if there's a dialog has been poped up => close it
+    		closeDialog();
+    	}
+    }
+    function closeDialog(){
+    	event.preventDefault();
+	    	// close the poped up dialog
+	    if($('#popedupDialog').length > 0){
+	   		$('#popedupDialog').dialog('close');
+	   		$('#popedupDialog').remove();
+	   		$('#fixActStsLink').blur();
+	    }
+    }
+	// open the link page (the issues details woki page)
+    function openExplanation(){
+    	closeDialog();
+    	<% String  acctDetailsLink = LdapProperty.getProperty(LdapConstants.ACCT_BROKEN_DETAILS_LINK);%>
+    	var win = window.open('<%=acctDetailsLink%>', '_blank');
+    	win.focus();
+    }
+	
+	
+	
+    
     function fixUserAccount(encodedUserDN){
+    	cleanUpThePage();
+    	closeDialog();
+    	
     	var params = "rqst=fixUser&userDN=" + encodedUserDN;
-    	$("#add-removeGroupPassed").html("Processing request...");
+    	$("#fixAcctPassed").html("Processing request...");
     	var jqxhr = $.post( "AccountStatusDetails", params, function(result) {
     		try{
     			var xmlRslt = $.parseXML(result);
@@ -481,26 +540,30 @@
 				// all broken has been fixed (no any failed to fix in the XML result)
 				if($(xmlRslt).find("failedToFix").length < 1){
 					$('#fixActStatus').html(""); // remove the broken link
-					$("#add-removeGroupPassed").html("Account has been successfully fixed.");
+					$("#fixAcctPassed").html("Account has been successfully fixed.");
 				
 				// some issues have not been fixed
 				} else {
 					var fixedRslt = '';
 					if($(xmlRslt).find("fixed").length > 0){
+						// if there are some issues have been fixed
+						// show that fixed results
 						fixedRslt = $(xmlRslt).find("fixed")[0].firstChild.data;
 					}
+					
+					// show those issues that couldnot be fixed
 					var failedToFix = $(xmlRslt).find("failedToFix")[0].firstChild.data;
 					$("#fixActStsLink").prop('title', fixedRslt + failedToFix);
 					
-					$("#add-removeGroupPassed").html(fixedRslt);
-					$("#add-removeGroupFailed").html(failedToFix);
+					$("#fixAcctPassed").html(fixedRslt);
+					$("#fixAcctFailed").html(failedToFix);
 				}
     		} catch (e) {
-				$("#add-removeGroupFailed").html("Server failed to process fixing account status request. Here's the message: " + result);
+				$("#fixAcctFailed").html("Server failed to process fixing account status request. Here's the message: " + e.message);
 			}
     	})
     	.fail(function() {
-    		$("#add-removeGroupFailed").html("Could not get a response from server while fixing this account status.");
+    		$("#fixAcctFailed").html("Could not get a response from server while fixing this account status.");
 		 });
     }
     </script>
@@ -521,6 +584,26 @@
       #facsimileTelephoneNumber   {width: 200px;}
       #mobile                     {width: 200px;}
       #company                    {width: 205px;}
+      
+      
+      /* styles for controlling poped up dialog*/
+      div.ui-widget-header, div.ui-state-default, div.ui-button{
+            background:white;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #007186;
+            font-size:20px;
+            font-weight: bold;
+      }
+      div.ui-dialog, div.ui-widget, div.ui-widget-content, div.ui-corner-all, div.ui-front, div.ui-resizable, div.ui-dialog-content, div.ui-widget-content {
+        	backgroun:white
+        	border: 1px solid #b9cd6d;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #007186;
+            font-size:12px;
+            font-weight: bold;
+      }
+      .noTitleStuff .ui-dialog-titlebar {display:none}  /*title bar is not displayed*/
+         
     </style>
   </head>
   <body onload='getAcctStatusDetails("<%=java.net.URLEncoder.encode(userDN)%>")'>
@@ -539,6 +622,13 @@
 		
 				
                 <div><a href="ChangePassword?rqstFrom=userDetail">Change Password</a></div>
+                
+                <div class="row">
+                	<span id="fixAcctPassed" style="float: center;" class="passed"></span>
+                	<br/>
+					<span id="fixAcctFailed" style="float: center;" class="failed"></span>
+				</div>
+                
                 <img src="./css/images/swish.gif" alt="There should be an image here...." />
 <%  if(session.getAttribute("error") != null){ %>
                 <div class="row">

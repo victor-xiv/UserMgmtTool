@@ -53,7 +53,7 @@ function validateEntries(){
   }
   
   // check if the username contains any special chars that ldap server doens't allow
-  var regex = new RegExp('[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?]', 'g');
+  var regex = new RegExp('[\\,\\<\\>\\;\\=\\*\\[\\]\\|\\:\\~\\#\\+\\&\\%\\{\\}\\?\\\'\\"]', 'g');
   var username = document.getElementById('sAMAccountName').value;
   var temp = username.replace(regex, "");
   if(temp.length < username.length){

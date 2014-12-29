@@ -5,8 +5,10 @@
 <head>
   <title>Organisation: <%=request.getParameter("name") %></title>
   <script type="text/javascript" language="javascript" src="./js/ajaxgen.js"></script>
- 
   <script type="text/javascript" language="javascript" src="./js/jquery.js"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+  	
   <link rel="stylesheet" href="./css/concerto.css" type="text/css" />
   <link rel="stylesheet" href="./css/general.css" type="text/css" />
   <jsp:useBean id="org" class="beans.LdapOrganisation" scope="page" />
@@ -14,6 +16,10 @@
   <%@ page import="java.util.TreeMap" %>
   <%@ page import="java.util.Set" %>
   <%@ page import="ldap.LdapTool" %>
+  <%@ page import="ldap.LdapProperty" %>
+  <%@ page import="ldap.LdapConstants" %>
+  <%@ page import="servlets.AdminServlet" %>
+  <%@ page import="tools.SyncAccountDetails" %>
   <%@ page import="javax.naming.directory.Attribute" %>
   <%@ page import="javax.naming.directory.Attributes" %>
   <%@ page import="javax.naming.NamingEnumeration" %>
@@ -23,12 +29,15 @@
   <%@ page import="javax.naming.ldap.Rdn" %>
   <%@ page import="java.util.List" %>
   <%@ page import="java.util.ArrayList" %>
-  <%@ page import="servlets.AdminServlet" %>
+  
   <%	
+  
+  	String orgName = request.getParameter("name");
+  	SyncAccountDetails.syncAllUsersThatBelongsToClient(orgName);
   
   	TreeMap<String,String[]> users = null;
   	try{
-		org.processOrganisationName(request.getParameter("name"));
+		org.processOrganisationName(orgName);
 		users = org.getUsers();
   	} catch (ConnectException e){
   		session.setAttribute("error", e.getMessage());
@@ -47,36 +56,63 @@
   
   
 <style>
-
 a.showingAcctSt {
 	font-family: VArial, Helvetica, sans-serif;
-  	width:200px; 
-  	display:block;
-    border:1px solid #7CBAFF;
-    background-color:#7CBAFF;
-    text-decoration:none;
-    text-align: center;
-    color:#666;
-    padding:5px 5px 5px 5px;"
+	width: 200px;
+	display: block;
+	border: 1px solid #7CBAFF;
+	background-color: #7CBAFF;
+	text-decoration: none;
+	text-align: center;
+	color: #666;
+	padding: 5px 5px 5px 5px;
 }
 
-a.showingAcctSt:hover{
-	border:1px solid #7CBABF;
-    background-color:#7CBABF;
-    color:#888;
+a.showingAcctSt:hover {
+	border: 1px solid #7CBABF;
+	background-color: #7CBABF;
+	color: #888;
 }
 
-a.loadingAcctSt{
-    font-family: VArial, Helvetica, sans-serif;
-  	width:200px; 
-  	display:block;
-    border:1px solid #ddd;
-    background-color:#ddd;
-    text-decoration:none;
-    text-align: center;
-    color:#aaa;
-    padding:5px 5px 5px 5px;"
+a.loadingAcctSt {
+	font-family: VArial, Helvetica, sans-serif;
+	width: 200px;
+	display: block;
+	border: 1px solid #ddd;
+	background-color: #ddd;
+	text-decoration: none;
+	text-align: center;
+	color: #aaa;
+	padding: 5px 5px 5px 5px;
 }
+
+
+
+
+/* styles for controlling poped up dialog*/
+div.ui-widget-header,div.ui-state-default,div.ui-button {
+	background: white;
+	font-family: Arial, Helvetica, sans-serif;
+	color: #007186;
+	font-size: 20px;
+	font-weight: bold;
+}
+
+div.ui-dialog,div.ui-widget,div.ui-widget-content,div.ui-corner-all,div.ui-front,div.ui-resizable,div.ui-dialog-content,div.ui-widget-content
+	{
+	backgroun: white border: 1px solid #b9cd6d;
+	font-family: Arial, Helvetica, sans-serif;
+	color: #007186;
+	font-size: 12px;
+	font-weight: bold;
+}
+
+.noTitleStuff .ui-dialog-titlebar {
+	display: none
+} /*title bar is not displayed*/
+
+
+
 </style>
 
 
@@ -305,6 +341,10 @@ function getIdIndex(encodedUserDN){
 			$('#LimitedUsers').html("");
 			$('#BrokenUsers').html("");
 			
+			/*
+			* There's no fixing symbols for DisabledUsers and EnabledUsers
+			* Fixing symbols are required for only: LimitedUsers, BrokenCantBeFixedUsers, BrokenInDisablingUsers and BorkenUsers
+			*/
 			
 			// add all the disabled accounts into the "#Disabledusers" element
 			var disabledUsersText = "";
@@ -328,10 +368,17 @@ function getIdIndex(encodedUserDN){
 					var displayName = $(this).find("name")[0].firstChild.data;
 					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					enabledUsersText += '<div id="'+thisIdIndex+'" class="row"><span style="float: inherit; width: 200px; text-align: center;">'+
-											'<a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></span></div>';
+											'<a  id="'+thisIdIndex+'Title'+'" href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></span></div>';
 				}
 			);
 			$('#EnbaledUsers').html(enabledUsersText);
+			
+			
+			
+			
+			/*
+			* Fixing symbols are required for only: LimitedUsers, BrokenCantBeFixedUsers, BrokenInDisablingUsers and BorkenUsers
+			*/
 			
 			// add limited users into "#Limitedusers" element
 			// and turn on the "#LimitedUsersCrossBar"
@@ -346,7 +393,7 @@ function getIdIndex(encodedUserDN){
 					var solution = $(this).find("solution")[0].firstChild.data;
 					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					limitedUsersText += '<tr id="'+thisIdIndex+'">';
-					limitedUsersText += '<td><a  id="'+thisIdIndex+'Title'+'"  class="Add" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+					limitedUsersText += '<td><a  id="'+thisIdIndex+'Title'+'"  class="Add" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
                 						'<td><a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
                 						'</tr>';
 				}
@@ -368,7 +415,7 @@ function getIdIndex(encodedUserDN){
 						var solution = $(this).find("solution")[0].firstChild.data;
 						var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 						brokenUsersText += '<tr id="'+thisIdIndex+'">';
-						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="CantBeFixed" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="CantBeFixed" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
 											'<td><a style="color:black" href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
 		                					'</tr>';  
 					}	
@@ -381,7 +428,7 @@ function getIdIndex(encodedUserDN){
 						var solution = $(this).find("solution")[0].firstChild.data;
 						var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 						brokenUsersText += '<tr id="'+thisIdIndex+'">';
-						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
 											'<td><a style="font-style: italic; color: #808080;"  href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ ' (disabled)</a></td>'+
 		                					'</tr>';  
 					}
@@ -394,7 +441,7 @@ function getIdIndex(encodedUserDN){
 					var solution = $(this).find("solution")[0].firstChild.data;
 					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					brokenUsersText += '<tr id="'+thisIdIndex+'">';
-					brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="fixUserAccount(\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+					brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
 										'<td><a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
 	                					'</tr>';  
 				}	
@@ -409,10 +456,65 @@ function getIdIndex(encodedUserDN){
 	}
 	
 	
+	
+	
+	
+	
+
+	// show the dialog that give user 3 choices:
+    // 1). fix the broken accoutn
+    // 2). link to the issues details page
+    // 3). cancel
+    function dialogPop(event, encodedUserDN){
+    	event.preventDefault();
+    	if($('#popedupDialog').length < 1){ // avoid to have multiple dialogs (so, it poped up only, if there's no dialog has been poped up)
+    		var text = '<div id="popedupDialog">'+
+			'<p><a onclick="openExplanation()">Open issues details page...</a></p>'+
+			'<p><a onclick="fixUserAccount(\''+encodedUserDN+'\')">Fix the account...</a></p>' +
+			'<p><a class="Button" onclick="closeDialog()" href="#">Cancel</a>' +
+			'</div>';
+			$(text).dialog({
+				model:true,
+				height: 110, 
+				width: 200, 
+				resizable: false, 
+				dialogClass:'noTitleStuff', 
+				position:{my:'left top', of:event}
+			});
+			
+    	} else { // if there's a dialog has been poped up => close it
+    		closeDialog();
+    	}
+    }
+    function closeDialog(){
+    	event.preventDefault();
+	    	// close the poped up dialog
+	    if($('#popedupDialog').length > 0){
+	   		$('#popedupDialog').dialog('close');
+	   		$('#popedupDialog').remove();
+	   		//$('#fixActStsLink').blur();
+	    }
+    }
+	// open the link page (the issues details woki page)
+    function openExplanation(){
+    	closeDialog();
+    	<% String  acctDetailsLink = LdapProperty.getProperty(LdapConstants.ACCT_BROKEN_DETAILS_LINK);%>
+    	var win = window.open('<%=acctDetailsLink%>', '_blank');
+    	win.focus();
+    }
+	
+	
+	
+    
+    
+	
+	
 	//fix the a user account
 	function fixUserAccount(uriEncodedUserDN){
 		//alert(uriEncodedUserDN);
 		cleanUpThePage();
+		closeDialog();
+		
 		$("#add-removePassed").html("Processing request...");
 		
 		var params = "rqst=fixUser&userDN=" + uriEncodedUserDN;
@@ -448,7 +550,7 @@ function getIdIndex(encodedUserDN){
 					// other type of broken account has been fixed 
 					} else {
 						var fixedUser = '<div id="'+thisIdIndex+'" class="row"><span style="float: inherit; width: 200px; text-align: center;">'+
-											'<a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></span></div>';
+											'<a  id="'+thisIdIndex+'Title'+'" href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></span></div>';
 						$('#EnbaledUsers').append(fixedUser);
 					}
 					
