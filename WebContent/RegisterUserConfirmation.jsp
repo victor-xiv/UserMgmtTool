@@ -9,6 +9,11 @@
     <%@ page import="java.util.ArrayList" %>
     <%@ page import="java.util.TreeMap" %>
     <%@ page import="java.util.Map" %>
+    <%@ page import="java.util.Set" %>
+    <%@ page import="ldap.LdapTool" %>
+    <%@ page import="ldap.LdapProperty" %>
+  	<%@ page import="ldap.LdapConstants" %>
+    <%@ page import="tools.SupportTrackerJDBC" %>
     <% user.processUsername((String)session.getAttribute("username")); %>
     <script src="./js/validator.js"></script>
     
@@ -242,8 +247,41 @@
                     <div class="row">
                       <span class="label2">Position / Role:</span>
                       <span class="formw">
+                      
+                      
+                      
+                      
+                      
+                            
+<!-- if Orion Health staff, then this role will be a drop down menu where the roles list is generated from the LK_positionCode table of ST DB -->               
+<% if(user.getCompany().equalsIgnoreCase(LdapTool.ORION_HEALTH_NAME)){ %>
+						<select id="description" name="description" tabindex="4" style="width:205px">
+<% Set<String> allRoles = SupportTrackerJDBC.getAllPositionCodeNames();
+		for(String role : allRoles){
+			if(role.equalsIgnoreCase(user.getDescription().trim())){
+%>
+							<option value="<%=user.getDescription().trim() %>" selected="selected"><%=user.getDescription() %></option>
+
+<%			} else {		%>
+							<option value="<%=role %>"><%=role %></option>
+<%			}
+		}
+%>
+						</select>
+
+
+
+<!-- if it is not Orion Health staff, then this role will be an input box -->
+<% } else { %>
                         <input type="text" id="description" name="description" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="4"
                          value="<%=user.getDescription() %>" />
+<% } %>         
+
+
+
+                      
+                      
+                      
                       </span>
                       <span class="required">*</span>
                     </div>

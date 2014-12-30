@@ -4,6 +4,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import ldap.LdapTool;
+
 import org.apache.log4j.Logger;
 
 import tools.ConcertoJDBC;
@@ -44,7 +46,13 @@ public class UserDetails {
 		
 		try {
 			Map<String, String> temp = SupportTrackerJDBC.getUserDetails(username, null);
-			if(temp!=null && !temp.isEmpty()) userDetails.putAll(temp);
+			
+			if(temp==null || temp.isEmpty()){  //this user might be Orion Staff
+				temp = SupportTrackerJDBC.getOrionHealthStaffDetails(username);
+			}
+			
+			if(temp != null && !temp.isEmpty()) userDetails.putAll(temp);
+			
 		} catch (SQLException e) {
 			// dt need to do anything
 		}

@@ -26,4 +26,5 @@ public class LdapConstants {
 	public static String BASEGROUP_ATTR = "basegroup.attribute";
 	public static String ORION_HEALTH_ORG_NAME = "orionhealthOrganisationName";
 	public static String ACCT_BROKEN_DETAILS_LINK = "acct.broken.details.link";
+	public static String DEFAULT_ORION_STAFF_POSITION="default.orion.staff.position";
 }

@@ -14,6 +14,12 @@
       
       <%@ page import="java.util.TreeMap" %>
       <%@ page import="java.util.Map" %>
+      <%@ page import="java.util.Set" %>
+      <%@ page import="tools.SupportTrackerJDBC" %>
+      <%@ page import="ldap.LdapTool" %>
+      <%@ page import="ldap.LdapProperty" %>
+      <%@ page import="ldap.LdapConstants" %>
+      
       <script src="./js/validator.js"></script>
       <script src="./js/jquery.js"></script>
       <script type="text/javascript" language="javascript">
@@ -365,7 +371,43 @@ function prepareUrlParams(){
                      <div class="row">
                        <span class="label2">Position / Role:</span>
                        <span class="formw">
-                         <input type="text" id="description" name="description" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="3"/>
+                       
+                       
+
+
+<!-- if Orion Health staff, then this role will be a drop down menu where the roles list is generated from the LK_positionCode table of ST DB -->               
+<% String company = request.getParameter("company");
+   String defaultOrionStaffPosition = LdapProperty.getProperty(LdapConstants.DEFAULT_ORION_STAFF_POSITION);
+   defaultOrionStaffPosition = defaultOrionStaffPosition==null ? "Orion Health Staff" : defaultOrionStaffPosition.trim();
+   
+   if(company.equalsIgnoreCase(LdapTool.ORION_HEALTH_NAME)){ %>
+						<select id="description" name="description" tabindex="3" style="width:205px">
+<% Set<String> allRoles = SupportTrackerJDBC.getAllPositionCodeNames();
+		for(String role : allRoles){
+			if(role.equalsIgnoreCase(defaultOrionStaffPosition)){
+%>
+							<option value="<%=defaultOrionStaffPosition %>" selected="selected"><%=defaultOrionStaffPosition %></option>
+
+<%			} else {		%>
+							<option value="<%=role %>"><%=role %></option>
+<%			}
+		}
+%>
+						</select>
+
+
+
+<!-- if it is not Orion Health staff, then this role will be an input box -->
+<% } else { %>
+                        <input type="text" id="description" name="description" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>" tabindex="3"/>
+<% } %>    
+
+
+                       
+                       
+                       
+                       
+                       
                        </span>
                        <span class="required">*</span>
                      </div>

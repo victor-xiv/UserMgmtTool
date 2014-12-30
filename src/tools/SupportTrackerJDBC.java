@@ -6,14 +6,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -333,7 +332,8 @@ The valid mobile phone should look like one of the below forms:
 		
 		// building query
 		StringBuffer query = new StringBuffer();
-		query.append("SELECT CA.contactPersonName as displayName, ");
+		query.append("SELECT CA.clientAccountId as info, ");
+		query.append(       "CA.contactPersonName as displayName, ");
 		query.append(       "CA.contactPersonDepartment as department, ");
 		query.append(       "CA.contactPersonPosition as description, ");
 		query.append(       "CA.contactPersonPhone as telephoneNumber, ");
@@ -407,7 +407,7 @@ The valid mobile phone should look like one of the below forms:
 		
 		String query = "SELECT  " +
 							" staffId, " +
-							" positionCodeId as positionCodeId, " +
+							" positionCodeName as description, " +
 							" familyName as sn, " +
 							" givenName as givenName, " +
 							" email as mail, " +
@@ -418,8 +418,10 @@ The valid mobile phone should look like one of the below forms:
 							" userPrivilegeId, " +
 							" loginName as sAMAccountName, " +
 							" receiveSms " +
-							" FROM [SupportTracker].[dbo].[Staff] " +
-							" where [SupportTracker].[dbo].[Staff].[loginName] = ? ";
+							" FROM Staff AS st " +
+							" FULL OUTER JOIN LK_PositionCode lkpost " +
+							" ON st.positionCodeId = lkpost.positionCodeId " +
+							" where loginName = ? ";
 		
 		ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username});
 		ResultSetMetaData meta = rs.getMetaData();
@@ -428,9 +430,16 @@ The valid mobile phone should look like one of the below forms:
 		Map<String, String> staffDetails = new HashMap<String, String>();
 		while(rs!=null && rs.next()){
 			for(int i=1; i<=numbColumns; i++){
-				staffDetails.put(meta.getColumnName(i), rs.getString(i));
+				String value = rs.getString(i) == null ? "" : rs.getString(i).trim();
+				staffDetails.put(meta.getColumnName(i), value);
 			}
 		}
+		
+		staffDetails.put("displayName", staffDetails.get("givenName") + " " + staffDetails.get("sn"));
+		staffDetails.put("company", LdapTool.ORION_HEALTH_NAME);
+		staffDetails.put("info", staffDetails.get("staffId"));
+		
+		
 
 		logger.debug("(SupportTrackerDB) finished selecting detail of staff: " + username);
 		return staffDetails;
@@ -471,7 +480,7 @@ The valid mobile phone should look like one of the below forms:
 	 * @return a sorted list of Orion Health staff emails
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
 	 */
-	public static List<String> getEmails() throws SQLException{
+	public static List<String> getStaffEmails() throws SQLException{
 		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 		
 		logger.debug("(SupportTrackerDB) about to get all the emails from Support Tracker DB ");
@@ -672,9 +681,11 @@ The valid mobile phone should look like one of the below forms:
 						+ "receiveSms) "
 						+ "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
+		String positionCodeId = getPositionCodeIdForGivenPositionName(maps.get("description") == null ? "null" : maps.get("description")[0]);
+		
 		// params for the query
 		String[] params = new String[11]; 
-		params[0] = "" + 14;
+		params[0] = positionCodeId;
 		params[1] = maps.get("sn")[0];
 		params[2] = maps.get("givenName")[0];
 		params[3] = maps.get("mail")[0];
@@ -727,6 +738,67 @@ The valid mobile phone should look like one of the below forms:
 	
 	
 	/**
+	 * Every Orion Staff Account (Staff table of ST DB) contains PositionCodeId which is a number.
+	 * The LK_PositionCode table storing the PositionCodeName and the join PositionCodeId.
+	 * This method will return the PositionCodeId that match to the PositionName of that LK_PositionCode table.
+	 * If there's no match it will return code "28" as default.
+	 * @param positionName that is used to match with the PositionCodeName column of LK_PositionCode that store the position id and name.
+	 * @return the String object contains the code number that match the PositionCodeName. and if there's no match, it will return code "28"
+	 */
+	public static String getPositionCodeIdForGivenPositionName(String positionName){
+		String positionCodeId = null;
+		
+		try{
+			String query = "SELECT positionCodeId FROM LK_PositionCode WHERE positionCodeName = ?";
+			ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{positionName.trim()});
+			while(rs!=null && rs.next()){
+				int id = rs.getInt(1);
+				if(id > 0) positionCodeId = ""+id;
+			}
+		} catch (SQLException e){
+			
+		}
+		
+		if(positionCodeId==null || positionCodeId.trim().isEmpty()) positionCodeId = "28";
+		return (positionCodeId == null || positionCodeId.trim().isEmpty()) ? "28" : positionCodeId;
+	}
+	
+	
+	/**
+	 * Every Orion Staff Account (Staff table of ST DB) contains PositionCodeId which is a number.
+	 * The LK_PositionCode table storing the PositionCodeName and the join PositionCodeId.
+	 * This method will return a set of all the rows of PositionCodeName column in LK_PositionCodeName of ST DB.
+	 * @return a set of all the rows of PositionCodeName column in LK_PositionCodeName of ST DB. if it cannot get anything
+	 * from that table, it will return a default set of PositionCodeName which is {"Account Manager", "Accounts Personnel", "Administration", 
+	 * "Chief Executive Officer", "Chief Operating Officer", "Clinical Consultant", 
+	 * "Consultant", "Development Manager", "General Manager", "Group Financial Controller", 
+	 * "Network Administrator", "Orion Health Staff", "Orion Health Support Staff", "Product Development Consultant", 
+	 * "PSG Manager, Senior Technical Writer", "Service Delivery Manager", "Software Engineer", 
+	 * "Support Administrators", "Support Manager", "Technical Writer", "Tester", "VP Product Management", "VP Sales"};
+	 */
+	public static Set<String> getAllPositionCodeNames(){
+		String query = "SELECT positionCodeName FROM LK_PositionCode ORDER BY positionCodeName";
+		try {
+			ResultSet rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{});
+			TreeSet<String> posNames = new TreeSet<>();
+			while(rs.next()){
+				String value = rs.getString(1) == null ? "" : rs.getString(1).trim();
+				posNames.add(value);
+			}
+			return posNames;
+		} catch (SQLException e) {
+			String[] allRoles = new String[]{"Account Manager", "Accounts Personnel", "Administration", 
+					"Chief Executive Officer", "Chief Operating Officer", "Clinical Consultant", 
+					"Consultant", "Development Manager", "General Manager", "Group Financial Controller", 
+					"Network Administrator", "Orion Health Staff", "Orion Health Support Staff", "Product Development Consultant", 
+					"PSG Manager, Senior Technical Writer", "Service Delivery Manager", "Software Engineer", 
+					"Support Administrators", "Support Manager", "Technical Writer", "Tester", "VP Product Management", "VP Sales"};
+			return new TreeSet<String>(Arrays.asList(allRoles));
+		}	
+	}
+	
+	
+	/**
 	 * update the Staff table with the given paramMaps on any rows (accounts) that match to username
 	 * @param username
 	 * @param paramMaps: must contains key/value for these keys:   {"sn", "givenName", "mail", "telephoneNumber", "mobile"}
@@ -738,16 +810,18 @@ The valid mobile phone should look like one of the below forms:
 
 		int status = 0;
 		String query = "UPDATE Staff SET familyName = ? , givenName= ? , "
-				+ " email = ? , workPhone = ? , mobile = ? WHERE loginName = ?";
+				+ " email = ? , workPhone = ? , mobile = ? , positionCodeId = ? WHERE loginName = ?";
 
+		String positionCodeId = getPositionCodeIdForGivenPositionName(paramMaps.get("description")==null ? "":paramMaps.get("description")[0]);
 		// params for the query
-		String[] params = new String[6]; 
+		String[] params = new String[7]; 
 		params[0] = paramMaps.get("sn")==null ? "":paramMaps.get("sn")[0];
 		params[1] = paramMaps.get("givenName")==null ? "":paramMaps.get("givenName")[0];
 		params[2] = paramMaps.get("mail")==null ? "":paramMaps.get("mail")[0];
 		params[3] = paramMaps.get("telephoneNumber")==null ? "":paramMaps.get("telephoneNumber")[0];
 		params[4] = paramMaps.get("mobile")==null ? "":paramMaps.get("mobile")[0];
-		params[5] = username;
+		params[5] = positionCodeId;
+		params[6] = username;
 		
 		try{
 			status = SupportTrackerJDBC.runUpdateOfGivenStatementWithStringParamsOnSupportTrackerDB(query, params);

@@ -357,6 +357,14 @@ public class RegisterUserServlet extends HttpServlet {
 			// ADDITIONAL CODE ENDS
 			
 			if (addUserStatus) {
+				String id = userDetails.get("info")==null ? "" : userDetails.get("info")[0];
+				if(isClient){
+					SupportTrackerJDBC.updateClientAccount(username, id, userDetails);
+				} else {
+					SupportTrackerJDBC.updateStaffAccount(username, userDetails);
+				}
+				
+				
 				session.setAttribute("passed", "You have been registered into LDAP server successfully.");
 				try {
 					new ConcertoAPI().setUserToUsePasswordStoredInLdap(username);
