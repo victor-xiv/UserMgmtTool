@@ -33,7 +33,6 @@
   <%	
   
   	String orgName = request.getParameter("name");
-  	SyncAccountDetails.syncAllUsersThatBelongsToClient(orgName);
   
   	TreeMap<String,String[]> users = null;
   	try{

@@ -79,6 +79,8 @@ public class AccountStatusDetailsServlet extends HttpServlet{
 		switch (rqst) {
 		case "getAllUsersOfOrganisation" :
 			String clientSimpleName = request.getParameter("orgSimpleName");
+			SyncAccountDetails.syncAllUsersThatBelongsToClient(clientSimpleName);
+			
 			try {
 				rslt = getAllUsersOfClientInXMLString(clientSimpleName);
 			} catch (NamingException e) {
