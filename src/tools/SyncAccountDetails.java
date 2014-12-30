@@ -1,6 +1,7 @@
 package tools;
 
 import java.io.FileNotFoundException;
+import java.net.MalformedURLException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -52,7 +53,8 @@ public class SyncAccountDetails {
 		String clientDN = lt.getDNFromOrg(clientName);
 		String username = lt.getUsername(oldUserDN);
 		
-		syncUserDetailsFromSupportTrackerDBtoLdapForTheGivenUserDN(oldUserDN);
+		SyncAccountDetails syncer = new SyncAccountDetails();
+		syncer.syncUserDetailsFromSupportTrackerDBtoLdapForTheGivenUserDN(oldUserDN);
 		
 		
 		Attributes attrs = lt.getUserAttributesWhoBelongsToClientAndHasLoginName(clientDN, username);
@@ -119,7 +121,8 @@ public class SyncAccountDetails {
 				Thread t = new Thread(){
 					public void run(){
 						for(final String unescapedUserDN : userDNListForAThread){
-							syncUserDetailsFromSupportTrackerDBtoLdapForTheGivenUserDN(unescapedUserDN);
+							SyncAccountDetails syncer = new SyncAccountDetails();
+							syncer.syncUserDetailsFromSupportTrackerDBtoLdapForTheGivenUserDN(unescapedUserDN);
 						}
 					}
 				};
@@ -142,15 +145,42 @@ public class SyncAccountDetails {
 	
 	
 	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	ConcertoAPI concerto = null;
+	Logger logger = Logger.getRootLogger();
+	
+	public SyncAccountDetails(){
+		try {
+			concerto = new ConcertoAPI();
+		} catch (MalformedURLException e) {
+		}
+	}
+	
 	/**
 	 * Use the given userDN to get the information from the Support Tracker DB and use this information
 	 * to update the Ldap account.
 	 * 
 	 * @param userDN is the distinguishedName of for the Ldap account. It must have not been escaped the reserved chars.
 	 */
-	public static void syncUserDetailsFromSupportTrackerDBtoLdapForTheGivenUserDN(String userDN){
-		Logger logger = Logger.getRootLogger();
-		
+	public void syncUserDetailsFromSupportTrackerDBtoLdapForTheGivenUserDN(String userDN){
 		logger.debug("Start processing syncing of the user details of: " + userDN);
 		
 		
@@ -166,14 +196,19 @@ public class SyncAccountDetails {
 		String company = lt.getUserCompany(userDN);
 		String username = lt.getUsername(userDN);
 		
+		boolean concertoHasBeenDisabled = false;
+		
 		try{
 			// if any account (Ldap account or Support Tracker account) is disabled
 			// we will disable the other accounts
 			if(lt.isAccountDisabled(userDN)){
 				SupportTrackerJDBC.disableClientAccount(username);
 				SupportTrackerJDBC.disableStaffAccount(username);
+				
+				concertoHasBeenDisabled = true;
+				concerto.deleteAccountOfGivenUser(username);
 			}
-		} catch (SQLException e){
+		} catch (Exception e){
 			logger.error("Exception while disable account for: " + username, e);
 		}
 		
@@ -223,6 +258,13 @@ public class SyncAccountDetails {
 		// we will disable the other accounts
 		if(!enabled){
 			lt.disableUser(userDN);
+			try {
+				if(!concertoHasBeenDisabled){
+					concerto.deleteAccountOfGivenUser(username);
+				}
+			} catch (Exception e) {
+				logger.error("Exception while disable account for: " + username, e);
+			}
 		}
 
 		

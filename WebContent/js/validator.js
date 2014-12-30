@@ -42,21 +42,20 @@ function mobileValidator(mobile) {
  * psw1 and psw2 must be at least 8 chars long
  * 				 must contain at least one lowercase alphabet a-z
  * 				 must contain at least one uppercase alphabet A-Z
- * 				 must contain at least one number 0-9
- * 				 must contain at least one symbol from: _ @ $ -  
+ * 				 must contain at least one number 0-9  
  */
 function passwordValidator(psw1, psw2) {
 	if (psw1 != null && psw2 != null) {
 		var indices = "" + psw1.search(/[a-z]/g) + psw1.search(/[A-Z]/g)
-				+ psw1.search(/[0-9]/g) + psw1.search(/[_@$-]/g);
+				+ psw1.search(/[0-9]/g);
 		if (psw1.length < 8 || indices.indexOf("-1") != -1) {
-			alert("The password is not incorrect. A valid password must have 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet, one number and one of these four symbols: @ _ $ -");
+			//alert("The password is not incorrect. A valid password must have 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet and one number");
 			return false;
 		} else {
 			if (psw1 === psw2) {
 				return true;
 			} else {
-				alert("The confirmation password is not the correct.");
+				//alert("The confirmation password is not the correct.");
 				return false;
 			}
 

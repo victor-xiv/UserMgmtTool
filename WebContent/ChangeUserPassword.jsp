@@ -26,13 +26,11 @@ function validatePwd01(){
 	document.getElementById('passed').innerHTML = "";
 	document.getElementById('failed').innerHTML = "";
 	
-    var regex = new RegExp("[A-Za-z0-9]{8,12}");
-    if(document.getElementById('password01').value == "" ){
-        document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Please enter a valid password.</font>";
-        return false;
-    }else if( !document.getElementById('password01').value.match(regex)){
-        document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Password needs to have 8-12 characters from letters [A-Za-z0-9]</font>";
-        return false;
+    var regex = new RegExp("[A-Za-z0-9]{8,512}");
+    var psw1 = document.getElementById('password01').value;
+    if(!passwordValidator(psw1, psw1)){
+    	document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Password needs to have 8-12 characters from letters [A-Za-z0-9]</font>";
+    	return false;
     }else{
         document.getElementById('pwd_msg01').innerHTML = "<img src=\"css/images/check_right.gif\" />";
     }
@@ -83,6 +81,7 @@ function SubmitForm(){
 	var psw1 = document.getElementById('password01').value;
 	var psw2 = document.getElementById('password02').value;
 	if(!passwordValidator(psw1, psw2)){
+		alert("The password is not incorrect. A valid password must have at least 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet and one number");
 		return false;
 	}
 	
@@ -245,13 +244,13 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 				                        <div class="row">
                                             <span class="label2">New Password:</span>
                                             <span class="formw"><input type="password" name="password01" id="password01" 
-                                                size="20" maxlength="12" onblur="javascript: validatePwd01();" style="width: 200px"/></span>
+                                                size="20" onblur="javascript: validatePwd01();" style="width: 200px"/></span>
                                             <span class="msg" id="pwd_msg01"></span>
                                         </div>
 				                        <div class="row">
                                             <span class="label2">Confirm Password:</span>
                                             <span class="formw"><input type="password" name="password02" id="password02" 
-                                                size="20" maxlength="12" onblur="javascript: validatePwd02();" style="width: 200px"/></span>
+                                                size="20" onblur="javascript: validatePwd02();" style="width: 200px"/></span>
                                             <span class="msg" id="pwd_msg02"></span>
                                         </div>
                                         <div class="row"></div>

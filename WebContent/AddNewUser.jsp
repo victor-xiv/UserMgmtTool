@@ -225,6 +225,7 @@ function validatePassword(){
 		if(validated){
 			return psw1;
 		} else {
+			alert("The password is not incorrect. A valid password must have at least 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet and one number");
 			return "false";
 		}
 	}
@@ -457,7 +458,7 @@ function prepareUrlParams(){
                      <div class="row">
                        <span class="label2" id="psw01Lbl">Password:</span>
                        <span class="formw">
-                       		<input type="password" id="psw01" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>"
+                       		<input type="password" id="psw01" size="<%=dsplSizeLimit%>"
                       		 tabindex="15" onkeypress="document.getElementById('GenPswChk').checked=false"/></span>
                        <span class="required" id="psw01Rq">*</span>
                      </div>
@@ -465,7 +466,7 @@ function prepareUrlParams(){
                      <div class="row">
                        <span class="label2" id="psw02Lbl">Confirm:</span>
                        <span class="formw">
-                       		<input type="password" id="psw02" size="<%=dsplSizeLimit%>" maxlength="<%=dsplSizeLimit%>"
+                       		<input type="password" id="psw02" size="<%=dsplSizeLimit%>"
                       		 tabindex="16" onkeypress='document.getElementById("GenPswChk").checked=false'/></span>
                        <span class="required" id="psw02Rq">*</span>
                      </div>

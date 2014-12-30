@@ -10,6 +10,8 @@
     <%@ page import="java.util.TreeMap" %>
     <%@ page import="java.util.Map" %>
     <% user.processUsername((String)session.getAttribute("username")); %>
+    <script src="./js/validator.js"></script>
+    
     <script type="text/javascript" language="javascript">
     function firstCharUp(input) {
         if (input.length > 1) {
@@ -105,24 +107,21 @@
         document.form.displayName.value = document.form.givenName.value + " " + document.form.sn.value;
     }
     function validatePwd01() {
-        var regex = new RegExp("[A-Za-z0-9]{8,12}");
-        if (document.getElementById('password01').value == "") {
-            document.getElementById('validation_msg').innerHTML = "<font color=\"#FF0000\">Please enter a valid password.</font>";
+        var regex = new RegExp("[A-Za-z0-9]{8,512}");
+        var psw1 = document.getElementById('password01').value;
+        if(!passwordValidator(psw1, psw1)){
+        	document.getElementById('validation_msg').innerHTML = "<font color=\"#FF0000\">Password needs to have 8-12 characters from letters [A-Za-z0-9]</font>";
             document.getElementById('pwd_msg01').innerHTML = "*";
             return false;
-        } else if (!document.getElementById('password01').value.match(regex)) {
-            document.getElementById('validation_msg').innerHTML = "<font color=\"#FF0000\">Password needs to have 8-12 characters from letters [A-Za-z0-9]</font>";
-            document.getElementById('pwd_msg01').innerHTML = "*";
-            return false;
-        } else {
+        }else{
         	document.getElementById('validation_msg').innerHTML = "";
             document.getElementById('pwd_msg01').innerHTML = "<img src=\"css/images/check_right.gif\" />";
         }
-        if (!document.getElementById('password02').value == "") {
-            return validatePwd02();
-        } else {
-            return true;
-        }
+    	if(!document.getElementById('password02').value == ""){
+    		return validatePwd02();
+    	}else{
+    		return true;
+    	}
     }
     function validatePwd02() {
         if (document.getElementById('password01').value == "") {
@@ -354,14 +353,14 @@
                     <div class="row">
                       <span class="label2">Password:</span>
                       <span class="formw">
-                        <input type="password" id="password01" name="password01" size="<%=dsplSizeLimit%>" maxlength="12" onblur="javascript: validatePwd01();" />
+                        <input type="password" id="password01" name="password01" size="<%=dsplSizeLimit%>" onblur="javascript: validatePwd01();" />
                       </span>
                       <span id="pwd_msg01" class="required">*</span>
                     </div>
                     <div class="row">
                       <span class="label2">Confirm Password:</span>
                       <span class="formw">
-                        <input type="password" id="password02" name="password02" size="<%=dsplSizeLimit%>" maxlength="12" onblur="javascript: validatePwd02();" />
+                        <input type="password" id="password02" name="password02" size="<%=dsplSizeLimit%>" onblur="javascript: validatePwd02();" />
                       </span>
                       <span id="pwd_msg02" class="required">*</span>
                     </div>

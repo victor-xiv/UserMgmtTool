@@ -185,6 +185,8 @@ function validatePassword(idx){
 					var validate = passwordValidator(psw1.value, psw2.value);
 					if(validate==true){
 						document.getElementById("password" + idx).value = psw1.value;
+					}else{
+						alert("The password is not incorrect. A valid password must have at least 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet and one number");
 					}
 					return validate;
 				}
@@ -192,7 +194,7 @@ function validatePassword(idx){
 			}
 		}
 	}
-	alert("Please choose a password for this user. A valid password must have 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet, one number and one of these four symbols: @ _ $ -");
+	alert("Please choose a password for this user. A valid password must have 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet and one number");
 	return false;
 }
 

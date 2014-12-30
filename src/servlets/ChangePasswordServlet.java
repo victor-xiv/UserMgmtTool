@@ -289,7 +289,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		if(mobile == null || !isPswGenerated){
 			logger.debug("A new password has been updated on this user. " + userDN +". But, his/her mobile phone is invalid");
 			lt.close();
-			return "passed|A new password: " + newPsw + " has been updated for this user. ";
+			return "passed|A new password for this user: " + username + " has been updated successfully. ";
 		} else {
 			
 			try{
