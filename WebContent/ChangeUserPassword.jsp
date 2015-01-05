@@ -227,7 +227,7 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 			                <td align="center">
                                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
 					            <h1>Password Management</h1>
-					            <h2> Update a password for: <h2> <h1><a href="UserDetails.jsp?dn=<%=java.net.URLEncoder.encode(user.getUserDN()) %>"><b><%=user.getDisplayName()%></b></a></h1>
+					            <h2> Update password for: <h2> <h1><a href="UserDetails.jsp?dn=<%=java.net.URLEncoder.encode(user.getUserDN()) %>"><b><%=user.getDisplayName()%></b></a></h1>
 						
 						
 					            <img src="css/images/swish.gif" alt="#" />
@@ -259,9 +259,12 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 					                        <a class="Button" href="#" onclick="javascript: ResetForm()">Reset</a>
 					                    </div>
 					                    
+<!-- if this page is accessed through UserDetails.jsp, then we show this "Back to ... " button -->
+<% if(request.getParameter("userDetails") != null) { %>
 					                    <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; height: 20px;">
 					                    	<a class="Button" href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(user.getCompany())%>">Back to <%=user.getCompany()%></a>
 					                    </div>
+<% } %>
 					                </form>
 					                
 					                <!-- this div used to decide whether the page should shows the "Generate" button, where user can use to generate a new

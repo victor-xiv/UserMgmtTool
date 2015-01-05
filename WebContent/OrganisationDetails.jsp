@@ -127,6 +127,7 @@ div.ui-dialog,div.ui-widget,div.ui-widget-content,div.ui-corner-all,div.ui-front
 var idMap = {};
 var idIndex = -1;
 var xmlRslt = {};
+var fixingMap = {};
 function putNameAndGetIdIndex(encodedUserDN){
 	idIndex = idIndex + 1;
 	var thisIndex = 'acctStatus'+idIndex;
@@ -313,12 +314,12 @@ function getIdIndex(encodedUserDN){
 		cleanUpThePage();
 		
 		var param = "rqst=getAllUsersOfOrganisation&orgSimpleName=" + encodedClientSimpleName;
-		$("#acctStsLink").html('<a class="loadingAcctSt" id="accountStatus" href="#">Loading Account Status...</a>');
+		$("#acctStsLink").html('<a class="ButtonDisabled" id="accountStatus">Loading Account Status...</a>');
 		
 		var jqxhr = $.post("AccountStatusDetails", param, function(result){
 			try{
 				xmlRslt = $.parseXML(result);
-				$("#acctStsLink").html('<a class="showingAcctSt" href="#" id="accountStatus" onclick="javascript: updateAccountStatus()">Show Accounts Status</a>');
+				$("#acctStsLink").html('<a class="Button" href="#" id="accountStatus" onclick="javascript: updateAccountStatus()">Show Accounts Status</a>');
 				cleanUpThePage();
 				
 			} catch (e) {
@@ -392,9 +393,10 @@ function getIdIndex(encodedUserDN){
 					var solution = $(this).find("solution")[0].firstChild.data;
 					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					limitedUsersText += '<tr id="'+thisIdIndex+'">';
-					limitedUsersText += '<td><a  id="'+thisIdIndex+'Title'+'"  class="Add" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+					limitedUsersText += '<td><a  id="'+thisIdIndex+'Title'+'"  class="Add" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="Account is broken. Click for details."/></td>' +
                 						'<td><a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
                 						'</tr>';
+                	fixingMap[escape(userDN)] = solution;
 				}
 			);
 			if(areThereAnyLimitedUsers){
@@ -414,9 +416,10 @@ function getIdIndex(encodedUserDN){
 						var solution = $(this).find("solution")[0].firstChild.data;
 						var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 						brokenUsersText += '<tr id="'+thisIdIndex+'">';
-						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="CantBeFixed" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="CantBeFixed" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="Account is broken. Click for details."/></td>' +
 											'<td><a style="color:black" href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
-		                					'</tr>';  
+		                					'</tr>';
+						fixingMap[escape(userDN)] = solution;
 					}	
 			);
 			$(xmlRslt).find("brokenInDisabling").each(
@@ -427,9 +430,10 @@ function getIdIndex(encodedUserDN){
 						var solution = $(this).find("solution")[0].firstChild.data;
 						var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 						brokenUsersText += '<tr id="'+thisIdIndex+'">';
-						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+						brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="Account is broken. Click for details."/></td>' +
 											'<td><a style="font-style: italic; color: #808080;"  href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ ' (disabled)</a></td>'+
 		                					'</tr>';  
+						fixingMap[escape(userDN)] = solution;
 					}
 			);
 			$(xmlRslt).find("broken").each(
@@ -440,9 +444,10 @@ function getIdIndex(encodedUserDN){
 					var solution = $(this).find("solution")[0].firstChild.data;
 					var thisIdIndex = putNameAndGetIdIndex(escape(userDN));
 					brokenUsersText += '<tr id="'+thisIdIndex+'">';
-					brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="' +solution+ '"/></td>' +
+					brokenUsersText += '<td><a id="'+thisIdIndex+'Title'+'" class="Fix" onclick="dialogPop(event,\'' +escape(userDN)+ '\')" href="#" title="Account is broken. Click for details."/></td>' +
 										'<td><a href="UserDetails.jsp?dn=' +escape(userDN)+ '">' +displayName+ '</a></td>'+
-	                					'</tr>';  
+	                					'</tr>'; 
+					fixingMap[escape(userDN)] = solution;
 				}	
 			);
 			if(areThereAnyBrokenUsers){
@@ -450,7 +455,7 @@ function getIdIndex(encodedUserDN){
 				$('#BrokenUsers').html(brokenUsersText);
 			}
 			
-			$("#acctStsLink").html('<a class="showingAcctSt" id="accountStatus" onclick=\'javascript: getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")\' href=\'#\'>Load Accounts Status</a>');
+			$("#acctStsLink").html('<a class="Button" id="accountStatus" onclick=\'javascript: getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")\' href=\'#\'>Load Accounts Status</a>');
 		}
 	}
 	
@@ -467,25 +472,30 @@ function getIdIndex(encodedUserDN){
     function dialogPop(event, encodedUserDN){
     	event.preventDefault();
     	if($('#popedupDialog').length < 1){ // avoid to have multiple dialogs (so, it poped up only, if there's no dialog has been poped up)
+    	
     		var text = '<div id="popedupDialog">'+
-			'<p><a onclick="openExplanation()">Open issues details page...</a></p>'+
-			'<p><a onclick="fixUserAccount(\''+encodedUserDN+'\')">Fix the account...</a></p>' +
-			'<p><a class="Button" onclick="closeDialog()" href="#">Cancel</a>' +
+    		'<div style="color:black; font-weight:normal">' +
+    		fixingMap[encodedUserDN].replace(new RegExp('\n|\r\n|\r', 'g'), '<br/>') +
+    		'</div>' +
+    		'<p><br/></p>' +
+			'<p><a onclick="openExplanation(event)" href="#">Open issues details page...</a></p>'+
+			'<p></p>' +
+			'<p><a class="Button" onclick="fixUserAccount(event, \''+encodedUserDN+'\')" href="#">Fix Account</a> <a class="Button" onclick="closeDialog(event)" href="#">Cancel</a>' +
 			'</div>';
 			$(text).dialog({
 				model:true,
-				height: 110, 
-				width: 200, 
-				resizable: false, 
+				height: 'auto',
+				width: 400, 
+				resizable: false,
 				dialogClass:'noTitleStuff', 
 				position:{my:'left top', of:event}
 			});
 			
     	} else { // if there's a dialog has been poped up => close it
-    		closeDialog();
+    		closeDialog(event);
     	}
     }
-    function closeDialog(){
+    function closeDialog(event){
     	event.preventDefault();
 	    	// close the poped up dialog
 	    if($('#popedupDialog').length > 0){
@@ -495,8 +505,8 @@ function getIdIndex(encodedUserDN){
 	    }
     }
 	// open the link page (the issues details woki page)
-    function openExplanation(){
-    	closeDialog();
+    function openExplanation(event){
+    	closeDialog(event);
     	<% String  acctDetailsLink = LdapProperty.getProperty(LdapConstants.ACCT_BROKEN_DETAILS_LINK);%>
     	var win = window.open('<%=acctDetailsLink%>', '_blank');
     	win.focus();
@@ -509,10 +519,10 @@ function getIdIndex(encodedUserDN){
 	
 	
 	//fix the a user account
-	function fixUserAccount(uriEncodedUserDN){
+	function fixUserAccount(event, uriEncodedUserDN){
 		//alert(uriEncodedUserDN);
 		cleanUpThePage();
-		closeDialog();
+		closeDialog(event);
 		
 		$("#add-removePassed").html("Processing request...");
 		
@@ -643,13 +653,7 @@ function getIdIndex(encodedUserDN){
 				
 				
 			
-				<!-- showing the button of "Lodaing Account Status..." and "Show Account Status" -->
-				<br/>
-				<div class="row"> <div id="acctStsLink"  >
-						<a class="showingAcctSt" id="accountStatus" onclick='javascript: getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")' href='#'>Load Accounts Status</a>
-  				</div></div>
 				
-				<br />
 				
 				
 				
@@ -663,7 +667,12 @@ function getIdIndex(encodedUserDN){
                     <h2 style="text-align: left; padding-left: 20px;">Support Tracker Users</h2>
                   </div>
                   <div style="float: right">
-                    <a class="Button" href="AddNewUser.jsp?company=<%= java.net.URLEncoder.encode(request.getParameter("name")) %>">Add New</a>
+                  	<span id="acctStsLink">
+                    	<a class="Button" id="accountStatus" onclick='javascript: getAllAccountsForThisOrganisation("<%=java.net.URLEncoder.encode(request.getParameter("name"))%>")' href='#'>Load Accounts Status</a>
+                    </span>
+                    <span id="addNewSpan">
+                    	<a class="Button" id="addNewBtn" href="AddNewUser.jsp?company=<%= java.net.URLEncoder.encode(request.getParameter("name")) %>">Add New</a>
+                    </span>
                   </div>
                 </div>
                 

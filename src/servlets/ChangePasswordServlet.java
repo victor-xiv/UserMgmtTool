@@ -53,6 +53,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		
 		String userDN = "";
 		HttpSession session = request.getSession(true);
+		String redirectURL = "ChangeUserPassword.jsp";
 		
 		// there are only two entries to this Servlet GET method
 		
@@ -62,6 +63,7 @@ public class ChangePasswordServlet extends HttpServlet {
 			if(session.getAttribute("dn") != null){
 				userDN = (String)session.getAttribute("dn");		
 			}
+			redirectURL += "?userDetails=true";
 		
 			
 		// 2). if the request is getting through directly from Portal
@@ -79,7 +81,7 @@ public class ChangePasswordServlet extends HttpServlet {
 				session.setAttribute("error",
 						"<font color=\"red\">Non-ldap user cannot change username via this menu.</font>");
 				logger.error(ErrorConstants.NO_USERDN_SPECIFIED);
-				String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
+				redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
 				response.sendRedirect(redirectURL);
 				return;
 			}
@@ -90,7 +92,7 @@ public class ChangePasswordServlet extends HttpServlet {
 						"<font color=\"red\">" + reqParams.get("error") + "</font>");
 				// we are not logging this error here, because it is already
 				// logged in the ValidatedRequestHandler.processRequest()
-				String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
+				redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
 				response.sendRedirect(redirectURL);
 				return;
 			}
@@ -101,7 +103,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		if (userDN.isEmpty()){
 			session.setAttribute("error", "<font color=\"red\">There is no userDN found in the request parameters.</font>");
 			logger.error("userDN is an empty String");
-			String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
+			redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
 			response.sendRedirect(redirectURL);
 			return;
 		}
@@ -117,7 +119,7 @@ public class ChangePasswordServlet extends HttpServlet {
 		
 		logger.debug("Redirect request to: ChangeUserPassword.jsp");
 		session.setAttribute("userDN", userDN);
-		String redirectURL = response.encodeRedirectURL("ChangeUserPassword.jsp");
+		redirectURL = response.encodeRedirectURL(redirectURL);
 		response.sendRedirect(redirectURL);
     }
 	

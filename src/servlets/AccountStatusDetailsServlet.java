@@ -35,6 +35,42 @@ import tools.SyncAccountDetails;
 
 
 
+/**
+ * This class is not providing any functions at all.
+ * It just provides a way to show all the constants of the content of the consistency-issues contents.
+ */
+class Issues {
+	public static final String ISSUE_1A = "1-a: Disable the account in Support Tracker DB.";
+	public static final String ISSUE_1B = "1-b: Disable the account in Concerto.";
+	public static final String ISSUE_2 = "2: OrionStaffs LDAP group is no longer required.";
+	public static final String ISSUE_3 = "3: LdapUsers is required for all LDAP accounts.";
+	public static final String ISSUE_4 = "4: Clients should never be a member of an Orion LDAP group.";
+	public static final String ISSUE_5 = "5: Orion staff should have an Orion LDAP role.";
+	public static final String ISSUE_6 = "6: Orion Staff should not be a member of LdapClients.";
+	public static final String ISSUE_7 = "7: For most users only Administrators should be allowed Domain Admins.";
+	public static final String ISSUE_8 = "8: Users should be a member of their organisations group in LDAP.";
+	public static final String ISSUE_9 = "9: User has an administrator group but does not have an administrator role.";
+	public static final String ISSUE_10 = "10: MANUAL: User is still using their concerto password."+
+										  " Contact the user and ask them to change their password to swap it to LDAP.";
+	public static final String ISSUE_11A = "11-a: Client already has support tracker access but is not a member of LdapClients.";
+	public static final String ISSUE_11B = "11-b: Clients group is no longer required.";
+	public static final String ISSUE_12 = "12: Orion Staff should not belong to a client group.";
+	public static final String ISSUE_13 = "13: Missing Support Tracker Client account.";
+	public static final String ISSUE_14 = "14: Missing Support Tracker Staff account.";
+	public static final String ISSUE_15A = "15-a: Staff has matching active client account(s).";
+	public static final String ISSUE_15B = "15-b: Client has matching active staff account.";
+	public static final String ISSUE_16A = "16-a: Client has multiple matching active accounts.";
+	public static final String ISSUE_16B = "16-b: Client Id is not set correctly"; 
+	public static final String ISSUE_16C = "16-c: MANUAL: Unable to find a matching account for this user, probably as the client name doesn't match."
+										 + " Please raise a CSSIR ticket with the organisation and user name.";
+	public static final String ISSUE_17A = "17-a: Activate this user's Support Tracker account.";
+	public static final String ISSUE_17B = "17-b: Activate this staff's Support Tracker account.";
+	public static final String ISSUE_17C = "17-c: Activate Concerto account for this user.";
+	public static final String ISSUE_18A = "18-a UPGRADE: Create a Support Tracker account for this user.";
+	public static final String ISSUE_18B = "18-b UPGRADE: Create a Concerto account for this user.";
+}
+
+
 
 /**
  * this servlet used to define and fix broken accounts, limited accounts and disabled accounts for a given organisation/company
@@ -79,7 +115,7 @@ public class AccountStatusDetailsServlet extends HttpServlet{
 		switch (rqst) {
 		case "getAllUsersOfOrganisation" :
 			String clientSimpleName = request.getParameter("orgSimpleName");
-			SyncAccountDetails.syncAllUsersThatBelongsToClient(clientSimpleName);
+//			SyncAccountDetails.syncAllUsersThatBelongsToClient(clientSimpleName);
 			
 			try {
 				rslt = getAllUsersOfClientInXMLString(clientSimpleName);
@@ -311,6 +347,7 @@ public class AccountStatusDetailsServlet extends HttpServlet{
 	 * @throws NamingException if there is a name that Ldap cannot validate or work with.
 	 */
 	public String getAllUsersOfClientInXMLString(String client) throws NamingException {
+	
 		logger.debug("about to get all the users that are stored in this Ldap's Clients folder: " + client);
 		
 		// preparing an escaped DN name of this client name
@@ -581,7 +618,7 @@ class ThreadProcessingAttribute extends Thread{
 						// It means that those limited users has to be counted as broken as well.
 						proposingSolution += checkingAndFixingForLimitedUser(false, attrs);
 						
-						if(proposingSolution.toLowerCase().contains("do nothing") || proposingSolution.toLowerCase().contains("can't be fixed")){
+						if(proposingSolution.toLowerCase().contains("manual") || proposingSolution.toLowerCase().contains("can't be fixed")){
 							String value = String.format("<brokenCantBeFixed><name>%s</name><dn>%s</dn><solution>%s</solution></brokenCantBeFixed>",
 									StringEscapeUtils.escapeXml10(displayName),
 									StringEscapeUtils.escapeXml10(unescapedUserDN), 
@@ -658,77 +695,77 @@ class ThreadProcessingAttribute extends Thread{
 		ArrayList<String> fixedRslts = new ArrayList<>();
 		ArrayList<String> failedToFixRslts = new ArrayList<>();
 		
-		try{
-			// getting username (sAMAccountName Ldap field) and userDN
-			String username = (String) attrs.get("sAMAccountName").get();
-			String escapedUserDN = (String)attrs.get("distinguishedname").get();
-			String unescapedUserDN = (String)Rdn.unescapeValue(escapedUserDN);
-			
-			logger.debug("start checking/fixing 1-a, 1-b condition for account: " + username);
-			
-			// if this account is enabled in Ldap Server, then we are not going further, because in this method
-			// we are concerning only with the disabled account.
-			if(lt.isAccountDisabled(unescapedUserDN)){
-				
-
-/**
- * 1-a: if account is disabled in Ldap, but it has not been disabled in Support Tracker DB 
- * 
- * Solution: we disable all the accounts in Support Tracker DB that match to this username 
- */
-				
-				try {
-
-					if(isAnyEnabledAccountsInSupportTrackerDB(username)){
-						proposingSolution.append("1-a: Disable the account in Support Tracker DB." + RETURN_CHAR);
-						
-						if(fixing){
-							// disable account in both ClientAccount table and Staff table of support tracker db
-							// we disable all accounts that have match this username
-							// because if there are more than one accounts that match this username, 
-							// then those accounts will become broken. so, we will fix it later 
-							if(disableAllAccountWithGivenUsernameInSupportTrackerDB(username)){
-								fixedRslts.add("1-a: Support Trackers accounts have been disabled.");
-							} else {
-								failedToFixRslts.add("1-a: Failed to disable Support Trackers accounts.");
-							}
-						}
-					}
-				} catch (SQLException e1) {
-					logger.error("exception when checking Support Tracker DB for: " + username);
-				}
-				
-				
-/**
- * 1-b: if account is disabled in Ldap, but it has not been disabled in Concerto
- * 
- * Solution: we disable the Concerto account that matches this username
- */
-				try{
-					if(concerto.isAccountEnabled(username)){
-						proposingSolution.append("1-b: Disable the account in Concerto." + RETURN_CHAR);
-						
-						if(fixing){
-						// disable account in concerto
-							try{
-								if(concerto.deleteAccountOfGivenUser(username)){
-									fixedRslts.add("1-b: Concerto accounts have been disabled.");
-								} else {
-									failedToFixRslts.add("1-b: Failed to disable Concerto accounts.");
-								}
-							} catch (Exception e){
-								failedToFixRslts.add("1-b: Failed to disable Concerto accounts.");
-							}
-						}
-					}
-				}catch(Exception e){
-					logger.error("exception at checking and fixing for disabled ldap acct. " + e.getMessage(), e);
-				}
-			}
-		} catch (NamingException e){
-			logger.error("Unpredicted exception at checking for disabled account.", e);
-			proposingSolution.append("There's an error while checking for disbaled account, please look at the log for more detail." + RETURN_CHAR);
-		}
+//		try{
+//			// getting username (sAMAccountName Ldap field) and userDN
+//			String username = (String) attrs.get("sAMAccountName").get();
+//			String escapedUserDN = (String)attrs.get("distinguishedname").get();
+//			String unescapedUserDN = (String)Rdn.unescapeValue(escapedUserDN);
+//			
+//			logger.debug("start checking/fixing 1-a, 1-b condition for account: " + username);
+//			
+//			// if this account is enabled in Ldap Server, then we are not going further, because in this method
+//			// we are concerning only with the disabled account.
+//			if(lt.isAccountDisabled(unescapedUserDN)){
+//				
+//
+///**
+// * 1-a: if account is disabled in Ldap, but it has not been disabled in Support Tracker DB 
+// * 
+// * Solution: we disable all the accounts in Support Tracker DB that match to this username 
+// */
+//				
+//				try {
+//
+//					if(isAnyEnabledAccountsInSupportTrackerDB(username)){
+//						proposingSolution.append(Issues.ISSUE_1A + RETURN_CHAR);
+//						
+//						if(fixing){
+//							// disable account in both ClientAccount table and Staff table of support tracker db
+//							// we disable all accounts that have match this username
+//							// because if there are more than one accounts that match this username, 
+//							// then those accounts will become broken. so, we will fix it later 
+//							if(disableAllAccountWithGivenUsernameInSupportTrackerDB(username)){
+//								fixedRslts.add(Issues.ISSUE_1A);
+//							} else {
+//								failedToFixRslts.add(Issues.ISSUE_1A);
+//							}
+//						}
+//					}
+//				} catch (SQLException e1) {
+//					logger.error("exception when checking Support Tracker DB for: " + username);
+//				}
+//				
+//				
+///**
+// * 1-b: if account is disabled in Ldap, but it has not been disabled in Concerto
+// * 
+// * Solution: we disable the Concerto account that matches this username
+// */
+//				try{
+//					if(concerto.isAccountEnabled(username)){
+//						proposingSolution.append(Issues.ISSUE_1B + RETURN_CHAR);
+//						
+//						if(fixing){
+//						// disable account in concerto
+//							try{
+//								if(concerto.deleteAccountOfGivenUser(username)){
+//									fixedRslts.add(Issues.ISSUE_1B);
+//								} else {
+//									failedToFixRslts.add(Issues.ISSUE_1B);
+//								}
+//							} catch (Exception e){
+//								failedToFixRslts.add(Issues.ISSUE_1B);
+//							}
+//						}
+//					}
+//				}catch(Exception e){
+//					logger.error("exception at checking and fixing for disabled ldap acct. " + e.getMessage(), e);
+//				}
+//			}
+//		} catch (NamingException e){
+//			logger.error("Unpredicted exception at checking for disabled account.", e);
+//			proposingSolution.append("There's an error while checking for disbaled account, please look at the log for more detail." + RETURN_CHAR);
+//		}
 		
 		// convert all the issues that have been fixed and the issues that could not be fixed into result string
 		String result = convertFixedResultsListAndFailedToFixedResultsListToResultString(fixedRslts, failedToFixRslts);
@@ -801,14 +838,14 @@ class ThreadProcessingAttribute extends Thread{
 			// checking for OrionStaffs  (CN=OrionStaffs,OU=Clients,DC=orion,DC=dmz)
 			logger.debug("start checking/fixing condition 2 for account: " + username);
 			if (isGivenAttrsHasMemberOf(attrs,ORIONSTAFFS_DN)) {
-				proposingSolution.append("2: Remove OrionStaffs from Ldap Membership." + RETURN_CHAR);
+				proposingSolution.append(Issues.ISSUE_2 + RETURN_CHAR);
 					
 				if(fixing){
 					// remove 'CN=OrionStaffs,OU=Clients,DC=orion,DC=dmz'
 					if(lt.removeUserFromAGroup(unescapedUserDN, ORIONSTAFFS_DN)){
-						fixedRslts.add("2: OrionStaffs has been removed from Ldap Membership.");
+						fixedRslts.add(Issues.ISSUE_2);
 					} else {
-						failedToFixRslts.add("2: Couldn't remove OrionStaffs from Ladp Membership.");
+						failedToFixRslts.add(Issues.ISSUE_2);
 					}
 				}
 			}
@@ -821,15 +858,15 @@ class ThreadProcessingAttribute extends Thread{
 	 */
 			logger.debug("start checking/fixing condition 3 for account: " + username);
 			if (!isGivenAttrsHasMemberOf_checkNestedly(attrs, LDAPUSERS_DN)) {
-				proposingSolution.append("3: Add LdapUsers as a memberOf this account's group."  + RETURN_CHAR);
+				proposingSolution.append(Issues.ISSUE_3  + RETURN_CHAR);
 
 				if(fixing){
 				// add 'LdapUsers
 					String companyGroupDN = lt.getDNFromGroup(company);
 					if(lt.addGroup1InToGroup2(companyGroupDN, LDAPUSERS_DN)){
-						fixedRslts.add("3: LdapUsers has been added as a memberOf of this account's group.");
+						fixedRslts.add(Issues.ISSUE_3);
 					} else {
-						failedToFixRslts.add("3: Couldn't add LdapUsers as a memberOf of this account's group.");
+						failedToFixRslts.add(Issues.ISSUE_3);
 					}
 				}
 			}
@@ -845,7 +882,7 @@ class ThreadProcessingAttribute extends Thread{
 			logger.debug("start checking/fixing condition 4 for account: " + username);
 			if (!isGivenAttrsStoredInOrionHealth(attrs)
 					&& isGivenAttrsMemberOfOrionHealthRoles(attrs)) {
-				proposingSolution.append("4: Remove all Orion-% roles from Ldap Membership."  + RETURN_CHAR);
+				proposingSolution.append(Issues.ISSUE_4  + RETURN_CHAR);
 
 				if(fixing){
 				// remove that 'A-Group-Start-With-Orion'
@@ -863,9 +900,9 @@ class ThreadProcessingAttribute extends Thread{
 						}
 					}
 					if(result){
-						fixedRslts.add("4: All Orion-% roles have been removed from Ldap Membership.");
+						fixedRslts.add(Issues.ISSUE_4);
 					} else {
-						failedToFixRslts.add("4: Couln't removed all Orion-% roles from Ldap Membership.");
+						failedToFixRslts.add(Issues.ISSUE_4);
 					}
 				}
 			}
@@ -884,15 +921,15 @@ class ThreadProcessingAttribute extends Thread{
 			logger.debug("start checking/fixing condition 5 for account: " + username);
 			if (isGivenAttrsStoredInOrionHealth(attrs)) {
 				if (!isGivenAttrsMemberOfOrionHealthRoles(attrs)) {
-					proposingSolution.append("5: Add lowest power of Orion-% role." + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_5 + RETURN_CHAR);
 
 					if(fixing){
 					// add the lowest power Orion Health role (i.e. Orion Health - User [at the moment])
 
 						if(lt.addUserToGroup(unescapedUserDN, ORION_LOWEST_ROLE_DN)){
-							fixedRslts.add("5: Lowest Power Orion-% role has been added to Ldap Membership.");
+							fixedRslts.add(Issues.ISSUE_5);
 						} else {
-							failedToFixRslts.add("5: Couldn't  add Lowest Power Orion-% role to Ldap Membership.");
+							failedToFixRslts.add(Issues.ISSUE_5);
 						}
 					}
 				}
@@ -907,14 +944,14 @@ class ThreadProcessingAttribute extends Thread{
 	 */
 				logger.debug("start checking/fixing condition 6 for account: " + username);
 				if (isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN)) {
-					proposingSolution.append("  6: Remove LdapClients from Ldap account." + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_6 + RETURN_CHAR);
 
 					if(fixing){
 					// remove 'LdapClients'
 						if(lt.removeUserFromAGroup(unescapedUserDN, LDAPCLIENTS_DN)){
-							fixedRslts.add("6: LdapClients has been removed from Ldap Membership.");
+							fixedRslts.add(Issues.ISSUE_6);
 						} else {
-							failedToFixRslts.add("6: Couldn't remove LdapClients from Ldap Membership.");
+							failedToFixRslts.add(Issues.ISSUE_6);
 						}
 					}
 				}
@@ -935,13 +972,13 @@ class ThreadProcessingAttribute extends Thread{
 					&& !isGivenAttrsNameAdminOrAdministrators(attrs)
 					&& (!isGivenAttrsStoredInOrionHealth(attrs) 
 							|| !isGivenAttrsHasMemberOf(attrs,ORION_HIGHEST_ROLE_DN))) {
-				proposingSolution.append("7: Remove Domain Admins from Ldap account." + RETURN_CHAR);
+				proposingSolution.append(Issues.ISSUE_7 + RETURN_CHAR);
 				
 				if(fixing){
 					if(lt.removeUserFromAGroup(unescapedUserDN, DOMAINADMIN_DN)){
-						fixedRslts.add("7: Domain Admins has been removed from Ldap Membership.");
+						fixedRslts.add(Issues.ISSUE_7);
 					} else {
-						failedToFixRslts.add("7: Couldn't remove Domain Admins from Ldap Membership.");
+						failedToFixRslts.add(Issues.ISSUE_7);
 					}
 				}
 			}
@@ -956,7 +993,7 @@ class ThreadProcessingAttribute extends Thread{
 	 */
 			logger.debug("start checking/fixing condition 8 for account: " + username);
 			if (!isGivenAttrsMemberOfGroupThatHasTheSameNameAsTheFolderItStoredIn(attrs)) {
-				proposingSolution.append("8: Add this user to its folder-name group (in Ldap server)." + RETURN_CHAR);
+				proposingSolution.append(Issues.ISSUE_8 + RETURN_CHAR);
 				
 				if(fixing){
 					String groupDN = getGroupDnFromGivenAttributes(attrs);
@@ -964,12 +1001,12 @@ class ThreadProcessingAttribute extends Thread{
 					
 					try{
 						if(lt.addUserToGroup(unescapedUserDN, groupDN)){
-							fixedRslts.add("8: Its Ldap Group has been added.");
+							fixedRslts.add(Issues.ISSUE_8);
 						} else {
-							failedToFixRslts.add("8: Couldn't added to its Ldap group.");
+							failedToFixRslts.add(Issues.ISSUE_8);
 						}
 					} catch (NamingException e){
-						failedToFixRslts.add("8: Couldn't added to its Ldap group.");
+						failedToFixRslts.add(Issues.ISSUE_8);
 					}
 				}
 			}
@@ -1000,17 +1037,17 @@ class ThreadProcessingAttribute extends Thread{
 							&& !isGivenAttrsNameAdminOrAdministrators(attrs)
 							&& concerto.isUserMemberOfAtLeastOneGroupInGivenGroupsList(username, CONCERTO_ADMIN_LIST)) {
 					
-					proposingSolution.append("9: Remove all Concerto admin groups." + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_9 + RETURN_CHAR);
 					
 					if(fixing){
 						try{
 							 if(concerto.removeAllGivenGroupsFromGivenUser(username, CONCERTO_ADMIN_LIST)){
-								 fixedRslts.add("9: All Concerto Admin Groups have been removed.");
+								 fixedRslts.add(Issues.ISSUE_9);
 							 } else {
-								 failedToFixRslts.add("9: Couldn't remove all Concerto Admin Groups.");
+								 failedToFixRslts.add(Issues.ISSUE_9);
 							 }
 						} catch (Exception e){
-							 failedToFixRslts.add("9: Couldn't remove all Concerto Admin Groups.");
+							 failedToFixRslts.add(Issues.ISSUE_9);
 						}
 					}
 				}
@@ -1026,9 +1063,9 @@ class ThreadProcessingAttribute extends Thread{
 				logger.debug("start checking/fixing condition 10 for account: " + username);
 				if (!concerto.isUserUsingLdapPassword(username)) {
 
-					proposingSolution.append("10: DO NOTHING: advise admin to contact user and ask them to change their password."  + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_10  + RETURN_CHAR);
 
-					failedToFixRslts.add("10: DO NOTHING: advise admin to contact user and ask them to change their password.");
+					failedToFixRslts.add(Issues.ISSUE_10);
 					// DO NOTHING: advise admin to contact user and ask them to change their own password
 				}
 				logger.debug("finished checking/fixing condition 10 for account: " + username);
@@ -1052,15 +1089,15 @@ class ThreadProcessingAttribute extends Thread{
 	 * Solution: add LdapClients to Ldap account
 	 */
 					if(!isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN)){
-						proposingSolution.append("11-a: Add LdapClients to Ldap Membership."  + RETURN_CHAR);
+						proposingSolution.append(Issues.ISSUE_11A  + RETURN_CHAR);
 						
 						if(fixing){
 							// add 'LdapClients' (if missing)
 							
 							if(lt.addUserToGroup(unescapedUserDN, LDAPCLIENTS_DN)){
-								fixedRslts.add("11-a: LdapClients has been added to Ldap Membership.");
+								fixedRslts.add(Issues.ISSUE_11A);
 							} else {
-								failedToFixRslts.add("11-a: Couldn't add LdapClients to Ldap Membership.");
+								failedToFixRslts.add(Issues.ISSUE_11A);
 							}
 						}
 					}
@@ -1072,14 +1109,14 @@ class ThreadProcessingAttribute extends Thread{
 	 * 
 	 * Solution: remove "Clients" from the Concerto account
 	 */
-					proposingSolution.append("11-b: Remove Clients from Concerto Group Membership." + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_11B + RETURN_CHAR);
 					
 					if(fixing){
 						// remove 'Clients' (concerto)
 						if(concerto.removeGroupFromUser(username, CONCERTO_CLIENT)){
-							fixedRslts.add("11-b: Clients has been removed from Concerto Group Membership.");
+							fixedRslts.add(Issues.ISSUE_11B);
 						} else {
-							failedToFixRslts.add("11-b: Couldn't remove Clients from Concerto Group Membership.");
+							failedToFixRslts.add(Issues.ISSUE_11B);
 						}
 					}
 				}
@@ -1098,22 +1135,18 @@ class ThreadProcessingAttribute extends Thread{
 				if (concerto.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT)
 							&& isGivenAttrsStoredInOrionHealth(attrs)) {
 					
-					proposingSolution.append("12: Remove Clients (from Concerto Membership) and LdapClients (from Ldap Membership)." + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_12 + RETURN_CHAR);
 
 					if(fixing){
 						// remove 'Clients' (concerto)
-						if(concerto.removeGroupFromUser(username, CONCERTO_CLIENT)){
-							fixedRslts.add("12: Clients has been removed from Concerto Group Membership.");
+						if(concerto.removeGroupFromUser(username, CONCERTO_CLIENT)
+								// remove 'LdapClients'
+								&& lt.removeUserFromAGroup(unescapedUserDN, LDAPCLIENTS_DN) ){
+							fixedRslts.add(Issues.ISSUE_12);
 						} else {
-							failedToFixRslts.add("12: Couldn't remove Clients from Concerto Group Membership.");
+							failedToFixRslts.add(Issues.ISSUE_12);
 						}
 
-						// remove 'LdapClients'
-						if(lt.removeUserFromAGroup(unescapedUserDN, LDAPCLIENTS_DN)){
-							fixedRslts.add("12: LdapClients has been removed from Ldap Membership.");
-						} else {
-							failedToFixRslts.add("12: Couldn't remove LdapClients from Ldap Membership.");
-						}
 					}
 
 				}
@@ -1140,7 +1173,7 @@ class ThreadProcessingAttribute extends Thread{
 			if (    (!isGivenAttrsStoredInOrionHealth(attrs) && !SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username))
 			     && (isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN) || concerto.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT))) {
 				
-				proposingSolution.append("13: add this user into clientAccount of Support Tracker DB  and update info field of this user's Ldap account based on returned clientAccountId."  + RETURN_CHAR);
+				proposingSolution.append(Issues.ISSUE_13 + RETURN_CHAR);
 
 				if(fixing){
 				// don't care about concerto account
@@ -1150,12 +1183,12 @@ class ThreadProcessingAttribute extends Thread{
 					try{
 						String[] results = createSupportTrackerClientAccountAndUpdateInfoFieldOfLdapAccount(attrs);
 						if(results[0].equalsIgnoreCase("false")){
-							failedToFixRslts.add("13: " + results[1]);
+							failedToFixRslts.add(Issues.ISSUE_13);
 						}else{
-							fixedRslts.add("13: " +  results[1]);
+							fixedRslts.add(Issues.ISSUE_13);
 						}
 					} catch (NamingException | SQLException e){
-						failedToFixRslts.add("13: Error occured while creating a new Support Tracker ClientAccount and updaing Info field of Ldap account." );
+						failedToFixRslts.add(Issues.ISSUE_13);
 					}
 				}
 			}
@@ -1174,7 +1207,7 @@ class ThreadProcessingAttribute extends Thread{
 			if (isGivenAttrsStoredInOrionHealth(attrs)
 					&& SupportTrackerJDBC.getOrionHealthStaffDetails(username).isEmpty()) {
 				
-				proposingSolution.append("14: add this staff into Staff of Support Tracker DB and update info field of this staff's Ldap account based on returned clientAccountId."  + RETURN_CHAR);
+				proposingSolution.append(Issues.ISSUE_14 + RETURN_CHAR);
 
 				if(fixing){
 				// add u into staff of Support Tracker DB
@@ -1182,12 +1215,12 @@ class ThreadProcessingAttribute extends Thread{
 					try{
 						String[] results = createSupportTrackerStaffAccountAndUpdateInfoFieldOfLdapAccount(attrs);
 						if(results[0].equalsIgnoreCase("false")){
-							failedToFixRslts.add("14: " + results[1]);
+							failedToFixRslts.add(Issues.ISSUE_14);
 						}else{
-							fixedRslts.add("14: " + results[1]);
+							fixedRslts.add(Issues.ISSUE_14);
 						}
 					} catch (NamingException | SQLException e){
-						failedToFixRslts.add("14: Error occured while creating a new Support Tracker Staff account and updaing Info field of Ldap account." );
+						failedToFixRslts.add(Issues.ISSUE_14);
 					}
 				}
 			}
@@ -1211,7 +1244,7 @@ class ThreadProcessingAttribute extends Thread{
 	 * Solution: disable all ClientAccounts (in Support Tracker DB) that match this username.
 	 */
 				if(isGivenAttrsStoredInOrionHealth(attrs)){
-					proposingSolution.append("15-a: Disable all ClientAccounts (in Support Tracker DB) that match this username." + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_15A + RETURN_CHAR);
 					
 					if(fixing){
 						// if Orion Health => disable all ClientAccount records
@@ -1220,31 +1253,31 @@ class ThreadProcessingAttribute extends Thread{
 						
 						// match this username
 						if(SupportTrackerJDBC.disableClientAccount(username)>0){
-							fixedRslts.add("15-a: All ClientAccounts that match this username have been disabled.");
+							fixedRslts.add(Issues.ISSUE_15A);
 							
 						} else {
-							failedToFixRslts.add("15-a: Couln't disable all ClientAccounts that match this username.");
+							failedToFixRslts.add(Issues.ISSUE_15A);
 						}
 					}
 					
 					
 					
 	/**
-	 * 15-a - if at least there is a Client account of Support Tracker that match this username
+	 * 15-B - if at least there is a Client account of Support Tracker that match this username
 	 * 			and at least there is a Staff account of Support Tracker that match this username
 	 * 			and this account is not stored in (Ldap) Orion Health folder
 	 * 
 	 * Solution: disable all Staff accounts (in Support Tracker DB) that match this username.
 	 */
 				} else {
-					proposingSolution.append("15-b: Disable all Staff accounts (in Support Tracker DB) that match this username." + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_15B + RETURN_CHAR);
 					
 				// if not(Orion Health) => disable all staff records match this username
 				
 					if(SupportTrackerJDBC.disableStaffAccount(username)>0){
-						fixedRslts.add("15-b: All Staff accounts that match this username have been disabled.");
+						fixedRslts.add(Issues.ISSUE_15B);
 					} else {
-						failedToFixRslts.add("15-b: Couln't disable all Staff accounts that match this username.");
+						failedToFixRslts.add(Issues.ISSUE_15B);
 					}
 				}
 			}
@@ -1275,7 +1308,7 @@ class ThreadProcessingAttribute extends Thread{
 	 */
 				if (clientAcctIds.size() > 1) {
 					
-					proposingSolution.append("16-a: Pick the lastAccount (from Support Tracker DB) that matches both username and companyname and disabled all others. update info field (in Ldap account) using lastAccount.clientAccoutnId."  + RETURN_CHAR);
+					proposingSolution.append(Issues.ISSUE_16A + RETURN_CHAR);
 					
 					if (fixing) {
 						String lastId = clientAcctIds.last();
@@ -1290,9 +1323,9 @@ class ThreadProcessingAttribute extends Thread{
 						updateMaps.put("Info", new String[] { "" + lastId });
 						String[] results = lt.updateUser(updateMaps);
 						if (results[0].equalsIgnoreCase("false")) {
-							failedToFixRslts.add("16-a: Updated Info field of Ldap account using the last occurent Support Tracker's clientAccountId.");
+							failedToFixRslts.add(Issues.ISSUE_16A);
 						} else {
-							fixedRslts.add("16-a: Couldn't update Info field of Ldap account using the last occurent Support Tracker's clientAccountId.");
+							fixedRslts.add(Issues.ISSUE_16A);
 						}
 					}
 
@@ -1309,7 +1342,7 @@ class ThreadProcessingAttribute extends Thread{
 				} else if (clientAcctIds.size() == 1) {
 					if (attrs.get("info") == null || !attrs.get("info").get().toString().equals(clientAcctIds.last())) {
 						
-						proposingSolution.append("16-b: update info field in Ldap account using Support Tracker clientAccountId." + RETURN_CHAR);
+						proposingSolution.append(Issues.ISSUE_16B + RETURN_CHAR);
 
 						if(fixing){
 							// update u.info using lastId
@@ -1318,9 +1351,9 @@ class ThreadProcessingAttribute extends Thread{
 							updateMaps.put("Info", new String[] { "" + clientAcctIds.last() });
 							String[] results = lt.updateUser(updateMaps);
 							if (results[0].equalsIgnoreCase("false")) {
-								failedToFixRslts.add("16-b: Couldn't update Info field of Ldap account using the last occurent Support Tracker's clientAccountId.");
+								failedToFixRslts.add(Issues.ISSUE_16B);
 							} else {
-								fixedRslts.add("16-b: Updated Info field of Ldap account using the last occurent Support Tracker's clientAccountId.");
+								fixedRslts.add(Issues.ISSUE_16B);
 							}
 						}
 					}
@@ -1332,8 +1365,8 @@ class ThreadProcessingAttribute extends Thread{
 	 * Solution: Broken and Cannot be fixed programmatically
 	 */
 				} else {
-					proposingSolution.append("16-c: (Can't Be Fixed) There are some ClientAccounts (in Support Tracker) that match this username. But none of them match the company/organisation name." + RETURN_CHAR);
-					failedToFixRslts.add("16-c: (Can't Be Fixed) There are some ClientAccounts (in Support Tracker) that match this username. But none of them match the company/organisation name.");					
+					proposingSolution.append(Issues.ISSUE_16C + RETURN_CHAR);
+					failedToFixRslts.add(Issues.ISSUE_16C);					
 				}
 			}
 			logger.debug("finished checking/fixing condition 16-a,b,c for account: " + username);
@@ -1343,105 +1376,107 @@ class ThreadProcessingAttribute extends Thread{
 	/**
  	* 17
  	*/
-			logger.debug("start checking/fixing condition 17-a,b for account: " + username);
-			if (lt.isAccountEnabled(unescapedUserDN)) {
-				try {
-					if (!isGivenAttrsStoredInOrionHealth(attrs)) {
-						try {
-							if (SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)
-								&& SupportTrackerJDBC.isClientAccountDisabled(username, clientAccountId)) {
-	/**
-	 * 17-a - If this account is enabled (in Ldap server)
-	 * 			and this account is not stored in (Ldap) Orion Health folder
-	 * 			and there is at least a client account in Support Tracker match this username
-	 * 			and this Client account is disabled in Support Tracker
-	 * 
-	 * Solution: activate this Client account of Support Tracker that match both username and ST's clientAccountId (with Ldap Info field) 
-	 */
-																
-								proposingSolution.append("17-a: Activate this user's Support Tracker account." + RETURN_CHAR);
-
-								if(fixing){
-									// update 'activate' in ClientAccount to 'Y'
-									if(SupportTrackerJDBC.enableClientAccount(username, clientAccountId)>0){
-										fixedRslts.add("17-a: Support Tracker ClientAccount for this user has been activated.");
-									} else {
-										failedToFixRslts.add("17-a: Couldn't activate Support Tracker ClientAccount.");
-									}
-								}
-
-								
-							}
-						} catch (SQLException sex) {
-							logger.error("Unpredicted exception", sex);
-						}
-								
-					} else {
-						
-						
-						
-	/**
-	 * 17-b - If this account is enabled (in Ldap server)
-	 * 			and this account is stored in (Ldap) Orion Health folder
-	 * 			and there is at least a Staff account in Support Tracker match this username
-	 * 			and this Staff accoutn is disabled in Support Tracker
-	 * 
-	 * Solution: activate this Staff account Support Tracker that match username 
-	 */
-						if (SupportTrackerJDBC.isAnySupportTrackerStaffAccountMatchUsername(username)
-								&& SupportTrackerJDBC.isStaffAccountDisabled(username)) {
-
-							proposingSolution.append("17-b: Activate this staff's Support Tracker account." + RETURN_CHAR);
-													
-							if(fixing){
-								// update 'recordStatus' in Staff to 'Y'
-								try{
-									String staffId = (String) attrs.get("Info").get();
-									if(SupportTrackerJDBC.enableStaffAccount(username)>0){
-										fixedRslts.add("17-b: Support Tracker Staff account for this staff has been activated.");
-									} else {
-										failedToFixRslts.add("17-b: Couldn't activate Support Tracker Staff account.");
-									}
-								} catch (NullPointerException e){
-									// exception will thrown when there's no staffId stored in Info field
-									failedToFixRslts.add("17-b: Couldn't activate Support Tracker Staff account because there's no staffId stored in Ldap account.");
-								}
-							}
-						}
-						
-					} // close else
-					
-					logger.debug("finished checking/fixing condition 17-a,b for account: " + username);
-				} catch (SQLException e) {
-					logger.error("Unpredicted exception: ", e);
-				}
-
-				
-				
-				
-	/**
-	 * 17-c - If this account is enabled (in Ldap server)
-	 * 		and this account exist in Concerto
-	 * 		and this Concerto account is disabled
-	 * 
-	 * Solution: active this Concerto account
-	 */
-				logger.debug("start checking/fixing condition 17-c for account: " + username);
-				if (concerto.doesUserExist(username)
-						&& concerto.isAccountDisabled(username)) {
-						proposingSolution.append("17-c: Activate Concerto account for this user." + RETURN_CHAR);
-						
-					if(fixing){
-						if(concerto.setAccountEnabledForGivenUser(true, username)){
-							fixedRslts.add("17-c: Concerto account for this user has been activated.");
-						} else {
-							failedToFixRslts.add("17-c: Couldn't activate Concerto account.");
-						}
-					}
-				}
-				logger.debug("finished checking/fixing condition 17-c for account: " + username);
-				
-			}
+//			logger.debug("start checking/fixing condition 17-a,b for account: " + username);
+//			if (lt.isAccountEnabled(unescapedUserDN)) {
+//				try {
+//					if (!isGivenAttrsStoredInOrionHealth(attrs)) {
+//						try {
+//							if (SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)
+//								&& SupportTrackerJDBC.isClientAccountDisabled(username, clientAccountId)) {
+//	/**
+//	 * 17-a - If this account is enabled (in Ldap server)
+//	 * 			and this account is not stored in (Ldap) Orion Health folder
+//	 * 			and there is at least a client account in Support Tracker match this username
+//	 * 			and this Client account is disabled in Support Tracker
+//	 * 
+//	 * Solution: activate this Client account of Support Tracker that match both username and ST's clientAccountId (with Ldap Info field) 
+//	 */
+//																
+//								proposingSolution.append(Issues.ISSUE_17A + RETURN_CHAR);
+//
+//								if(fixing){
+//									// update 'activate' in ClientAccount to 'Y'
+//									if(SupportTrackerJDBC.enableClientAccount(username, clientAccountId)>0){
+//										fixedRslts.add(Issues.ISSUE_17A);
+//									} else {
+//										failedToFixRslts.add(Issues.ISSUE_17A);
+//									}
+//								}
+//
+//								
+//							}
+//						} catch (SQLException sex) {
+//							logger.error("Unpredicted exception", sex);
+//						}
+//								
+//					} else {
+//						
+//						
+//						
+//	/**
+//	 * 17-b - If this account is enabled (in Ldap server)
+//	 * 			and this account is stored in (Ldap) Orion Health folder
+//	 * 			and there is at least a Staff account in Support Tracker match this username
+//	 * 			and this Staff accoutn is disabled in Support Tracker
+//	 * 
+//	 * Solution: activate this Staff account Support Tracker that match username 
+//	 */
+//						if (SupportTrackerJDBC.isAnySupportTrackerStaffAccountMatchUsername(username)
+//								&& SupportTrackerJDBC.isStaffAccountDisabled(username)) {
+//
+//							proposingSolution.append(Issues.ISSUE_17B + RETURN_CHAR);
+//													
+//							if(fixing){
+//								// update 'recordStatus' in Staff to 'Y'
+//								try{
+//									String staffId = (String) attrs.get("Info").get();
+//									if(SupportTrackerJDBC.enableStaffAccount(username)>0){
+//										fixedRslts.add(Issues.ISSUE_17B);
+//									} else {
+//										failedToFixRslts.add(Issues.ISSUE_17B);
+//									}
+//								} catch (NullPointerException e){
+//									// exception will thrown when there's no staffId stored in Info field
+//									failedToFixRslts.add(Issues.ISSUE_17B);
+//								}
+//							}
+//						}
+//						
+//					} // close else
+//					
+//					logger.debug("finished checking/fixing condition 17-a,b for account: " + username);
+//				} catch (SQLException e) {
+//					logger.error("Unpredicted exception: ", e);
+//				}
+//
+//				
+//				
+//				
+//	/**
+//	 * 17-c - If this account is enabled (in Ldap server)
+//	 * 		and this account exist in Concerto
+//	 * 		and this Concerto account is disabled
+//	 * 
+//	 * Solution: active this Concerto account
+//	 */
+//				logger.debug("start checking/fixing condition 17-c for account: " + username);
+//				if (concerto.doesUserExist(username)
+//						&& concerto.isAccountDisabled(username)) {
+//						proposingSolution.append(Issues.ISSUE_17C + RETURN_CHAR);
+//						
+//					if(fixing){
+//						if(concerto.setAccountEnabledForGivenUser(true, username)){
+//							fixedRslts.add(Issues.ISSUE_17C);
+//						} else {
+//							failedToFixRslts.add(Issues.ISSUE_17C);
+//						}
+//					}
+//				}
+//				logger.debug("finished checking/fixing condition 17-c for account: " + username);
+//				
+//			}
+			
+			
 		} catch (Exception e){
 			logger.error("Unpredicted exception at checking for broken account.", e);
 			proposingSolution.append("There's an error while checking for a broken account, please look at the log for more detail." + RETURN_CHAR);
@@ -1482,7 +1517,7 @@ class ThreadProcessingAttribute extends Thread{
 	 * If fixing==false, return what need to be fixed. Each issue in the return result is delimited by RETURN_CHAR defined in this class. 
 	 *  
 	 */
-	String checkingAndFixingForLimitedUser(boolean fixing, Attributes attrs){
+	public String checkingAndFixingForLimitedUser(boolean fixing, Attributes attrs){
 		//All conditions to defined the account type (broken, limited or disabled) are described at: 
 		// http://woki/display/~jordans/User+Account+Management+Pseudo+Code+for+SPT-1272
 		
@@ -1512,7 +1547,7 @@ class ThreadProcessingAttribute extends Thread{
 	 * 
 	 * Solution: create a support tracker account using the information from Ldap account and update "Info" field of Ldap account using the clientAccountId that just created.
 	 */
-				proposingSolution.append("(18-a- Limited User) Create a Support Tracker account for this user;");
+				proposingSolution.append(Issues.ISSUE_18A + RETURN_CHAR);
 				
 				if(fixing){
 				// add u into clientAccount of ST DB
@@ -1520,12 +1555,12 @@ class ThreadProcessingAttribute extends Thread{
 					try{
 						String[] results = createSupportTrackerClientAccountAndUpdateInfoFieldOfLdapAccount(attrs);
 						if(results[0].equalsIgnoreCase("false")){
-							failedToFixRslts.add("(18-a- Limited User) " + results[1]);
+							failedToFixRslts.add(Issues.ISSUE_18A);
 						}else{
-							fixedRslts.add("(18-a- Limited User) " + results[1]);
+							fixedRslts.add(Issues.ISSUE_18A);
 						}
 					} catch (NamingException | SQLException e){
-						failedToFixRslts.add("(18-a- Limited User) Error occured while creating a new Support Tracker ClientAccount and updaing Info field of Ldap account." );
+						failedToFixRslts.add(Issues.ISSUE_18A);
 					}
 				}
 		
@@ -1537,21 +1572,19 @@ class ThreadProcessingAttribute extends Thread{
 	 * Solution: create a Concerto account
 	 */
 				if(!concerto.doesUserExist(username)){
-					proposingSolution.append("(18-b- Limited User) create a Concerto account for this user.");
+					proposingSolution.append(Issues.ISSUE_18B + RETURN_CHAR);
 					
 					if(fixing){
 						// if u doesn't exist in concerto => add u into concerto
 						Map<String, String[]> maps = convertAttributesToMapObject(attrs);
 						try{
 							concerto.addClientUser(maps);
-							fixedRslts.add("(18-b- Limited User) Concerto account has been created for this user.");
+							fixedRslts.add(Issues.ISSUE_18B);
 						} catch (Exception e){
-							failedToFixRslts.add("(18-b- Limited User) Couldn't create a Concerto account for this user.");
+							failedToFixRslts.add(Issues.ISSUE_18B);
 						}
 					}
 				}
-				
-				proposingSolution.append(RETURN_CHAR);
 			}
 			
 			logger.debug("finished checking/fixing condition 18-a,b for account: " + username);

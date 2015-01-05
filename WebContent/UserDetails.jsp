@@ -435,33 +435,37 @@
     }
     
     
-    
+    var fixingSolution = "";
     function getAcctStatusDetails(encodedUserDN){
     	cleanUpThePage();
+    	
+    	$("#fixAcctPassed").html("Checking account consistency.");
     	
     	var param = "rqst=getAUserStatusDetails&unescapedUserDN=" + encodedUserDN; 
     	
     	var jqxhr = $.post("AccountStatusDetails", param, function(result){
+    		cleanUpThePage();
+    		
     		try{
 				var xmlRslt = $.parseXML(result);
 				var result = '<a id="fixActStsLink" style="background-size:20px; padding-left:20px" href="#"' +
 							'onclick=\'dialogPop(event,"' + encodedUserDN + '")\''
 
 				if($(xmlRslt).find('limited').length > 0){
-					var solution = $(xmlRslt).find('limited').find("solution")[0].firstChild.data;
-	       			result += ' title="' +solution+ '" class="Add" ></a>';
+					fixingSolution = $(xmlRslt).find('limited').find("solution")[0].firstChild.data;
+	       			result += ' title="Account is limited. Click for details." class="Add" ></a>';
 	       			
 	       		} else if($(xmlRslt).find('brokenCantBeFixed').length > 0){
-					var solution = $(xmlRslt).find('brokenCantBeFixed').find("solution")[0].firstChild.data;
-	       			result += ' title="' +solution+ '" class="CantBeFixed" ></a>';
+	       			fixingSolution = $(xmlRslt).find('brokenCantBeFixed').find("solution")[0].firstChild.data;
+	       			result += ' title="Account is broken. Click for details." class="CantBeFixed" ></a>';
 	       			
 	       		} else if($(xmlRslt).find('brokenInDisabling').length > 0){
-					var solution = $(xmlRslt).find('brokenInDisabling').find("solution")[0].firstChild.data;
-	       			result += ' title="' +solution+ '" class="Fix" ></a>';
+	       			fixingSolution = $(xmlRslt).find('brokenInDisabling').find("solution")[0].firstChild.data;
+	       			result += ' title="Account is broken. Click for details." class="Fix" ></a>';
 	       			
 	       		} else if($(xmlRslt).find('broken').length > 0){
-					var solution = $(xmlRslt).find('broken').find("solution")[0].firstChild.data;
-	       			result += ' title="' +solution+ '" class="Fix" ></a>';
+	       			fixingSolution = $(xmlRslt).find('broken').find("solution")[0].firstChild.data;
+	       			result += ' title="Account is broken. Click for details." class="Fix" ></a>';
 
 	       		// for the case this user is disabled or enabled
 	       		} else { //if($(xmlRslt).find('disabled').length > 1 || $(xmlRslt).find('enabled').length > 1)
@@ -469,14 +473,22 @@
 				}
 				
 				$('#fixActStatus').html(result);
+				
+				if(result==""){
+					$("#fixAcctPassed").html("Account is consistent.")
+				} else {
+					$("#fixAcctPassed").html("Account is not consistent.");
+				}
 			
 								
 			} catch (e) {
-				$("#add-removeGroupFailed").html("Server failed to process the account status request. Here's the message: " + result);
+				cleanUpThePage();
+				$("#fixAcctFailed").html("Server failed to process the account status request. Here's the message: " + result);
 			}
     	})
     	.fail(function() {
-    		$("#add-removeGroupFailed").html("Could not get a response from server while checking this account status.");
+    		cleanUpThePage();
+    		$("#fixAcctFailed").html("Could not get a response from server while checking this account status.");
 		 });
     	
     }
@@ -491,24 +503,28 @@
     	event.preventDefault();
     	if($('#popedupDialog').length < 1){ // avoid to have multiple dialogs (so, it poped up only, if there's no dialog has been poped up)
     		var text = '<div id="popedupDialog">'+
-			'<p><a onclick="openExplanation()">Open issues details page...</a></p>'+
-			'<p><a onclick="fixUserAccount(\''+encodedUserDN+'\')">Fix the account...</a></p>' +
-			'<p><a class="Button" onclick="closeDialog()" href="#">Cancel</a>' +
+    		'<div style="color:black; font-weight:normal">' +
+    		fixingSolution.replace(new RegExp('\n|\r\n|\r', 'g'), '<br/>') +
+    		'</div>' +
+    		'<p><br/></p>' +
+			'<p><a onclick="openExplanation(event)" href="#">Open issues details page...</a></p>'+
+			'<p></p>' +
+			'<p><a class="Button" onclick="fixUserAccount(event, \''+encodedUserDN+'\')" href="#">Fix Account</a> <a class="Button" onclick="closeDialog(event)" href="#">Cancel</a>' +
 			'</div>';
 			$(text).dialog({
 				model:true,
-				height: 110, 
-				width: 200, 
-				resizable: false, 
+				height: 'auto',
+				width: 400, 
+				resizable: false,
 				dialogClass:'noTitleStuff', 
 				position:{my:'left top', of:event}
 			});
 			
     	} else { // if there's a dialog has been poped up => close it
-    		closeDialog();
+    		closeDialog(event);
     	}
     }
-    function closeDialog(){
+    function closeDialog(event){
     	event.preventDefault();
 	    	// close the poped up dialog
 	    if($('#popedupDialog').length > 0){
@@ -518,8 +534,8 @@
 	    }
     }
 	// open the link page (the issues details woki page)
-    function openExplanation(){
-    	closeDialog();
+    function openExplanation(event){
+    	closeDialog(event);
     	<% String  acctDetailsLink = LdapProperty.getProperty(LdapConstants.ACCT_BROKEN_DETAILS_LINK);%>
     	var win = window.open('<%=acctDetailsLink%>', '_blank');
     	win.focus();
@@ -528,9 +544,9 @@
 	
 	
     
-    function fixUserAccount(encodedUserDN){
+    function fixUserAccount(event, encodedUserDN){
     	cleanUpThePage();
-    	closeDialog();
+    	closeDialog(event);
     	
     	var params = "rqst=fixUser&userDN=" + encodedUserDN;
     	$("#fixAcctPassed").html("Processing request...");
@@ -560,10 +576,12 @@
 					$("#fixAcctFailed").html(failedToFix);
 				}
     		} catch (e) {
+    			cleanUpThePage();
 				$("#fixAcctFailed").html("Server failed to process fixing account status request. Here's the message: " + e.message);
 			}
     	})
     	.fail(function() {
+    		cleanUpThePage();
     		$("#fixAcctFailed").html("Could not get a response from server while fixing this account status.");
 		 });
     }
