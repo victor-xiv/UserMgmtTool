@@ -146,24 +146,25 @@ public class AccountRequestServlet extends HttpServlet {
 				String message = "<font color=\"red\">";
 				message = "Unable to create user account. ";
 				message += "An account has already been created for this user. <br />";
-				message += "Please contact Orion Health Support: <ul>";
-				message += "<li>Phone </li>";
-				message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-				message += "<li>Raise a Ticket </li></ul>";
+				message += "Please contact Orion Health Support:";
+				message += "<br></br>";
+				message += "<p>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </p>";
+				message += "<p>Raise a Ticket </p>";
 				message += "</font>";
 				session.setAttribute("error", message);
 				logger.debug("Username '"+username+"' already exists.");
 			}
+			
 			//Check if email already used in account
 			else if (lt.emailExists(email, request.getParameter("company"))) {
 				//If so, create error message and return as message to display
 				String message = "<font color=\"red\">";
 				message = "Unable to create user account. ";
 				message += "An account with this email address ("+email+") already exists. <br />";
-				message += "Please contact Orion Health Support: <ul>";
-				message += "<li>Phone </li>";
-				message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-				message += "<li>Raise a Ticket </li></ul>";
+				message += "Please contact Orion Health Support: ";
+				message += "<br></br>";
+				message += "<p>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </p>";
+				message += "<p>Raise a Ticket </p>";
 				message += "</font>";
 				session.setAttribute("error", message);
 				logger.debug("Email '"+email+"' already in use.");

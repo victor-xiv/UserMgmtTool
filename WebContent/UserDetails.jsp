@@ -451,10 +451,11 @@
 				var result = '<a id="fixActStsLink" style="background-size:20px; padding-left:20px" href="#"' +
 							'onclick=\'dialogPop(event,"' + encodedUserDN + '")\''
 
+				var isLimtiedAct = false;
 				if($(xmlRslt).find('limited').length > 0){
 					fixingSolution = $(xmlRslt).find('limited').find("solution")[0].firstChild.data;
 	       			result += ' title="Account is limited. Click for details." class="Add" ></a>';
-	       			
+	       			isLimtiedAct = true;
 	       		} else if($(xmlRslt).find('brokenCantBeFixed').length > 0){
 	       			fixingSolution = $(xmlRslt).find('brokenCantBeFixed').find("solution")[0].firstChild.data;
 	       			result += ' title="Account is broken. Click for details." class="CantBeFixed" ></a>';
@@ -477,7 +478,11 @@
 				if(result==""){
 					$("#fixAcctPassed").html("Account is consistent.")
 				} else {
-					$("#fixAcctPassed").html("Account is not consistent.");
+					if(isLimtiedAct){
+						$("#fixAcctPassed").html("Limited account.");
+					} else {
+						$("#fixAcctPassed").html("Account is not consistent.");
+					}
 				}
 			
 								
@@ -847,12 +852,12 @@
                     </div>
 	
                     <div id="buttonGrp1" class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 200px; height: 20px; display: block">
-                      <a class="Button" id="updateButton" onclick="javascript: UpdateForm()" style="display: compact;">Update</a>
-                      <a class="Button" id="backButton" onclick="javascript: BackForm()" style="display: compact;">Back</a>
+                      <a class="Button" id="updateButton" onclick="javascript: UpdateForm()" style="display: compact;" href="#">Update</a>
+                      <a class="Button" href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(user.getCompany())%>" style="display: compact;">Back</a>
                     </div>
                     <div id="buttonGrp2" class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 200px; height: 20px; display: none">
-                      <a class="Button" id="submitButton" onclick="javascript: SubmitForm()" style="display: compact;">Submit</a>
-                      <a class="Button" id="cancelButton" onclick="javascript: CancelForm()" style="display: compact;">Cancel</a>
+                      <a class="Button" id="submitButton" onclick="javascript: SubmitForm()" style="display: compact;" href="#">Submit</a>
+                      <a class="Button" id="cancelButton" onclick="javascript: CancelForm()" style="display: compact;" href="#">Cancel</a>
                     </div>
                   </form>
                   
@@ -911,11 +916,6 @@ NamingEnumeration e = attr.getAll();
 
 
 <%} //this bracket is paired with the open at else after if(isAdmin) %>
-
-				<div class='row'>
-					<a class="Button" href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(user.getCompany())%>">Back to <b><%=user.getCompany()%></b></a>
-					<br/><br/>
-				</div>
 				
 				
                 <div align="center"><img src="./css/images/swish.gif" alt="There should be an image here...." /></div>
