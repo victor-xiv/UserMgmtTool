@@ -51,11 +51,6 @@ public class AddGroupUserServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		logger.debug("AddGroupUserServlet about to process Post request: " + request.getParameterMap());
 		
-		//Get dn name of this user
-		String dn = request.getParameter("dn").trim(); 
-		//Get name of this group (this is not a dn-name of this group)
-		String group = request.getParameter("groupselect").trim();
-		
 		NamingEnumeration namingEnum = null;
 		HttpSession session = request.getSession(true);
 		List<String> ohGroupsThisUserCanAccess = (List<String>)session.getAttribute(AdminServlet.OHGROUPS_ALLOWED_ACCESSED);
@@ -70,11 +65,34 @@ public class AddGroupUserServlet extends HttpServlet {
 	    sfXml.append("<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>");
 	    sfXml.append("<response>");
 	    
+	  //Get dn name of this user
+	  	String dn = request.getParameter("dn").trim(); 
+	  	//Get name of this group (this is not a dn-name of this group)
+	  	String group = null;
+	  	boolean getThisUserMemberOf = false;
+	  	
+	  	// if the request contains parameter:  getAllMemberOf="true"
+	  	// it means that the javascript trying to get all the memberOf list in order to refresh the page.
+	  	// otherwise, it means the client's javascript trying to add a group into memberOf list
+	  	if(request.getParameter("getAllMemberOf")!=null && request.getParameter("getAllMemberOf").trim().equalsIgnoreCase("true")){
+	  		getThisUserMemberOf = true;
+	  	} else {
+	  		group = request.getParameter("groupselect").trim();
+	  	}
+	  		
+	    
 	    
 		try {
 			lt = new LdapTool();
-			//Add organisation as group
-			userAdded = lt.addUserToGroup(dn, lt.getDNFromGroup(group));
+			
+			if(group!=null && !getThisUserMemberOf){
+				//Add organisation as group
+				userAdded = lt.addUserToGroup(dn, lt.getDNFromGroup(group));
+			} else {
+				// this is the case that we just want to get the list of this user's MemberOf
+				// so, we are not adding any group to the list and we just set this boolean to true
+				userAdded = true;
+			}
 			
 			// baseGroups will be used to list all groups that this user doesn't belong to
 			// namingEnum will be used to list all groups that this user belong to

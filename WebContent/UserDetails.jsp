@@ -325,7 +325,13 @@
         	
         }
     }
-    function SubmitGroupForm() {
+    /*
+    * param asRefresh: is added at the later stage of development, to turn this method from "adding a group to this user's memberOf list"
+    * to just "getting all the groups of this user's memberOf list". This case is used to refresh and update the "Member of:" part in the page.
+    * In order to use this case, we call this method by applying asRefresh=true;
+    *
+    */
+    function SubmitGroupForm(asRefresh) {
     	cleanUpThePage();
     	
     	// send a POST request to AddGroupUser servlet with parameters: dn and gropselect
@@ -336,7 +342,13 @@
     	ajax.open("POST", "AddGroupUser", true);
     	ajax.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         ajax.setRequestHeader("Accept", "text/xml, application/xml, text/plain");
-        var params = "dn=" + encodedUserDN + "&groupselect=" + encodedGroupSelect;
+        var params = "";
+        
+        if(asRefresh){
+        	params = "dn=" + encodedUserDN + "&getAllMemberOf=true";
+        } else {
+        	params = "dn=" + encodedUserDN + "&groupselect=" + encodedGroupSelect;
+        }
         ajax.send(params);
     	
         // handling ajax state
@@ -376,21 +388,34 @@
 		        		document.getElementById("groupselect").innerHTML = value;
 		        		
 		        		var passed = xmlDoc.getElementsByTagName("passed")[0].firstChild.nodeValue;
-		        		document.getElementById("add-removeGroupPassed").innerHTML = "<font color=\"green\"><b>" + passed +"</b></font>";
+		        		
+		        		if(asRefresh){
+		        			// if we are refreshing this "Member of:" part, then there's no adding result need to be updated.
+		        		}else {
+		        			document.getElementById("add-removeGroupPassed").innerHTML = "<font color=\"green\"><b>" + passed +"</b></font>";
+		        		}
 		        	} else {
-		        		// xml reponse contains "failed" tage:
-		        		// set the add-removeGroupFailed element
-		        		var reason = "<font color=\"red\"><b>" + failed.firstChild.nodeValue +"</b></font>";
-						document.getElementById("add-removeGroupFailed").innerHTML = reason;
+		        		if(asRefresh){
+		        			// if we are refreshing this "Member of:" part, then there's no adding result need to be updated.
+		        		} else {
+			        		// xml reponse contains "failed" tage:
+			        		// set the add-removeGroupFailed element
+			        		var reason = "<font color=\"red\"><b>" + failed.firstChild.nodeValue +"</b></font>";
+							document.getElementById("add-removeGroupFailed").innerHTML = reason;
+		        		}
 		        	}
         		} else {
-            		// if reponse is not 200
-            		// set the add-removeGroupFailed element
-            		var reason = "<font color=\"red\"><b>Addition of organisation '" + unescape(encodedUserDN) 
-    															+ "' to group " + unescape(encodedGroupSelect) + " has failed.</b>"
-    												  "<b> Server is not responding to the request. </b>"
-    													+"</font>";
-    				document.getElementById("add-removeGroupFailed").innerHTML = reason;
+        			if(asRefresh){
+        				// if we are refreshing this "Member of:" part, then there's no adding result need to be updated.
+        			}else{
+	            		// if reponse is not 200
+	            		// set the add-removeGroupFailed element
+	            		var reason = "<font color=\"red\"><b>Addition of organisation '" + unescape(encodedUserDN) 
+	    															+ "' to group " + unescape(encodedGroupSelect) + " has failed.</b>"
+	    												  "<b> Server is not responding to the request. </b>"
+	    													+"</font>";
+	    				document.getElementById("add-removeGroupFailed").innerHTML = reason;
+        			}
         		}
         	}
         }
@@ -449,7 +474,7 @@
     		try{
 				var xmlRslt = $.parseXML(result);
 				var result = '<a id="fixActStsLink" style="background-size:20px; padding-left:20px" href="#"' +
-							'onclick=\'dialogPop(event,"' + encodedUserDN + '")\''
+							'onclick=\'dialogPop(event,"' + encodedUserDN + '")\'';
 
 				var isLimtiedAct = false;
 				if($(xmlRslt).find('limited').length > 0){
@@ -495,7 +520,6 @@
     		cleanUpThePage();
     		$("#fixAcctFailed").html("Could not get a response from server while checking this account status.");
 		 });
-    	
     }
     
     
@@ -557,6 +581,7 @@
     	$("#fixAcctPassed").html("Processing request...");
     	var jqxhr = $.post( "AccountStatusDetails", params, function(result) {
     		try{
+    			SubmitGroupForm(true);
     			var xmlRslt = $.parseXML(result);
 				
 				// all broken has been fixed (no any failed to fix in the XML result)

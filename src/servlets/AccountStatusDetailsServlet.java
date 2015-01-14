@@ -818,7 +818,6 @@ class ThreadProcessingAttribute extends Thread{
 			String username = (String) attrs.get("sAMAccountName").get();
 			String escapedUserDN = (String)attrs.get("distinguishedname").get();
 			String unescapedUserDN = (String)Rdn.unescapeValue(escapedUserDN);
-			String clientAccountId = attrs.get("info")==null ? "0" : (String)attrs.get("info").get();
 			String company = lt.getUserCompany(unescapedUserDN);
 			
 			logger.debug("start checking/fixing 2 condition for account: " + username);
@@ -1532,6 +1531,8 @@ class ThreadProcessingAttribute extends Thread{
 		
 		try{
 			String username = (String) attrs.get("sAMAccountName").get();
+			String escapedUserDN = (String)attrs.get("distinguishedname").get();
+			String unescapedUserDN = (String)Rdn.unescapeValue(escapedUserDN);
 
 			logger.debug("start checking/fixing condition 18-a,b for account: " + username);
 			if(!isGivenAttrsStoredInOrionHealth(attrs)
@@ -1553,11 +1554,15 @@ class ThreadProcessingAttribute extends Thread{
 				// add u into clientAccount of ST DB
 				// update u.info using clientAccountId that just created
 					try{
-						String[] results = createSupportTrackerClientAccountAndUpdateInfoFieldOfLdapAccount(attrs);
-						if(results[0].equalsIgnoreCase("false")){
+						if(lt.addUserToGroup(unescapedUserDN, LDAPCLIENTS_DN)){
+							String[] results = createSupportTrackerClientAccountAndUpdateInfoFieldOfLdapAccount(attrs);
+							if(results[0].equalsIgnoreCase("false")){
+								failedToFixRslts.add(Issues.ISSUE_18A);
+							}else{
+								fixedRslts.add(Issues.ISSUE_18A);
+							}
+						} else {
 							failedToFixRslts.add(Issues.ISSUE_18A);
-						}else{
-							fixedRslts.add(Issues.ISSUE_18A);
 						}
 					} catch (NamingException | SQLException e){
 						failedToFixRslts.add(Issues.ISSUE_18A);
