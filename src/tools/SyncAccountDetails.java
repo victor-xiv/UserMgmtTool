@@ -13,9 +13,13 @@ import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
 import javax.naming.ldap.Rdn;
 
+import ldap.LdapConstants;
+import ldap.LdapProperty;
 import ldap.LdapTool;
 
 import org.apache.log4j.Logger;
+
+import servlets.AccountStatusDetailsServlet;
 
 
 public class SyncAccountDetails {
@@ -195,6 +199,21 @@ public class SyncAccountDetails {
 		Attributes attrs = lt.getUserAttributes(userDN);
 		String company = lt.getUserCompany(userDN);
 		String username = lt.getUsername(userDN);
+		
+		
+		// if this user's concerto account doesn't have "Clients" in its membership
+		// and this user's Ldap account doesn't have "LdapClients" in its memberOf list
+		// then we are not syncing
+		String ldapClientsDN = LdapProperty.getProperty(LdapConstants.GROUP_LDAP_CLIENT);
+		if(!AccountStatusDetailsServlet.isGivenLdapAttrsHasMemberOf_checkNestedly(attrs, ldapClientsDN)){
+			try {
+				boolean concertoClient = concerto.isUserMemberOfGivenGroup(username, "Clients");
+				if(!concertoClient) return;
+			} catch (Exception e) {
+				return;
+			}
+			
+		}
 		
 		boolean concertoHasBeenDisabled = false;
 		

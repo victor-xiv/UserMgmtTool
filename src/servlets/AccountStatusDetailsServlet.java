@@ -438,7 +438,23 @@ public class AccountStatusDetailsServlet extends HttpServlet{
 
 	
 	
-
+	
+	/**
+	 * check if the Ldap account that is represented by the given Attribtues object, is a memberOf the given escapedGroupDN
+	 * @param attributes object that represetns a Ldap account
+	 * @param escapedGroupDN: an escaped (special chars) group DN that used to check
+	 * @return true if the given Attributes object is a memberOf the given escapedGroupDN. false otherwise
+	 * @throws NamingException
+	 */
+	public static boolean isGivenLdapAttrsHasMemberOf_checkNestedly(Attributes attributes, String escapedGroupDN) {
+		ThreadProcessingAttribute t = new ThreadProcessingAttribute();
+		try {
+			return t.isGivenAttrsHasMemberOf_checkNestedly(attributes, escapedGroupDN);
+		} catch (NullPointerException | NamingException e) {
+			// NullPointerException thrown when there's no memberOf property
+			return false;
+		}
+	}
 }
 
 
@@ -1087,7 +1103,7 @@ class ThreadProcessingAttribute extends Thread{
 	 * 
 	 * Solution: add LdapClients to Ldap account
 	 */
-					if(!isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN)){
+					if(!isGivenAttrsHasMemberOf_checkNestedly(attrs, LDAPCLIENTS_DN)){
 						proposingSolution.append(Issues.ISSUE_11A  + RETURN_CHAR);
 						
 						if(fixing){
@@ -1170,7 +1186,7 @@ class ThreadProcessingAttribute extends Thread{
 			logger.debug("start checking/fixing condition 13 for account: " + username);
 			// if u memberof 'ldapclients' && no ST client account)
 			if (    (!isGivenAttrsStoredInOrionHealth(attrs) && !SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username))
-			     && (isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN) || concerto.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT))) {
+			     && (isGivenAttrsHasMemberOf_checkNestedly(attrs, LDAPCLIENTS_DN) || concerto.isUserMemberOfGivenGroup(username, CONCERTO_CLIENT))) {
 				
 				proposingSolution.append(Issues.ISSUE_13 + RETURN_CHAR);
 
@@ -1536,7 +1552,7 @@ class ThreadProcessingAttribute extends Thread{
 
 			logger.debug("start checking/fixing condition 18-a,b for account: " + username);
 			if(!isGivenAttrsStoredInOrionHealth(attrs)
-					&& !isGivenAttrsHasMemberOf(attrs, LDAPCLIENTS_DN)
+					&& !isGivenAttrsHasMemberOf_checkNestedly(attrs, LDAPCLIENTS_DN)
 					&& !SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)
 					){
 
@@ -1659,7 +1675,7 @@ class ThreadProcessingAttribute extends Thread{
 	 * @return true if the given Attributes object is a memberOf the given escapedGroupDN. false otherwise
 	 * @throws NamingException
 	 */
-	private boolean isGivenAttrsHasMemberOf(Attributes attributes, String escapedGroupDN) throws NamingException {
+	public boolean isGivenAttrsHasMemberOf(Attributes attributes, String escapedGroupDN) throws NamingException {
 		try {
 			ArrayList<String> listMemberOf = (ArrayList<String>) Collections.list(attributes.get("memberOf").getAll());
 			return listMemberOf.contains(escapedGroupDN);
@@ -1677,7 +1693,7 @@ class ThreadProcessingAttribute extends Thread{
 	 * @return true if the given Attributes object is a memberOf the given escapedGroupDN. false otherwise
 	 * @throws NamingException
 	 */
-	private boolean isGivenAttrsHasMemberOf_checkNestedly(Attributes attributes, String escapedGroupDN) throws NamingException{
+	public boolean isGivenAttrsHasMemberOf_checkNestedly(Attributes attributes, String escapedGroupDN) throws NamingException{
 		try{ 
 			ArrayList<String> firstLevelListMemberOf = (ArrayList<String>) Collections.list(attributes.get("memberOf").getAll());
 			HashSet<String> listMemberOf = new HashSet<>(firstLevelListMemberOf);
@@ -1894,10 +1910,10 @@ class ThreadProcessingAttribute extends Thread{
 			}
 		}
 		
-		if(isGivenAttrsHasMemberOf(attributes, LDAPCLIENTS_DN)){
-			maps.put("isLdapClient", new String[]{"false"});
-		} else {
+		if(isGivenAttrsHasMemberOf_checkNestedly(attributes, LDAPCLIENTS_DN)){
 			maps.put("isLdapClient", new String[]{"true"});
+		} else {
+			maps.put("isLdapClient", new String[]{"false"});
 		}
 		
 		String escapedUserDN = (String)attributes.get("distinguishedname").get();

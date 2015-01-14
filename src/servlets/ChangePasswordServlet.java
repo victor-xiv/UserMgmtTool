@@ -64,7 +64,13 @@ public class ChangePasswordServlet extends HttpServlet {
 				userDN = (String)session.getAttribute("dn");		
 			}
 			redirectURL += "?userDetails=true";
-		
+			
+			// try to check that the user (who is using UserMgmt tool) is changing his/her own password
+			String dnOfWhoIsUsingThisTool = (String) session.getAttribute(AdminServlet.WHO_USING_THIS_TOOL);
+			if(dnOfWhoIsUsingThisTool!=null && dnOfWhoIsUsingThisTool.equalsIgnoreCase(userDN)){
+				redirectURL += "&selfChangingPsw=true";
+			}
+			
 			
 		// 2). if the request is getting through directly from Portal
 		} else {
@@ -73,6 +79,11 @@ public class ChangePasswordServlet extends HttpServlet {
 
 			if (reqParams.containsKey("userDN") && reqParams.get("userDN") != null) {
 				userDN = reqParams.get("userDN");
+				
+				
+				// we don't need to check, because all the "ChangePassword" request that get through
+				// portal are the cases that the user, who is using UserMgmt tool, is changing his/her own password
+				redirectURL += "?selfChangingPsw=true";
 
 				// if there is no "userDN" key and no "error" key in the request parameters
 				// It means that the request is valid but the request doesn't

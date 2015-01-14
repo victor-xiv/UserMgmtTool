@@ -6,12 +6,13 @@
 		<jsp:useBean id="user" class="beans.LdapUser" scope="page" />
 		
 <%
+String userDN = "";
 try{
-	String userDN = (String)session.getAttribute("userDN"); 
+	userDN = (String)session.getAttribute("userDN"); 
 	user.processUserDN(userDN);	
 } catch (Exception e) {
 	session.setAttribute("error", e.getMessage());
-}		
+}
 %>
 		<script src="./js/validator.js"></script>
 		
@@ -29,7 +30,7 @@ function validatePwd01(){
     var regex = new RegExp("[A-Za-z0-9]{8,512}");
     var psw1 = document.getElementById('password01').value;
     if(!passwordValidator(psw1, psw1)){
-    	document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Password needs to have 8-12 characters from letters [A-Za-z0-9]</font>";
+    	document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Password must be at least 8 characters with one lowercase, one uppercase and one number.</font>";
     	return false;
     }else{
         document.getElementById('pwd_msg01').innerHTML = "<img src=\"css/images/check_right.gif\" />";
@@ -180,6 +181,19 @@ function generateRandomPassword(){
  */
 shouldProvideGeneratingNewPasswordForThisUser();
 function shouldProvideGeneratingNewPasswordForThisUser(){
+	
+<% if(request.getParameter("selfChangingPsw") != null){ %>
+	var isThisUserChangingHisOwnPsw = true;
+<%} else{ %>
+	var isThisUserChangingHisOwnPsw = false;
+<%}%>
+
+	// if this user is changing his own psw, then we are not allowing to have "Generate Password" button
+	if(isThisUserChangingHisOwnPsw){
+		return;
+	}
+	
+	
 	var ajax2;
 	if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
 		ajax2 = new XMLHttpRequest();
@@ -227,7 +241,7 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 			                <td align="center">
                                 <div align="center"><img src="css/images/logos/supporttracker.gif" alt="Support Tracker Logo" /></div>
 					            <h1>Password Management</h1>
-					            <h2> Update password for: <h2> <h1><a href="UserDetails.jsp?dn=<%=java.net.URLEncoder.encode(user.getUserDN()) %>"><b><%=user.getDisplayName()%></b></a></h1>
+					            <h2> Update password for "<%=user.getDisplayName()%>" </h2>
 						
 						
 					            <img src="css/images/swish.gif" alt="#" />
@@ -257,14 +271,15 @@ function shouldProvideGeneratingNewPasswordForThisUser(){
 				                        <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; height: 20px;">
 					                        <a class="Button" href="#" onclick="javascript: SubmitForm()">Submit</a>
 					                        <a class="Button" href="#" onclick="javascript: ResetForm()">Reset</a>
-					                    </div>
-					                    
-<!-- if this page is accessed through UserDetails.jsp, then we show this "Back to ... " button -->
+					                        
+					                        <!-- if this page is accessed through UserDetails.jsp, then we show this "Back" button -->
 <% if(request.getParameter("userDetails") != null) { %>
-					                    <div class="Buttons" style="text-align: center; clear: none; padding-top: 20px; height: 20px;">
-					                    	<a class="Button" href="OrganisationDetails.jsp?name=<%=java.net.URLEncoder.encode(user.getCompany())%>">Back to <%=user.getCompany()%></a>
-					                    </div>
+					                    	<a class="Button" href="UserDetails.jsp?dn=<%=java.net.URLEncoder.encode(userDN)%>">Back</a>
+
 <% } %>
+
+
+					                    </div>
 					                </form>
 					                
 					                <!-- this div used to decide whether the page should shows the "Generate" button, where user can use to generate a new

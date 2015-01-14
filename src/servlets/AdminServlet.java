@@ -26,7 +26,7 @@ public class AdminServlet extends HttpServlet {
 	Logger logger = Logger.getRootLogger(); // initiate as a default root logger
 	
 	public static final String OHGROUPS_ALLOWED_ACCESSED = "Orion Health groups that the user have access right on";
-	
+	public static final String WHO_USING_THIS_TOOL = "the current user who is using or querying this tool right now. not the user whom his/her account is being worked on.";
 	
 	/**
 	 * received the request, validate and decrypt the request. Redirect to an appropriate .jsp file
@@ -67,6 +67,9 @@ public class AdminServlet extends HttpServlet {
 					List<String> groups = lt.getOrionHealthGroupsThisUserAllowToAccess(unescappedUserDN);
 					lt.close();
 					session.setAttribute(this.OHGROUPS_ALLOWED_ACCESSED, groups);
+					
+					// this session attribute is used only in ChangePasswordServlet
+					session.setAttribute(this.WHO_USING_THIS_TOOL, unescappedUserDN);
 				} catch (NamingException e) {
 					parameters.put("error", e.getMessage());
 					// we are not logging here because it has been logged  in LdapTool();
@@ -74,6 +77,8 @@ public class AdminServlet extends HttpServlet {
 			}
 			
 		}
+		
+		
 		
 		
 
