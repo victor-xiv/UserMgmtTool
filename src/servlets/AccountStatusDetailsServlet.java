@@ -31,7 +31,6 @@ import org.apache.log4j.Logger;
 
 import tools.ConcertoAPI;
 import tools.SupportTrackerJDBC;
-import tools.SyncAccountDetails;
 
 
 
@@ -45,7 +44,8 @@ class Issues {
 	public static final String ISSUE_2 = "2: OrionStaffs LDAP group is no longer required.";
 	public static final String ISSUE_3 = "3: LdapUsers is required for all LDAP accounts.";
 	public static final String ISSUE_4 = "4: Clients should never be a member of an Orion LDAP group.";
-	public static final String ISSUE_5 = "5: Orion staff should have an Orion LDAP role.";
+	public static final String ISSUE_5A = "5-a: Orion staff should have an Orion LDAP role.";
+	public static final String ISSUE_5B = "5-b: Orion staff should not have more than one Orion LDAP roles.";
 	public static final String ISSUE_6 = "6: Orion Staff should not be a member of LdapClients.";
 	public static final String ISSUE_7 = "7: For most users only Administrators should be allowed Domain Admins.";
 	public static final String ISSUE_8 = "8: Users should be a member of their organisations group in LDAP.";
@@ -926,29 +926,50 @@ class ThreadProcessingAttribute extends Thread{
 			
 			
 	/**
-	 * 5- if this account is stored in Orion Health folder (is Orion Health Staff) (in Ldap server)
+	 * 5-a- if this account is stored in Orion Health folder (is Orion Health Staff) (in Ldap server)
 	 * 		but it doesn't have any Orion-% role  (in Ldap server)
 	 * 
 	 * Solution: we add the lowest power of Orion-% role
 	 */
 			// ******************************************
 			// LdapClients
-			logger.debug("start checking/fixing condition 5 for account: " + username);
+			logger.debug("start checking/fixing condition 5-a for account: " + username);
 			if (isGivenAttrsStoredInOrionHealth(attrs)) {
-				if (!isGivenAttrsMemberOfOrionHealthRoles(attrs)) {
-					proposingSolution.append(Issues.ISSUE_5 + RETURN_CHAR);
+				if (!isGivenAttrsMemberOfOrionHealthRolesOtherThanSpecialRole(attrs)) {
+					proposingSolution.append(Issues.ISSUE_5A + RETURN_CHAR);
 
 					if(fixing){
 					// add the lowest power Orion Health role (i.e. Orion Health - User [at the moment])
 
 						if(lt.addUserToGroup(unescapedUserDN, ORION_LOWEST_ROLE_DN)){
-							fixedRslts.add(Issues.ISSUE_5);
+							fixedRslts.add(Issues.ISSUE_5A);
 						} else {
-							failedToFixRslts.add(Issues.ISSUE_5);
+							failedToFixRslts.add(Issues.ISSUE_5A);
 						}
 					}
 				}
-			logger.debug("finished checking/fixing condition 5 for account: " + username);
+				logger.debug("finished checking/fixing condition 5-a for account: " + username);
+			
+			
+			
+			
+				logger.debug("start checking/fixing condition 5-b for account: " + username);
+				if(isGivenAttrsMemberOfMoreThanOneOrionHealthRoles(attrs)){
+					proposingSolution.append(Issues.ISSUE_5B + RETURN_CHAR);
+					
+					if(fixing){
+						// keep the highest power of Orion Health role that this user is a memberOf
+						
+						if(keepTheHighestOrionRoleAndRemoveOthersExceptSpecialRole(attrs)){
+							fixedRslts.add(Issues.ISSUE_5B);
+						} else {
+							failedToFixRslts.add(Issues.ISSUE_5B);
+						}
+					}
+				}
+				logger.debug("finished checking/fixing condition 5-b for account: " + username);
+			
+			
 				
 				
 	/**
@@ -1745,6 +1766,130 @@ class ThreadProcessingAttribute extends Thread{
 		return false;
 	}
 	
+	
+	/**
+	 * check if the Ldap account that is represented by the given Attribtues object, is a memberOf any Orion-% roles, but this checking is not counting the special role.
+	 * (special role is a role defined in ldap.proerpties file. for example in the case I'm writing this code, 
+	 * this special role is "Orion Health Additional - Reporting"). this means that if this user is a memberOf only this special role, then this method will return false.
+	 * this method will return true only if there is at least one Orion-% role, which is not this special role.
+	 * @param attributes object that represetns a Ldap account
+	 * @return if this user is a memberOf only this special role, then this method will return false.
+	 * this method will return true only if there is at least one Orion-% role, which is not this special role.
+	 * @throws NamingException
+	 */
+	private boolean isGivenAttrsMemberOfOrionHealthRolesOtherThanSpecialRole(Attributes attributes) throws NamingException{
+		List<String> orionRoles = LdapTool.readGroupsAndPermissionLevelFromConfigureFile();
+		String baseDN = LdapProperty.getProperty("orionhealthOrganisationBasedDN");
+		if(baseDN == null) baseDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+		
+		String specialOrionRoleThatCanBeKeptWithOtherOrionRoles = LdapProperty.getProperty("special.orionrole.canbekept.withother.orionroles");
+		if(specialOrionRoleThatCanBeKeptWithOtherOrionRoles == null) {
+			specialOrionRoleThatCanBeKeptWithOtherOrionRoles = "Orion Health Additional - Reporting";
+		}
+		
+		for(String orionRole : orionRoles){
+			if(orionRole.equalsIgnoreCase(specialOrionRoleThatCanBeKeptWithOtherOrionRoles)) continue;
+			
+			String orionRoleDN = "CN=" + Rdn.escapeValue(orionRole) + "," +baseDN;
+			if(isGivenAttrsHasMemberOf(attributes, orionRoleDN)){
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	
+	/**
+	 * check if the ldap account that is represented by the given Attribute object, is a memberOf more than one Orion-% roles
+	 * but this check is not including the special role  (special role is a role defined in ldap.proerpties file. for example in the case I'm writing this code, 
+	 * this special role is "Orion Health Additional - Reporting"). This means that if the user is a memberOf one Orion...User role and this special role then the method will return false.
+	 * This method will return only true if there are at least two Orion-% roles (and there's no the special role among these two). e.g. the user is a memberOf Orion...User and Orion...Regional.
+	 * @param attributes object that represetns a Ldap account
+	 * @return This means that if the user is a memberOf one Orion...User role and this special role then the method will return false.
+	 * This method will return only true if there are at least two Orion-% roles (and there's no the special role among these two). e.g. the user is a memberOf Orion...User and Orion...Regional. 
+	 * @return
+	 */
+	public boolean isGivenAttrsMemberOfMoreThanOneOrionHealthRoles(Attributes attributes){
+		List<String> orionRoles = LdapTool.readGroupsAndPermissionLevelFromConfigureFile();
+		
+		String specialOrionRoleThatCanBeKeptWithOtherOrionRoles = LdapProperty.getProperty("special.orionrole.canbekept.withother.orionroles");
+		if(specialOrionRoleThatCanBeKeptWithOtherOrionRoles == null) {
+			specialOrionRoleThatCanBeKeptWithOtherOrionRoles = "Orion Health Additional - Reporting";
+		}
+		
+		List<String> orionRolesWithoutSpecialRole = new ArrayList<>(orionRoles);
+		orionRolesWithoutSpecialRole.remove(specialOrionRoleThatCanBeKeptWithOtherOrionRoles);
+		
+		String baseDN = LdapProperty.getProperty("orionhealthOrganisationBasedDN");
+		if(baseDN == null) baseDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+		
+		boolean isMemberOfAnOrionRole = false;
+		
+		for(String orionRole : orionRolesWithoutSpecialRole){
+			String orionRoleDN = "CN=" + Rdn.escapeValue(orionRole) + "," +baseDN;
+			try {
+				if(isGivenAttrsHasMemberOf(attributes, orionRoleDN)){
+					// if isMemberOfAnOrionRole is true, it means that we have already found a memberOf orion role
+					// so, now we are finding another one. so, this user has more than one Orion Roles
+					if(!isMemberOfAnOrionRole) isMemberOfAnOrionRole = true;
+					else return true;
+				}
+			} catch (NamingException e) {
+			}
+		}
+		
+		return false;
+	}
+	
+	
+	/**
+	 * this method will assume that the given user (represented by the given Attributes object) is a memberOf more than one Orion-% role 
+	 * (which is not including special role that defined in the ldap.properties. at the time i'm writing this code, this special role is "Orion Health Additional - Reporting").
+	 * So, this method will keep only the higest power Orion-% roles that this user is a memberOf, then it will remove all other oles, except the special role.  
+	 * 
+	 * @param attributes object that represetns a Ldap account
+	 * @return if the method processed successfully
+	 */
+	public boolean keepTheHighestOrionRoleAndRemoveOthersExceptSpecialRole(Attributes attributes) {
+		try{
+			String escapedUserDN = (String)attributes.get("distinguishedname").get();
+			String unescapedUserDN = (String)Rdn.unescapeValue(escapedUserDN);
+			
+			List<String> orionRoles = LdapTool.readGroupsAndPermissionLevelFromConfigureFile();
+			
+			String specialOrionRoleThatCanBeKeptWithOtherOrionRoles = LdapProperty.getProperty("special.orionrole.canbekept.withother.orionroles");
+			if(specialOrionRoleThatCanBeKeptWithOtherOrionRoles == null) {
+				specialOrionRoleThatCanBeKeptWithOtherOrionRoles = "Orion Health Additional - Reporting";
+			}
+			
+			List<String> orionRolesWithoutSpecialRole = new ArrayList<>(orionRoles);
+			orionRolesWithoutSpecialRole.remove(specialOrionRoleThatCanBeKeptWithOtherOrionRoles);
+			
+			String baseDN = LdapProperty.getProperty("orionhealthOrganisationBasedDN");
+			if(baseDN == null) baseDN = "OU=Orion Health,OU=Clients,DC=orion,DC=dmz";
+			
+			boolean hasHighestRoleBeenKept = false;
+			
+			for(int i=0; i<orionRolesWithoutSpecialRole.size(); i++){
+				String orionRole = orionRolesWithoutSpecialRole.get(i);
+				String orionRoleDN = "CN=" + orionRole + "," + baseDN;
+	
+				if (isGivenAttrsHasMemberOf(attributes, orionRoleDN)) {
+					if (hasHighestRoleBeenKept) {
+						lt.removeUserFromAGroup(unescapedUserDN, orionRoleDN);
+					} else {
+						hasHighestRoleBeenKept = true;
+					}
+	
+				}
+			}
+	
+			return true;
+		} catch (NamingException e){
+			return false;
+		}
+	}
 	
 	/**
 	 * check if the Ldap account that is represented by the given Attribtues object, stored in Orion Health folder (in Ldap's Clients folder).
