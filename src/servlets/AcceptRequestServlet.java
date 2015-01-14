@@ -106,7 +106,7 @@ public class AcceptRequestServlet extends HttpServlet {
 			
 			boolean genRandPsw = false;
 			if(request.getParameter("psw")==null || request.getParameter("psw").trim().equals("GenPsw")){
-				String psw = PasswordGenerator.generatePswForLength(8);
+				String psw = PasswordGenerator.generatePswForLength(10);
 				maps.put("password01", new String[]{psw});
 				genRandPsw = true;
 			} else {

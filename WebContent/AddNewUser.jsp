@@ -231,7 +231,7 @@ function validatePassword(){
 		if(validated){
 			return psw1;
 		} else {
-			alert("The password is not incorrect. A valid password must have at least 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet and one number");
+			alert("The password is not incorrect. A valid password must be at least 10 characters with one lowercase alphabet, one uppercase alphabet and one number");
 			return "false";
 		}
 	}

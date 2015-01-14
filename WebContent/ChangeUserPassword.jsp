@@ -20,17 +20,17 @@ try{
 
 /**
  * Validate user's input password.
- * Pasword must be more than 8 and less than 12 characters in length
+ * Pasword must be more than 10 and less than 12 characters in length
  * Password must contatins A-Z, a-z, 0-9
  */
 function validatePwd01(){
 	document.getElementById('passed').innerHTML = "";
 	document.getElementById('failed').innerHTML = "";
 	
-    var regex = new RegExp("[A-Za-z0-9]{8,512}");
+    var regex = new RegExp("[A-Za-z0-9]{10,512}");
     var psw1 = document.getElementById('password01').value;
     if(!passwordValidator(psw1, psw1)){
-    	document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Password must be at least 8 characters with one lowercase, one uppercase and one number.</font>";
+    	document.getElementById('pwd_msg01').innerHTML = "<font color=\"#FF0000\">Password must be at least 10 characters with one lowercase, one uppercase and one number.</font>";
     	return false;
     }else{
         document.getElementById('pwd_msg01').innerHTML = "<img src=\"css/images/check_right.gif\" />";
@@ -82,7 +82,7 @@ function SubmitForm(){
 	var psw1 = document.getElementById('password01').value;
 	var psw2 = document.getElementById('password02').value;
 	if(!passwordValidator(psw1, psw2)){
-		alert("The password is not incorrect. A valid password must have at least 8 characters, and it contains at least one lowercase alphabet, one uppercase alphabet and one number");
+		alert("The password is not incorrect. A valid password must be at least 10 characters with one lowercase alphabet, one uppercase alphabet and one number");
 		return false;
 	}
 	

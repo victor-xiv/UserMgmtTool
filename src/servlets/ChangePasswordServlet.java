@@ -204,7 +204,7 @@ public class ChangePasswordServlet extends HttpServlet {
 			response.getWriter().write("failed|Could not get userDN, please check the entry point.");
 			return;
 		}
-		String newPsw = tools.PasswordGenerator.generatePswForLength(8);
+		String newPsw = tools.PasswordGenerator.generatePswForLength(10);
 		boolean isPswGenerated = true;
 		String result = "failed|Could not get mobile phone.";
 		try {

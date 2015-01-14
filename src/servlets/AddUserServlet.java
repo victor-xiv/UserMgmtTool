@@ -53,7 +53,7 @@ public class AddUserServlet extends HttpServlet {
 				|| ((String[]) maps.get("password01"))[0].trim().equals("GenPsw")
 				|| ((String[]) maps.get("password01"))[0].trim().isEmpty()) {
 			
-			maps.put("password01", new String[] { PasswordGenerator.generatePswForLength(8) });
+			maps.put("password01", new String[] { PasswordGenerator.generatePswForLength(10) });
 			isPswGenerated = true;
 		}
 		

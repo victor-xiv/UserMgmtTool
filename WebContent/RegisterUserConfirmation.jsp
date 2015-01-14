@@ -112,10 +112,10 @@
         document.form.displayName.value = document.form.givenName.value + " " + document.form.sn.value;
     }
     function validatePwd01() {
-        var regex = new RegExp("[A-Za-z0-9]{8,512}");
+        var regex = new RegExp("[A-Za-z0-9]{10,512}");
         var psw1 = document.getElementById('password01').value;
         if(!passwordValidator(psw1, psw1)){
-        	document.getElementById('validation_msg').innerHTML = "<font color=\"#FF0000\">Password must be at least 8 characters with one lowercase, one uppercase and one number.</font>";
+        	document.getElementById('validation_msg').innerHTML = "<font color=\"#FF0000\">Password must be at least 10 characters with one lowercase, one uppercase and one number.</font>";
             document.getElementById('pwd_msg01').innerHTML = "*";
             return false;
         }else{
