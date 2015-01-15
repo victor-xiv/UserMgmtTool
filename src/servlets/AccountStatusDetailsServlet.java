@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 
 import tools.ConcertoAPI;
 import tools.SupportTrackerJDBC;
+import tools.SyncAccountDetails;
 
 
 
@@ -70,6 +71,7 @@ class Issues {
 	public static final String ISSUE_17C = "17-c: Activate Concerto account for this user.";
 	public static final String ISSUE_18A = "18-a UPGRADE: Create a Support Tracker account for this user.";
 	public static final String ISSUE_18B = "18-b UPGRADE: Create a Concerto account for this user.";
+	public static final String ISSUE_18C = "18-c UPGRADE: Add LdapClients role for this user's Ldap  account.";
 	public static final String ISSUE_19 = "19 MANUAL: The Limited Account cannot be upgraded, "
 												+ "because this organisation doesn't exist in the Support Tracker DB. "
 												+ "Please raise a CSSIR ticket with the organisation and user name.";
@@ -120,7 +122,7 @@ public class AccountStatusDetailsServlet extends HttpServlet{
 		switch (rqst) {
 		case "getAllUsersOfOrganisation" :
 			String clientSimpleName = request.getParameter("orgSimpleName");
-//			SyncAccountDetails.syncAllUsersThatBelongsToClient(clientSimpleName);
+			SyncAccountDetails.syncAllUsersThatBelongsToClient(clientSimpleName);
 			
 			try {
 				rslt = getAllUsersOfClientInXMLString(clientSimpleName);
@@ -601,7 +603,8 @@ class ThreadProcessingAttribute extends Thread{
 			// if this account has not been disabled (account is enabled), the proposingSolution must be also an empty StringBuffer
 			
 			// so, if this proposingSolution is not empty, means this account is a disabled but broken 
-			// (either support tracker account has not been disabled or concerto portal account has not been disabled, or both have not been disabled) 
+			// (either support tracker account has not been disabled or concerto portal account has not been disabled, or both have not been disabled)
+			// if this account is broken while it has been disabled, we dt need to check further (the further checks are checking only the broken in enabled account)
 			if(!proposingSolution.isEmpty()){
 				String value = String.format("<brokenInDisabling><name>%s</name><dn>%s</dn><solution>%s</solution></brokenInDisabling>",
 						StringEscapeUtils.escapeXml10(displayName),
@@ -1342,7 +1345,7 @@ class ThreadProcessingAttribute extends Thread{
 			if (!isGivenAttrsStoredInOrionHealth(attrs)
 					&& SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)) {
 				
-				SortedSet<String> clientAcctIds = getAllActiveClientAccountIdRecordsFromSupportTrackerThatMatch(username, company);
+				SortedSet<String> clientAcctIds = getAllClientAccountIdRecordsFromSupportTrackerThatMatch(username, company);
 
 				
 	/**
@@ -1616,62 +1619,94 @@ class ThreadProcessingAttribute extends Thread{
 						logger.debug("start checking/fixing condition 18-a,b for account: " + username);
 						if(!isGivenAttrsStoredInOrionHealth(attrs)
 								&& !isGivenAttrsHasMemberOf_checkNestedly(attrs, LDAPCLIENTS_DN)
-								&& !SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)
 								){
 	
-				/**
-				 * Limited user:
-				 * 18-a - if this account is not stored in Orion Health folder (Ldap)
-				 * 			and it doesn't have a memberOf LdapClients
-				 * 			and there is no any Client Account in Support Tracker that match this username
-				 * 
-				 * Solution: create a support tracker account using the information from Ldap account and update "Info" field of Ldap account using the clientAccountId that just created.
-				 */
-							proposingSolution.append(Issues.ISSUE_18A + RETURN_CHAR);
 							
-							if(fixing){
-							// add u into clientAccount of ST DB
-							// update u.info using clientAccountId that just created
-								try{
-									if(lt.addUserToGroup(unescapedUserDN, LDAPCLIENTS_DN)){
-										String[] results = createSupportTrackerClientAccountAndUpdateInfoFieldOfLdapAccount(attrs);
-										if(results[0].equalsIgnoreCase("false")){
-											failedToFixRslts.add(Issues.ISSUE_18A);
-										}else{
-											fixedRslts.add(Issues.ISSUE_18A);
-										}
-									} else {
-										failedToFixRslts.add(Issues.ISSUE_18A);
-									}
-								} catch (NamingException | SQLException e){
-									failedToFixRslts.add(Issues.ISSUE_18A);
-								}
-							}
-					
-							
-				/**
-				 * 18-b- continute from 18-a
-				 * 			and if there's no Concerto account that match this username
-				 * 
-				 * Solution: create a Concerto account
-				 */
-							if(!concerto.doesUserExist(username)){
-								proposingSolution.append(Issues.ISSUE_18B + RETURN_CHAR);
+							if(!SupportTrackerJDBC.isAnySupportTrackerClientAccountMatchUsername(username)){
+								/**
+								 * Limited user:
+								 * 18-a - if this account is not stored in Orion Health folder (Ldap)
+								 * 			and it doesn't have a memberOf LdapClients
+								 * 			and there is no any Client Account in Support Tracker that match this username
+								 * 
+								 * Solution: create a support tracker account using the information from Ldap account and update "Info" field of Ldap account using the clientAccountId that just created.
+								 */
+								proposingSolution.append(Issues.ISSUE_18A + RETURN_CHAR);
 								
 								if(fixing){
-									// if u doesn't exist in concerto => add u into concerto
-									Map<String, String[]> maps = convertAttributesToMapObject(attrs);
+								// add u into clientAccount of ST DB
+								// update u.info using clientAccountId that just created
 									try{
-										concerto.addClientUser(maps);
-										fixedRslts.add(Issues.ISSUE_18B);
-									} catch (Exception e){
-										failedToFixRslts.add(Issues.ISSUE_18B);
+										if(lt.addUserToGroup(unescapedUserDN, LDAPCLIENTS_DN)){
+											String[] results = createSupportTrackerClientAccountAndUpdateInfoFieldOfLdapAccount(attrs);
+											if(results[0].equalsIgnoreCase("false")){
+												failedToFixRslts.add(Issues.ISSUE_18A);
+											}else{
+												fixedRslts.add(Issues.ISSUE_18A);
+											}
+										} else {
+											failedToFixRslts.add(Issues.ISSUE_18A);
+										}
+									} catch (NamingException | SQLException e){
+										failedToFixRslts.add(Issues.ISSUE_18A);
 									}
 								}
+							
+							
+							
+							
+							
+							
+								/**
+								 * 18-b- continute from 18-a
+								 * 			and if there's no Concerto account that match this username
+								 * 
+								 * Solution: create a Concerto account
+								 */
+								if(!concerto.doesUserExist(username)){
+									proposingSolution.append(Issues.ISSUE_18B + RETURN_CHAR);
+									
+									if(fixing){
+										// if u doesn't exist in concerto => add u into concerto
+										Map<String, String[]> maps = convertAttributesToMapObject(attrs);
+										try{
+											concerto.addClientUser(maps);
+											fixedRslts.add(Issues.ISSUE_18B);
+										} catch (Exception e){
+											failedToFixRslts.add(Issues.ISSUE_18B);
+										}
+									}
+								}
+						
+						
+							} else {
+								/**
+								 * Limited user:
+								 * 18-c - if this account is not stored in Orion Health folder (Ldap)
+								 * 			and it doesn't have a memberOf LdapClients
+								 * 			and there is a Client Account in Support Tracker that match this username
+								 * 
+								 * Solution: Add LdapClients role for this user's Ldap  account.
+								 */
+								
+								proposingSolution.append(Issues.ISSUE_18C + RETURN_CHAR);
+								
+								if(fixing){
+									try{
+										if(lt.addUserToGroup(unescapedUserDN, LDAPCLIENTS_DN)){
+											fixedRslts.add(Issues.ISSUE_18C);
+										} else {
+											failedToFixRslts.add(Issues.ISSUE_18C);
+										}
+									} catch (NamingException e){
+										failedToFixRslts.add(Issues.ISSUE_18C);
+									}
+								}
+								
 							}
 						}
 						
-						logger.debug("finished checking/fixing condition 18-a,b for account: " + username);	
+						logger.debug("finished checking/fixing condition 18-a,b,c for account: " + username);	
 					}
 				}catch(Exception e){
 					logger.error("Unpredicted exception at checking for limited user.", e);
@@ -2050,9 +2085,9 @@ class ThreadProcessingAttribute extends Thread{
 	 * @return a sorted list of clientAccountId (s) from support tracker that match the given username and company name
 	 * @throws SQLException
 	 */
-	private SortedSet<String> getAllActiveClientAccountIdRecordsFromSupportTrackerThatMatch(String username, String companyname) throws SQLException{
+	private SortedSet<String> getAllClientAccountIdRecordsFromSupportTrackerThatMatch(String username, String companyname) throws SQLException{
 		String query = "SELECT clientAccountId FROM ClientAccount " +
-							"WHERE loginName = ? and active ='Y' " +
+							"WHERE loginName = ? " +
 							"and clientId = (SELECT clientId FROM Client WHERE rtrim(ltrim(companyName)) = ?)";
 		ResultSet rs = SupportTrackerJDBC.runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{username, companyname});
 		SortedSet<String> clientAcctIds = new TreeSet<>();
