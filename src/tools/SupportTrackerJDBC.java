@@ -269,6 +269,48 @@ The valid mobile phone should look like one of the below forms:
 	
 	
 	
+	/**
+	 * get the detail of the given company
+	 * @param companyName    
+	 * @return a Map object that stored the detail of the given companyName.
+	 *  if the companyName doesn't exist in ST DB, it will return an empty map. if there's an exception during the process it will return null.
+	 */
+	public static Map<String, String> getCompanyDetails(String companyName){
+		Logger logger = Logger.getRootLogger(); // initiate as a default root logger
+		
+		logger.debug("(SupportTrackerDB) about to get the details of company from Support Tracker DB " + companyName);
+
+		String query = "SELECT * FROM Client WHERE RTRIM(LTRIM(companyName))=?";		
+		
+		Map<String, String> companyDetails= new HashMap<>(); 
+		
+		try {
+			// executing the query
+			ResultSet rs = null;
+			
+			if(companyName != null && !companyName.trim().isEmpty()){
+				rs = runGivenStatementWithParamsOnSupportTrackerDB(query, new String[]{companyName});
+			} else {
+				return companyDetails;
+			}
+			
+			ResultSetMetaData meta = rs.getMetaData();
+			meta.getColumnCount();
+			while (rs != null && rs.next()) {
+				for (int i = 1; i <= meta.getColumnCount(); i++) {
+					String value = rs.getString(i) == null ? "" : rs.getString(i).trim();
+					companyDetails.put(meta.getColumnName(i), value);
+				}
+			}
+		} catch (SQLException e) {
+			logger.error("(SupportTrackerDB) " + ErrorConstants.FAIL_QUERYING_DB, e);
+			return null;
+		}
+		
+		logger.debug("(SupportTrackerDB) finished getting the details of company: " + companyDetails + " from Support Tracker DB.");
+		
+		return companyDetails;
+	}
 	
 	
 	
