@@ -373,8 +373,8 @@
                       <span class="required">*</span>
                     </div>
                     <div id="buttonGrp1" class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 200px; height: 20px; display: block">
-                      <a class="Button" id="nextButton" onclick="javascript: NextForm()" style="display: compact;">Next</a>
-                      <a class="Button" id="cancelButton" onclick="javascript: CancelForm()" style="display: compact;">Cancel</a>
+                      <a class="Button" id="nextButton" onclick="javascript: NextForm()" style="display: compact;" href="#">Next</a>
+                      <a class="Button" id="cancelButton" onclick="javascript: CancelForm()" style="display: compact;" href="#">Cancel</a>
                     </div>
                     </div>
                     
@@ -403,8 +403,8 @@
                       <span id="pwd_msg02" class="required">*</span>
                     </div>
                     <div id="buttonGrp2" class="Buttons" style="text-align: center; clear: none; padding-top: 20px; width: 200px; height: 20px; display: block">
-                      <a class="Button" id="submitButton" onclick="javascript: SubmitForm()" style="display: compact;">Submit</a>
-                      <a class="Button" id="backButton" onclick="javascript: BackForm()" style="display: compact;">Back</a>
+                      <a class="Button" id="submitButton" onclick="javascript: SubmitForm()" style="display: compact;" href="#">Submit</a>
+                      <a class="Button" id="backButton" onclick="javascript: BackForm()" style="display: compact;" href="#">Back</a>
                     </div>
                     </div>
                   </form>

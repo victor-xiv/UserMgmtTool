@@ -321,6 +321,8 @@ The valid mobile phone should look like one of the below forms:
 	/**
 	 * get the detail of the given user
 	 * @param username (login name or sAMAccountName name for both support tracker and ldap server) that his/her detail needed to be returned
+	 * @param clientAccountId: is the unique id for this user. So, the method will try to find a row that match both username and clientAccountId.
+	 *  If null or empty string given to this param, the method will try to get the last row that match username.   
 	 * @return a Map object that stored the detail of the given username. So, if there's no username available in the support tracker DB, then it will return an empty Map.
 	 * 			if the connection failed (or the query has not been executed successfully, it will return null.
 	 * @throws SQLException if the connection failed, query execution failed or closing connection failed.
@@ -435,9 +437,11 @@ The valid mobile phone should look like one of the below forms:
 			}
 		}
 		
-		staffDetails.put("displayName", staffDetails.get("givenName") + " " + staffDetails.get("sn"));
-		staffDetails.put("company", LdapTool.ORION_HEALTH_NAME);
-		staffDetails.put("info", staffDetails.get("staffId"));
+		if(!staffDetails.isEmpty()){
+			staffDetails.put("displayName", staffDetails.get("givenName") + " " + staffDetails.get("sn"));
+			staffDetails.put("company", LdapTool.ORION_HEALTH_NAME);
+			staffDetails.put("info", staffDetails.get("staffId"));
+		}
 		
 		
 

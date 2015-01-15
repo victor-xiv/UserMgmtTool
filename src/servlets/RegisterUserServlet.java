@@ -56,6 +56,7 @@ public class RegisterUserServlet extends HttpServlet {
 			return;
 		}
 		
+		
 		if(!reqParams.get("isOrionStaff").equals("true") && !reqParams.get("isAClient").equals("true")){
 			session.setAttribute("error", "This page can only be accessed by either an Orion Health's staff or client.");
 			logger.error("The user " + username + " accessing RegisterUserForKB. This user is neither an Orion Health's staff nor client.");
@@ -67,6 +68,25 @@ public class RegisterUserServlet extends HttpServlet {
 		
 		if( reqParams.containsKey("username") && reqParams.get("username") != null ){
 			username = reqParams.get("username");
+			
+			
+			// check the Support Tracker account
+			// if this user doesn't have Support Tracker account, then we are not allowing this user to register
+			try {
+				Map<String, String> userDetails = SupportTrackerJDBC.getUserDetails(username, null);
+				userDetails.putAll(SupportTrackerJDBC.getOrionHealthStaffDetails(username)); // case this is Orion user, not client user
+				if(userDetails==null || userDetails.isEmpty()){
+					throw new SQLException(); // will handle this case in the catch below
+				}
+			} catch (SQLException e1) {
+				session.setAttribute("error", "You don't have Support Tracker account. Please contact Orion Health Support.");
+				logger.error("The user " + username + " accessing RegisterUserForKB. This user doesn't have Support Tracker account.");
+				String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
+				response.sendRedirect(redirectURL);
+				return;
+			}
+			
+			
 			
 			try {
 				UserDetails user = new UserDetails();
@@ -132,8 +152,6 @@ public class RegisterUserServlet extends HttpServlet {
 			if(doesUserExist){
 				session.setAttribute("error", "You have already been registered. Please contact Orion Health Support Team for more detail.");
 				logger.error("User: " + fullname + " from company: " + company + " have already been registered.");
-				String redirectURL = response.encodeRedirectURL("RegisterUser.jsp");
-				response.sendRedirect(redirectURL);
 			}
 		}
 
@@ -236,10 +254,10 @@ public class RegisterUserServlet extends HttpServlet {
 			String message = "<font color=\"red\">";
 			message = "Unable to create user account. ";
 			message += "An account has already been created with the same name. <br />";
-			message += "Please contact Orion Health Support: <ul>";
-			message += "<li>Phone </li>";
-			message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-			message += "<li>Raise a Ticket </li></ul>";
+			message += "Please contact Orion Health Support: ";
+			message += "";
+			message += "<p>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </p>";
+			message += "<p>Raise a Ticket </p>";
 			message += "</font>";
 			session.setAttribute("error", message);
 			logger.debug("UserDN for user '" + username + "' already exists.");
@@ -253,10 +271,10 @@ public class RegisterUserServlet extends HttpServlet {
 			String message = "<font color=\"red\">";
 			message = "Unable to create user account. ";
 			message += "An account with this email address (" + email + ") already exists. <br />";
-			message += "Please contact Orion Health Support: <ul>";
-			message += "<li>Phone </li>";
-			message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-			message += "<li>Raise a Ticket </li></ul>";
+			message += "Please contact Orion Health Support: ";
+			message += "";
+			message += "<p>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </p>";
+			message += "<p>Raise a Ticket </p>";
 			message += "</font>";
 			session.setAttribute("error", message);
 			logger.debug("Email '" + email + "' already in use.");
@@ -269,10 +287,10 @@ public class RegisterUserServlet extends HttpServlet {
 			String message = "<font color=\"red\">";
 			message = "Unable to create user account. ";
 			message += "An account has already been created for this user. <br />";
-			message += "Please contact Orion Health Support: <ul>";
-			message += "<li>Phone </li>";
-			message += "<li>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </li>";
-			message += "<li>Raise a Ticket </li></ul>";
+			message += "Please contact Orion Health Support: ";
+			message += "";
+			message += "<p>Email <a href=\"mailto:support@orionhealth.com\">support@Orionhealth.com</a> </p>";
+			message += "<p>Raise a Ticket </p>";
 			message += "</font>";
 			session.setAttribute("error", message);
 			logger.debug("Username '" + username + "' already exists.");

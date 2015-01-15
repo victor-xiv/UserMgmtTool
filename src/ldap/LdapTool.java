@@ -1426,6 +1426,10 @@ info							: is the unique ID that get from clientAccountID column of the client
 	public boolean userDNExists(String fullname, String company){
 		logger.debug("(LdapTool) about to search for user: " + fullname + " from company: " + company);
 		
+		if(company==null || company.trim().isEmpty() || fullname==null || fullname.trim().isEmpty()){
+			return false;
+		}
+		
 		//Search user's company
 		String baseDN = "OU="+Rdn.escapeValue(company)+","+LdapProperty.getProperty(LdapConstants.CLIENT_DN);
 		//Create search string (CN=Display Name)

@@ -52,8 +52,8 @@ function Logout(){
                     </div>
                     <div class="row">
                       <div class="Buttons" style="text-align: center; clear: none; padding-top: 5px; width: 180px; height: 20px;">
-                        <a class="Button" href="#" onclick="javascript: ClickYes()">Yes</a>
-                        <a class="Button" href="#" onclick="javascript: ClickNo()">No</a>
+                        <a class="Button" href="#" onclick="javascript: ClickYes()" href="#">Yes</a>
+                        <a class="Button" href="#" onclick="javascript: ClickNo()" href="#">No</a>
                       </div>
                     </div>
                   </form>
