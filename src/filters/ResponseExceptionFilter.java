@@ -58,7 +58,10 @@ public class ResponseExceptionFilter implements Filter{
 			Enumeration<String> sessionAttrs = session.getAttributeNames();
 			while(sessionAttrs.hasMoreElements()){
 				String attr = sessionAttrs.nextElement();
-				session.removeAttribute(attr);
+				
+				if(!attr.equalsIgnoreCase("isAdmin")){
+					session.removeAttribute(attr);
+				}
 			}
 			
 			((HttpServletResponse)response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

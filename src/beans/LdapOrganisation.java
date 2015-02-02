@@ -12,9 +12,9 @@ import ldap.LdapTool;
 import org.apache.log4j.Logger;
 
 public class LdapOrganisation{
-	private TreeMap<String,String[]> users;
-	private String name;
-	private String distinguishedName;
+	private TreeMap<String,String[]> users = new TreeMap<>();
+	private String name =  "";
+	private String distinguishedName = "";
 	
 	
 	/**
@@ -42,13 +42,16 @@ public class LdapOrganisation{
 		if( lt != null){
 			users = lt.getClientUsers(name);
 			Attributes attrs = lt.getOrganisationAttributes(name);
-			try{
-				setName(attrs.get("name")!=null ? attrs.get("name").get().toString():"");
-				setDistinguishedName(attrs.get("distinguishedName")!=null?attrs.get("distinguishedName").get().toString():"");
-			}catch(NamingException ex){
-				lt.close();
-				throw new ConnectException(ex.getMessage());
-				// we are not logging this error here, because it has been logged in LdapTool()
+			
+			if(attrs != null){
+				try{
+					setName(attrs.get("name")!=null ? attrs.get("name").get().toString():"");
+					setDistinguishedName(attrs.get("distinguishedName")!=null?attrs.get("distinguishedName").get().toString():"");
+				}catch(NamingException ex){
+					lt.close();
+					throw new ConnectException(ex.getMessage());
+					// we are not logging this error here, because it has been logged in LdapTool()
+				}
 			}
 			
 			lt.close();
