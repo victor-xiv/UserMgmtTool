@@ -1608,9 +1608,9 @@ class ThreadProcessingAttribute extends Thread{
 					String company = lt.getUserCompany(unescapedUserDN);
 
 				/**
-				 * if this company doesn't exist then we cannot check the Limited Account status
+				 * if this company is not "Orion Health" and this company doesn't exist in ST DB then we cannot check the Limited Account status
 				 */
-					if(SupportTrackerJDBC.getCompanyDetails(company).isEmpty()){
+					if(SupportTrackerJDBC.getCompanyDetails(company).isEmpty() && !isGivenAttrsStoredInOrionHealth(attrs)){
 						proposingSolution.append(Issues.ISSUE_19 + RETURN_CHAR);
 						failedToFixRslts.add(Issues.ISSUE_19);
 						
@@ -1980,11 +1980,11 @@ class ThreadProcessingAttribute extends Thread{
 		try{
 			String escapedUserDN = (String)attributes.get("distinguishedname").get();
 			// orionHealthDN should look like this one: OU=Orion Health,OU=Clients,DC=orion,DC=dmz
-			String orionHealthDN = LdapProperty.getProperty(LdapConstants.ORION_HEALTH_ORG_NAME);
+			String orionHealthName = LdapProperty.getProperty(LdapConstants.ORION_HEALTH_ORG_NAME);
 			
 			//if escapedUserDN is in this form "CN=%displayName%,OU=Orion Health,OU=Clients,DC=orion,DC=dmz" 
 			//=> it is an account stored in Orion Health
-			return escapedUserDN.toLowerCase().contains(orionHealthDN.toLowerCase());
+			return escapedUserDN.toLowerCase().contains(orionHealthName.toLowerCase());
 		} catch (NullPointerException e){
 			// NullPointerException thrown when there's no "distinguishedname" property
 			// if that's the case, this is the unusual case, so throw exception to let the user knows about this
