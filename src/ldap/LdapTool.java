@@ -853,7 +853,7 @@ info							: is the unique ID that get from clientAccountID column of the client
 
 			// this method must be performed on SSL or TSL connection
 			ctx.modifyAttributes(new LdapName(userDN), mods);
-			logger.debug("(LdapTool) Updated password for user: "+userDN);
+			logger.info("(LdapTool) Updated password for user: "+userDN);
 			return true;
 		}catch(NamingException ex){
 			logger.error(String.format("(LdapTool) Exception while modifying user's password, (userDN, psw) = (%s, %s)", userDN, password), ex);

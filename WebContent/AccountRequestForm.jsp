@@ -14,10 +14,20 @@
       <%@ page import="java.util.TreeMap" %>
       <%@ page import="java.util.Map" %>
       <script src="./js/validator.js"></script>
-      <script src="./js/jquery.js"></script>
+      <script src="./js/jquery1-1-2.js"></script>
       
       <script type="text/javascript" language="javascript">
 
+
+      
+/*declare a trim() function for IE8, since IE8 doesn't support trim()*/
+if(typeof String.prototype.trim !== 'function') {
+	String.prototype.trim = function() {
+		return this.replace(/^\s+|\s+$/g, ''); 
+	}
+}
+      
+      
 $(document).ready(function(){
  	$("input").keypress(function(event){
   		keyPressed(event);

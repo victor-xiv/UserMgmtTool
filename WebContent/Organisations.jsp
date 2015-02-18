@@ -24,18 +24,29 @@
   %>
   
   <script>
-    window.onload = function () {
-    	if (document.getElementById("addnew").org.length == 0) {
-    		document.getElementById("addnew").removeChild(org);
-    		document.getElementById("addnew").removeChild(addlabel);
-    		document.getElementById("addnew").removeChild(addbutton);
-    	}
-    }
-    
-    function SubmitForm(){
-    	document.getElementById("addnew").submit();
-	    return true;
-    }
+  
+
+/*inform user that we are not supporting IE8 or older*/
+if(navigator.appVersion.indexOf("MSIE 8.")!=-1 || navigator.appVersion.indexOf("MSIE 7")!=-1
+		|| navigator.appVersion.indexOf("MSIE 6")!=-1 || navigator.appVersion.indexOf("MSIE 5")!=-1
+		|| navigator.appVersion.indexOf("MSIE 4")!=-1) {
+	alert("Internet Explorer 8 and older are not supported!");
+	document.write('');
+	window.onload = function(){ document.write('') };
+} else {
+	    window.onload = function () {
+	    	if (document.getElementById("addnew").org.length == 0) {
+	    		document.getElementById("addnew").removeChild(org);
+	    		document.getElementById("addnew").removeChild(addlabel);
+	    		document.getElementById("addnew").removeChild(addbutton);
+	    	}
+	    }
+	    
+	    function SubmitForm(){
+	    	document.getElementById("addnew").submit();
+		    return true;
+	    }
+   }
   </script>
 </head>
   <body>
