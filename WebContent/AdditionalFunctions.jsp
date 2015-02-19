@@ -7,11 +7,14 @@
 
 <script type="text/javascript" language="javascript">
 /*inform user that we are not supporting IE8 or older*/
-if(navigator.appVersion.indexOf("MSIE 8.")!=-1 || navigator.appVersion.indexOf("MSIE 7")!=-1
+if( navigator.appVersion.indexOf("MSIE 8.")!=-1 || navigator.appVersion.indexOf("MSIE 7")!=-1
 		|| navigator.appVersion.indexOf("MSIE 6")!=-1 || navigator.appVersion.indexOf("MSIE 5")!=-1
 		|| navigator.appVersion.indexOf("MSIE 4")!=-1) {
-	alert("Internet Explorer 8 and older are not supported!");
-	window.onload = function(){ document.write('') };
+	// check if it is not enterprise mode
+	// (if spellcheck feature availbale means that it is enterprise mode of IE11. we are supporting IE11 enterprise mode)
+	if(  !('spellcheck' in document.createElement('textarea'))  ){
+		window.onload = function(){ document.write('Internet Explorer 8 is not supported. Please use another browser.') };
+	}
 }
 </script>
 

@@ -24,15 +24,16 @@
   %>
   
   <script>
-  
-
 /*inform user that we are not supporting IE8 or older*/
-if(navigator.appVersion.indexOf("MSIE 8.")!=-1 || navigator.appVersion.indexOf("MSIE 7")!=-1
+if(  (navigator.appVersion.indexOf("MSIE 8.")!=-1 || navigator.appVersion.indexOf("MSIE 7")!=-1
 		|| navigator.appVersion.indexOf("MSIE 6")!=-1 || navigator.appVersion.indexOf("MSIE 5")!=-1
-		|| navigator.appVersion.indexOf("MSIE 4")!=-1) {
-	alert("Internet Explorer 8 and older are not supported!");
-	document.write('');
-	window.onload = function(){ document.write('') };
+		|| navigator.appVersion.indexOf("MSIE 4")!=-1)
+		
+		// check if it is not enterprise mode
+		// (if spellcheck feature availbale means that it is enterprise mode of IE11. we are supporting IE11 enterprise mode)
+		&&  !('spellcheck' in document.createElement('textarea')) ) {
+	
+	window.onload = function(){ document.write('Internet Explorer 8 is not supported. Please use another browser.') };
 } else {
 	    window.onload = function () {
 	    	if (document.getElementById("addnew").org.length == 0) {
